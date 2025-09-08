@@ -1,0 +1,56 @@
+import { Repository } from 'typeorm';
+import { WatchProgress } from '../entity/watch-progress.entity';
+import { Episode } from '../entity/episode.entity';
+export declare class WatchProgressService {
+    private readonly watchProgressRepo;
+    private readonly episodeRepo;
+    constructor(watchProgressRepo: Repository<WatchProgress>, episodeRepo: Repository<Episode>);
+    updateWatchProgress(userId: number, episodeId: number, stopAtSecond: number): Promise<{
+        ok: boolean;
+    }>;
+    getUserWatchProgress(userId: number, episodeId?: number): Promise<{
+        userId: number;
+        episodeId: number;
+        stopAtSecond: number;
+        updatedAt: Date;
+        episode: {
+            id: number;
+            title: string;
+            episodeNumber: number;
+            series: {
+                id: number;
+                title: string;
+                coverUrl: string;
+            };
+        };
+    }[]>;
+    getRecentWatchedEpisodes(userId: number, limit?: number): Promise<{
+        userId: number;
+        episodeId: number;
+        stopAtSecond: number;
+        updatedAt: Date;
+        episode: {
+            id: number;
+            title: string;
+            episodeNumber: number;
+            series: {
+                id: number;
+                title: string;
+                coverUrl: string;
+            };
+        };
+    }[]>;
+    getUserWatchProgressByEpisodeIds(userId: number, episodeIds: number[]): Promise<WatchProgress[]>;
+    deleteWatchProgress(userId: number, episodeId: number): Promise<{
+        ok: boolean;
+    }>;
+    clearAllWatchProgress(userId: number): Promise<{
+        ok: boolean;
+        deletedCount: number;
+    }>;
+    getEpisodeWatchStats(episodeId: number): Promise<{
+        totalWatchers: number;
+        completedWatchers: number;
+        completionRate: number;
+    }>;
+}
