@@ -11,18 +11,9 @@ export declare class AdminController {
         message: string;
     }>;
     getDeletedSeries(page?: number, size?: number): Promise<{
-        success: boolean;
-        data: {
-            list: import("./entity/series.entity").Series[];
-            total: number;
-            page: number;
-            size: number;
-            hasMore: boolean;
-        };
-        message?: undefined;
-    } | {
-        success: boolean;
-        message: string;
-        data?: undefined;
+        list: any[];
+        total: number;
+        page: number;
+        size: number;
     }>;
 }

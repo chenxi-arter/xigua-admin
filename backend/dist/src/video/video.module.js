@@ -19,8 +19,10 @@ const browse_history_entity_1 = require("./entity/browse-history.entity");
 const category_entity_1 = require("./entity/category.entity");
 const short_video_entity_1 = require("./entity/short-video.entity");
 const banner_entity_1 = require("./entity/banner.entity");
+const user_entity_1 = require("../user/entity/user.entity");
 const filter_type_entity_1 = require("./entity/filter-type.entity");
 const filter_option_entity_1 = require("./entity/filter-option.entity");
+const series_genre_option_entity_1 = require("./entity/series-genre-option.entity");
 const video_service_1 = require("./video.service");
 const cache_monitor_controller_1 = require("./cache-monitor.controller");
 const video_api_module_1 = require("./modules/video-api.module");
@@ -31,6 +33,12 @@ const category_service_1 = require("./services/category.service");
 const filter_service_1 = require("./services/filter.service");
 const series_service_1 = require("./services/series.service");
 const browse_history_service_1 = require("./services/browse-history.service");
+const browse_history_cleanup_service_1 = require("./services/browse-history-cleanup.service");
+const playback_service_1 = require("./services/playback.service");
+const content_service_1 = require("./services/content.service");
+const home_service_1 = require("./services/home.service");
+const media_service_1 = require("./services/media.service");
+const url_service_1 = require("./services/url.service");
 const app_logger_service_1 = require("../common/logger/app-logger.service");
 const app_config_service_1 = require("../common/config/app-config.service");
 const catalog_module_1 = require("./modules/catalog.module");
@@ -42,6 +50,7 @@ const channel_exists_validator_1 = require("./validators/channel-exists.validato
 const ingest_service_1 = require("./services/ingest.service");
 const ingest_controller_1 = require("./controllers/ingest.controller");
 const test_ingest_controller_1 = require("./controllers/test-ingest.controller");
+const play_count_service_1 = require("./services/play-count.service");
 let VideoModule = class VideoModule {
 };
 exports.VideoModule = VideoModule;
@@ -63,14 +72,22 @@ exports.VideoModule = VideoModule = __decorate([
                 category_entity_1.Category,
                 short_video_entity_1.ShortVideo,
                 banner_entity_1.Banner,
+                user_entity_1.User,
                 filter_type_entity_1.FilterType,
                 filter_option_entity_1.FilterOption,
+                series_genre_option_entity_1.SeriesGenreOption,
                 browse_history_entity_1.BrowseHistory
             ]),
             video_api_module_1.VideoApiModule
         ],
         providers: [
             video_service_1.VideoService,
+            playback_service_1.PlaybackService,
+            content_service_1.ContentService,
+            home_service_1.HomeService,
+            media_service_1.MediaService,
+            url_service_1.UrlService,
+            play_count_service_1.PlayCountService,
             watch_progress_service_1.WatchProgressService,
             comment_service_1.CommentService,
             episode_service_1.EpisodeService,
@@ -79,6 +96,7 @@ exports.VideoModule = VideoModule = __decorate([
             filter_service_1.FilterService,
             series_service_1.SeriesService,
             browse_history_service_1.BrowseHistoryService,
+            browse_history_cleanup_service_1.BrowseHistoryCleanupService,
             app_logger_service_1.AppLoggerService,
             app_config_service_1.AppConfigService,
             channel_exists_validator_1.IsValidChannelExistsConstraint,

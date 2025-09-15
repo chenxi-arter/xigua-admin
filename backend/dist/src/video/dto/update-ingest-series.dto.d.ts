@@ -20,6 +20,7 @@ export declare class UpdateIngestSeriesDto {
     categoryId?: number;
     status?: string;
     releaseDate?: string;
+    isCompleted?: boolean;
     score?: number;
     playCount?: number;
     starring?: string;
@@ -32,4 +33,6 @@ export declare class UpdateIngestSeriesDto {
     episodes?: EpisodeUpdateDto[];
     removeMissingEpisodes?: boolean;
     removeMissingUrls?: boolean;
+    genreOptionNames?: string[];
+    replaceGenres?: boolean;
 }

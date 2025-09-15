@@ -17,7 +17,6 @@ const filter_option_entity_1 = require("../entity/filter-option.entity");
 const banner_entity_1 = require("../entity/banner.entity");
 const banner_metric_daily_entity_1 = require("../entity/banner-metric-daily.entity");
 const browse_history_entity_1 = require("../entity/browse-history.entity");
-const video_service_1 = require("../video.service");
 const series_service_1 = require("../services/series.service");
 const episode_service_1 = require("../services/episode.service");
 const browse_history_service_1 = require("../services/browse-history.service");
@@ -35,7 +34,6 @@ exports.SeriesModule = SeriesModule = __decorate([
             typeorm_1.TypeOrmModule.forFeature([series_entity_1.Series, episode_entity_1.Episode, episode_url_entity_1.EpisodeUrl, category_entity_1.Category, filter_option_entity_1.FilterOption, browse_history_entity_1.BrowseHistory, banner_entity_1.Banner, banner_metric_daily_entity_1.BannerMetricDaily])
         ],
         providers: [
-            video_service_1.VideoService,
             series_service_1.SeriesService,
             episode_service_1.EpisodeService,
             browse_history_service_1.BrowseHistoryService,
@@ -43,7 +41,7 @@ exports.SeriesModule = SeriesModule = __decorate([
             banner_service_1.BannerService,
             comment_service_1.CommentService,
         ],
-        exports: [video_service_1.VideoService, series_service_1.SeriesService, episode_service_1.EpisodeService, comment_service_1.CommentService, typeorm_1.TypeOrmModule],
+        exports: [series_service_1.SeriesService, episode_service_1.EpisodeService, comment_service_1.CommentService, typeorm_1.TypeOrmModule],
     })
 ], SeriesModule);
 //# sourceMappingURL=series.module.js.map

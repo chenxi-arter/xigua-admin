@@ -7,6 +7,7 @@ export declare class FilterOption {
     isDefault: boolean;
     isActive: boolean;
     sortOrder: number;
+    displayOrder: number;
     createdAt: Date;
     updatedAt: Date;
     filterType: FilterType;

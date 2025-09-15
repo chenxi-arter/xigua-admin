@@ -13,6 +13,9 @@ export declare class CacheKeys {
     static categories(): string;
     static tags(): string;
     static seriesDetail(seriesId: number): string;
+    static episodeList(seriesIdentifier: string, idType: string, page: number, size: number, userId?: number): string;
+    static seriesList(categoryId?: number, page?: number, size?: number): string;
+    static seriesByCategory(categoryId: number): string;
     static moduleVideos(moduleType: string, categoryId: number, page: number): string;
     static topSeries(limit: number): string;
     static getPatternKeys(pattern: string): string[];

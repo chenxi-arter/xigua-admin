@@ -31,6 +31,9 @@ let Episode = class Episode {
     watchProgresses;
     comments;
     playCount;
+    likeCount;
+    dislikeCount;
+    favoriteCount;
     createdAt;
     updatedAt;
     hasSequel;
@@ -97,6 +100,18 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'int', default: 0, name: 'play_count' }),
     __metadata("design:type", Number)
 ], Episode.prototype, "playCount", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'int', default: 0, name: 'like_count' }),
+    __metadata("design:type", Number)
+], Episode.prototype, "likeCount", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'int', default: 0, name: 'dislike_count' }),
+    __metadata("design:type", Number)
+], Episode.prototype, "dislikeCount", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'int', default: 0, name: 'favorite_count' }),
+    __metadata("design:type", Number)
+], Episode.prototype, "favoriteCount", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)

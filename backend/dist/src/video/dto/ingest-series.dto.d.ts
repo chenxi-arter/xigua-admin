@@ -18,8 +18,9 @@ export declare class IngestSeriesDto {
     description: string;
     coverUrl: string;
     categoryId: number;
-    status: string;
+    status?: string;
     releaseDate: string;
+    isCompleted: boolean;
     score?: number;
     playCount?: number;
     starring?: string;
@@ -30,4 +31,5 @@ export declare class IngestSeriesDto {
     statusOptionName: string;
     yearOptionName: string;
     episodes: EpisodeInputDto[];
+    genreOptionNames?: string[];
 }

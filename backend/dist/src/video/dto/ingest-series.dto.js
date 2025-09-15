@@ -94,6 +94,7 @@ class IngestSeriesDto {
     categoryId;
     status;
     releaseDate;
+    isCompleted;
     score;
     playCount;
     starring;
@@ -104,6 +105,7 @@ class IngestSeriesDto {
     statusOptionName;
     yearOptionName;
     episodes;
+    genreOptionNames;
 }
 exports.IngestSeriesDto = IngestSeriesDto;
 __decorate([
@@ -134,14 +136,19 @@ __decorate([
     __metadata("design:type", Number)
 ], IngestSeriesDto.prototype, "categoryId", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsIn)(['on-going', 'completed', 'deleted']),
+    (0, class_validator_1.IsIn)(['deleted']),
     __metadata("design:type", String)
 ], IngestSeriesDto.prototype, "status", void 0);
 __decorate([
     (0, class_validator_1.IsDateString)(),
     __metadata("design:type", String)
 ], IngestSeriesDto.prototype, "releaseDate", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], IngestSeriesDto.prototype, "isCompleted", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
@@ -206,4 +213,10 @@ __decorate([
     (0, class_transformer_1.Type)(() => EpisodeInputDto),
     __metadata("design:type", Array)
 ], IngestSeriesDto.prototype, "episodes", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsString)({ each: true }),
+    __metadata("design:type", Array)
+], IngestSeriesDto.prototype, "genreOptionNames", void 0);
 //# sourceMappingURL=ingest-series.dto.js.map

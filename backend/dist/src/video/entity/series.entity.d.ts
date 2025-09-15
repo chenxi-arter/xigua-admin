@@ -17,7 +17,6 @@ export declare class Series {
     playCount: number;
     upStatus: string;
     upCount: number;
-    status: string;
     starring: string;
     actor: string;
     director: string;
@@ -33,7 +32,7 @@ export declare class Series {
     isCompleted: boolean;
     updatedAt: Date;
     isActive: number;
-    deletedAt: Date;
-    deletedBy: number;
+    deletedAt: Date | null;
+    deletedBy: number | null;
     generateShortId(): void;
 }

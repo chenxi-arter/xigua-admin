@@ -31,4 +31,8 @@ export declare class BrowseHistoryService {
     private checkUserOperationLimit;
     deleteBrowseHistory(userId: number, seriesId?: number): Promise<void>;
     findSeriesByShortId(shortId: string): Promise<Series | null>;
+    private getBrowseTypeDescription;
+    private getWatchStatus;
+    private formatDateTime;
+    private checkAndEnforceUserRecordLimit;
 }

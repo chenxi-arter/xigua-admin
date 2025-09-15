@@ -16,6 +16,9 @@ export declare class Episode {
     watchProgresses: WatchProgress[];
     comments: Comment[];
     playCount: number;
+    likeCount: number;
+    dislikeCount: number;
+    favoriteCount: number;
     createdAt: Date;
     updatedAt: Date;
     hasSequel: boolean;

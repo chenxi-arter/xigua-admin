@@ -15,6 +15,7 @@ const class_transformer_1 = require("class-transformer");
 class RedisConfig {
     host = 'localhost';
     port = 6379;
+    username;
     password;
     db = 0;
     ttl = 300;
@@ -26,10 +27,9 @@ class RedisConfig {
     enableReadyCheck = true;
     maxRetriesPerRequest = 20000;
     getRedisConfig() {
-        return {
+        const config = {
             host: this.host,
             port: this.port,
-            password: this.password,
             db: this.db,
             connectTimeout: this.connectTimeout,
             lazyConnect: this.lazyConnect,
@@ -38,17 +38,30 @@ class RedisConfig {
             enableReadyCheck: this.enableReadyCheck,
             maxRetriesPerRequest: this.maxRetriesPerRequest,
         };
+        if (this.username && this.username.trim() !== '') {
+            config.username = this.username;
+        }
+        if (this.password && this.password.trim() !== '') {
+            config.password = this.password;
+        }
+        return config;
     }
     getCacheConfig() {
-        return {
+        const config = {
             store: 'redis',
             host: this.host,
             port: this.port,
-            password: this.password,
             db: this.db,
             ttl: this.ttl,
             max: this.max,
         };
+        if (this.username && this.username.trim() !== '') {
+            config.username = this.username;
+        }
+        if (this.password && this.password.trim() !== '') {
+            config.password = this.password;
+        }
+        return config;
     }
 }
 exports.RedisConfig = RedisConfig;
@@ -62,6 +75,11 @@ __decorate([
     (0, class_transformer_1.Transform)(({ value }) => parseInt(value) || 6379),
     __metadata("design:type", Number)
 ], RedisConfig.prototype, "port", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], RedisConfig.prototype, "username", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),

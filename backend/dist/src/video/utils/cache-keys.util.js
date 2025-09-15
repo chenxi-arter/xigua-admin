@@ -37,6 +37,17 @@ class CacheKeys {
     static seriesDetail(seriesId) {
         return `${this.PREFIX.SERIES}_detail_${seriesId}`;
     }
+    static episodeList(seriesIdentifier, idType, page, size, userId) {
+        const userPart = userId ? `_user_${userId}` : '';
+        return `episode_list_${seriesIdentifier}_${idType}_${page}_${size}${userPart}`;
+    }
+    static seriesList(categoryId, page = 1, size = 20) {
+        const categoryPart = categoryId ? `_cat_${categoryId}` : '_all';
+        return `series_list${categoryPart}_${page}_${size}`;
+    }
+    static seriesByCategory(categoryId) {
+        return `series_by_category_${categoryId}`;
+    }
     static moduleVideos(moduleType, categoryId, page) {
         return `${moduleType}_videos_${categoryId}_${page}`;
     }

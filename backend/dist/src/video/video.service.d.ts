@@ -1,42 +1,36 @@
 import { Repository } from 'typeorm';
 import { Cache } from 'cache-manager';
-import { Category } from './entity/category.entity';
-import { Series } from './entity/series.entity';
 import { Episode } from './entity/episode.entity';
-import { ShortVideo } from "./entity/short-video.entity";
-import { FilterOption } from './entity/filter-option.entity';
-import { FilterTagsResponse } from './dto/filter-tags.dto';
-import { FilterDataResponse } from './dto/filter-data.dto';
-import { ConditionFilterDto, ConditionFilterResponse } from './dto/condition-filter.dto';
-import { EpisodeListResponse } from './dto/episode-list.dto';
-import { WatchProgressService } from './services/watch-progress.service';
-import { CommentService } from './services/comment.service';
-import { EpisodeService } from './services/episode.service';
-import { CategoryService } from './services/category.service';
+import { Series } from './entity/series.entity';
+import { Comment } from './entity/comment.entity';
+import { PlaybackService } from './services/playback.service';
+import { ContentService } from './services/content.service';
+import { HomeService } from './services/home.service';
+import { MediaService } from './services/media.service';
+import { UrlService } from './services/url.service';
 import { FilterService } from './services/filter.service';
+import { CommentService } from './services/comment.service';
 import { SeriesService } from './services/series.service';
-import { BannerService } from './services/banner.service';
-import { BrowseHistoryService } from './services/browse-history.service';
+import { CategoryService } from './services/category.service';
 export declare class VideoService {
-    private readonly catRepo;
-    private readonly seriesRepo;
-    private readonly shortRepo;
-    private readonly epRepo;
-    private readonly filterOptionRepo;
-    private cacheManager;
-    private readonly watchProgressService;
-    private readonly commentService;
-    private readonly episodeService;
-    private readonly categoryService;
+    private readonly playbackService;
+    private readonly contentService;
+    private readonly homeService;
+    private readonly mediaService;
+    private readonly urlService;
     private readonly filterService;
+    private readonly commentService;
     private readonly seriesService;
-    private readonly bannerService;
-    private readonly browseHistoryService;
-    constructor(catRepo: Repository<Category>, seriesRepo: Repository<Series>, shortRepo: Repository<ShortVideo>, epRepo: Repository<Episode>, filterOptionRepo: Repository<FilterOption>, cacheManager: Cache, watchProgressService: WatchProgressService, commentService: CommentService, episodeService: EpisodeService, categoryService: CategoryService, filterService: FilterService, seriesService: SeriesService, bannerService: BannerService, browseHistoryService: BrowseHistoryService);
-    listCategories(): Promise<{}>;
-    listSeriesByCategory(categoryId: number): Promise<{}>;
-    getSeriesDetail(seriesId: number): Promise<{} | null>;
+    private readonly categoryService;
+    private readonly episodeRepo;
+    private readonly seriesRepo;
+    private readonly commentRepo;
+    private readonly cacheManager;
+    constructor(playbackService: PlaybackService, contentService: ContentService, homeService: HomeService, mediaService: MediaService, urlService: UrlService, filterService: FilterService, commentService: CommentService, seriesService: SeriesService, categoryService: CategoryService, episodeRepo: Repository<Episode>, seriesRepo: Repository<Series>, commentRepo: Repository<Comment>, cacheManager: Cache);
     saveProgress(userId: number, episodeId: number, stopAtSecond: number): Promise<{
+        ok: boolean;
+    }>;
+    saveProgressWithBrowseHistory(userId: number, episodeId: number, stopAtSecond: number, req?: any): Promise<{
         ok: boolean;
     }>;
     getProgress(userId: number, episodeId: number): Promise<{
@@ -51,13 +45,60 @@ export declare class VideoService {
         lastWatchTime: string;
         isCompleted: boolean;
     } | null>;
-    getEpisodeByShortId(episodeShortId: string): Promise<Episode | null>;
-    private clearVideoRelatedCache;
-    private clearAllListCache;
-    addComment(userId: number, episodeId: number, content: string, appearSecond?: number): Promise<import("./entity/comment.entity").Comment>;
-    createEpisodeUrl(episodeId: number, quality: string, ossUrl: string, cdnUrl: string, subtitleUrl?: string): Promise<import("./entity/episode-url.entity").EpisodeUrl>;
+    getEpisodeList(seriesIdentifier?: string, isShortId?: boolean, page?: number, size?: number, userId?: number, req?: any): Promise<import("./dto/episode-list.dto").EpisodeListResponse>;
+    getEpisodeByShortId(shortId: string): Promise<Episode | null>;
+    getSeriesDetail(id: number): Promise<{}>;
+    getHomeVideos(channeid: number, page: number): Promise<{}>;
+    getHomeModules(channeid: number, page: number): Promise<{
+        code: number;
+        msg: string;
+        data: {
+            list: any[];
+        };
+    }>;
+    listCategories(): Promise<{}>;
+    listMedia(categoryId?: number, type?: 'short' | 'series', userId?: number, sort?: 'latest' | 'like' | 'play', page?: number, size?: number): Promise<{
+        code: number;
+        data: {
+            list: {
+                id: number;
+                shortId: string;
+                title: string;
+                description: string;
+                coverUrl: string;
+                type: string;
+                categoryId: number;
+                episodeCount: number;
+                status: string;
+                score: number;
+                playCount: number;
+                starring: string;
+                director: string;
+                createdAt: string;
+            }[];
+            total: number;
+            page: number;
+            size: number;
+            hasMore: boolean;
+        };
+        msg: null;
+    }>;
+    listSeriesFull(categoryId?: number, page?: number, size?: number): Promise<{}>;
+    listSeriesByCategory(categoryId: number): Promise<{}>;
+    createEpisodeUrl(episodeId: number, quality: string, ossUrl: string, cdnUrl: string, subtitleUrl?: string): Promise<{
+        code: number;
+        data: {
+            id: number;
+            episodeId: number;
+            quality: string;
+            accessKey: string;
+            ossUrl: string;
+            cdnUrl: string;
+            subtitleUrl: string | null;
+        };
+        msg: string;
+    }>;
     getEpisodeUrlByAccessKey(accessKey: string): Promise<{
-        accessKeySource: string;
         episodeId: number;
         episodeShortId: string;
         episodeTitle: string;
@@ -73,9 +114,9 @@ export declare class VideoService {
             createdAt: Date;
             updatedAt: Date;
         }[];
-    }>;
-    getEpisodeUrlByKey(prefix: string, raw: string): Promise<{
         accessKeySource: string;
+    }>;
+    getEpisodeUrlByKey(prefix: string, key: string): Promise<{
         episodeId: number;
         episodeShortId: string;
         episodeTitle: string;
@@ -91,89 +132,36 @@ export declare class VideoService {
             createdAt: Date;
             updatedAt: Date;
         }[];
-    }>;
-    updateEpisodeSequel(episodeId: number, hasSequel: boolean): Promise<{
-        ok: boolean;
+        accessKeySource: string;
     }>;
     generateAccessKeysForExisting(): Promise<{
-        updatedUrlKeys: number;
-        updatedEpisodeKeys: number;
+        code: number;
+        data: {
+            updatedCount: number;
+            message: string;
+        };
+        msg: string;
     }>;
-    listMedia(categoryId?: number, type?: 'short' | 'series', userId?: number, sort?: 'latest' | 'like' | 'play', page?: number, size?: number): Promise<[ShortVideo[], number] | {
-        list: {
-            id: number;
-            title: string;
-            coverUrl: string;
-            totalEpisodes: number;
-            categoryName: string;
-            latestEpisode: number;
-        }[];
-        total: number;
-        page: number;
-        size: number;
+    updateEpisodeSequel(episodeId: number, hasSequel: boolean): Promise<{
+        code: number;
+        data: {
+            episodeId: number;
+            hasSequel: boolean;
+        };
+        msg: string;
     }>;
-    listSeriesFull(categoryId?: number, page?: number, size?: number): Promise<{
-        list: {
-            id: number;
-            title: string;
-            description: string;
-            coverUrl: string;
-            totalEpisodes: number;
-            categoryName: string;
-            createdAt: Date;
-            episodes: {
-                id: number;
-                episodeNumber: number;
-                title: string;
-                duration: number;
-                status: string;
-            }[];
-        }[];
-        total: number;
-        page: number;
-        size: number;
-    }>;
-    getHomeVideos(channeid?: number, page?: number): Promise<any>;
-    private findCategoryInfo;
-    private createBannerBlock;
-    private createSearchFilterBlock;
-    private createAdvertisementBlock;
-    private createVideoListBlock;
-    getMovieVideos(catid?: string, page?: number): Promise<any>;
-    getDramaVideos(catid?: string, page?: number): Promise<any>;
-    getVarietyVideos(catid?: string, page?: number): Promise<any>;
-    private getModuleVideos;
-    private getTopSeries;
-    private getVideoList;
-    getFiltersTags(channeid: string): Promise<FilterTagsResponse>;
+    getFiltersTags(channeid: string): Promise<import("./dto/filter-tags.dto").FilterTagsResponse>;
+    getFiltersData(channelId: string, ids: string, page: string): Promise<import("./dto/filter-data.dto").FilterDataResponse>;
+    fuzzySearch(keyword: string, channelId?: string, page?: number, size?: number): Promise<import("./dto/fuzzy-search.dto").FuzzySearchResponse>;
+    getConditionFilterData(dto: any): Promise<import("./dto/filter-data.dto").FilterDataResponse>;
     clearFilterCache(channeid?: string): Promise<void>;
-    getFiltersData(channeid: string, ids: string, page: string): Promise<FilterDataResponse>;
-    fuzzySearch(keyword: string, channeid?: string, page?: number, size?: number): Promise<any>;
-    getConditionFilterData(dto: ConditionFilterDto): Promise<ConditionFilterResponse>;
-    private applyConditionFilters;
-    private parseFilterIds;
-    private applySorting;
-    createFilterOption(data: any): Promise<{
-        success: boolean;
-        data: any;
+    addComment(userId: number, episodeId: number, content: string, appearSecond?: number): Promise<Comment>;
+    getSeriesByCategory(categoryId: number, page?: number, pageSize?: number): Promise<{
+        series: Series[];
+        total: number;
     }>;
-    updateFilterOption(id: number, data: any): Promise<{
-        success: boolean;
-        id: number;
-        data: any;
-    }>;
-    deleteFilterOption(id: number): Promise<{
-        success: boolean;
-        id: number;
-    }>;
-    batchCreateFilterOptions(options: any[]): Promise<{
-        success: boolean;
-        count: number;
-    }>;
-    getEpisodeList(seriesIdentifier?: string, isShortId?: boolean, page?: number, size?: number, userId?: number, req?: any): Promise<EpisodeListResponse>;
-    private clearProgressRelatedCache;
-    private clearSeriesRelatedCache;
-    private clearCommentRelatedCache;
+    getAllCategories(): Promise<import("./entity/category.entity").Category[]>;
+    getCategoriesWithStats(): Promise<{}>;
     softDeleteSeries(seriesId: number, deletedBy?: number): Promise<{
         success: boolean;
         message: string;
@@ -183,18 +171,11 @@ export declare class VideoService {
         message: string;
     }>;
     getDeletedSeries(page?: number, size?: number): Promise<{
-        success: boolean;
-        data: {
-            list: Series[];
-            total: number;
-            page: number;
-            size: number;
-            hasMore: boolean;
-        };
-        message?: undefined;
-    } | {
-        success: boolean;
-        message: string;
-        data?: undefined;
+        list: any[];
+        total: number;
+        page: number;
+        size: number;
     }>;
+    clearProgressRelatedCache(episodeId: number): void;
+    clearSeriesRelatedCache(seriesId: number): void;
 }

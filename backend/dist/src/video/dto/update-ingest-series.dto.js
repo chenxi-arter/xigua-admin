@@ -97,6 +97,7 @@ class UpdateIngestSeriesDto {
     categoryId;
     status;
     releaseDate;
+    isCompleted;
     score;
     playCount;
     starring;
@@ -109,6 +110,8 @@ class UpdateIngestSeriesDto {
     episodes;
     removeMissingEpisodes;
     removeMissingUrls;
+    genreOptionNames;
+    replaceGenres;
 }
 exports.UpdateIngestSeriesDto = UpdateIngestSeriesDto;
 __decorate([
@@ -142,7 +145,7 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsIn)(['on-going', 'completed', 'deleted']),
+    (0, class_validator_1.IsIn)(['deleted']),
     __metadata("design:type", String)
 ], UpdateIngestSeriesDto.prototype, "status", void 0);
 __decorate([
@@ -150,6 +153,11 @@ __decorate([
     (0, class_validator_1.IsDateString)(),
     __metadata("design:type", String)
 ], UpdateIngestSeriesDto.prototype, "releaseDate", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], UpdateIngestSeriesDto.prototype, "isCompleted", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
@@ -221,4 +229,15 @@ __decorate([
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], UpdateIngestSeriesDto.prototype, "removeMissingUrls", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.IsString)({ each: true }),
+    __metadata("design:type", Array)
+], UpdateIngestSeriesDto.prototype, "genreOptionNames", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], UpdateIngestSeriesDto.prototype, "replaceGenres", void 0);
 //# sourceMappingURL=update-ingest-series.dto.js.map

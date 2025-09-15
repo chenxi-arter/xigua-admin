@@ -5,7 +5,6 @@ export declare class BrowseHistory {
     userId: number;
     seriesId: number;
     browseType: string;
-    durationSeconds: number;
     lastEpisodeNumber: number | null;
     visitCount: number;
     userAgent: string | null;

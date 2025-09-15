@@ -17,25 +17,37 @@ const common_1 = require("@nestjs/common");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const rate_limit_guard_1 = require("../common/guards/rate-limit.guard");
 const browse_history_service_1 = require("./services/browse-history.service");
-let BrowseHistoryController = class BrowseHistoryController {
+const browse_history_cleanup_service_1 = require("./services/browse-history-cleanup.service");
+const base_controller_1 = require("./controllers/base.controller");
+let BrowseHistoryController = class BrowseHistoryController extends base_controller_1.BaseController {
     browseHistoryService;
-    constructor(browseHistoryService) {
+    browseHistoryCleanupService;
+    constructor(browseHistoryService, browseHistoryCleanupService) {
+        super();
         this.browseHistoryService = browseHistoryService;
+        this.browseHistoryCleanupService = browseHistoryCleanupService;
     }
-    async getUserBrowseHistory(req, page = '1', size = '20') {
-        const pageNum = parseInt(page, 10);
-        const sizeNum = parseInt(size, 10);
-        return this.browseHistoryService.getUserBrowseHistory(req.user.userId, pageNum, sizeNum);
+    async getUserBrowseHistory(req, page = '1', size = '10') {
+        try {
+            const { page: pageNum, size: sizeNum } = this.normalizePagination(page, size, 50);
+            const result = await this.browseHistoryService.getUserBrowseHistory(Number(req.user?.userId), pageNum, sizeNum);
+            return this.success(result, '获取浏览记录成功');
+        }
+        catch (error) {
+            return this.handleServiceError(error, '获取浏览记录失败');
+        }
     }
     async getRecentBrowsedSeries(req, limit = '10') {
-        const limitNum = parseInt(limit, 10);
-        return {
-            code: 200,
-            data: await this.browseHistoryService.getRecentBrowsedSeries(req.user.userId, limitNum),
-            msg: null
-        };
+        try {
+            const limitNum = this.validateId(limit, '限制数量');
+            const result = await this.browseHistoryService.getRecentBrowsedSeries(Number(req.user?.userId), limitNum);
+            return this.success(result, '获取最近浏览记录成功');
+        }
+        catch (error) {
+            return this.handleServiceError(error, '获取最近浏览记录失败');
+        }
     }
-    async syncBrowseHistory(req, seriesShortId, browseType = 'episode_list', lastEpisodeNumber) {
+    async syncBrowseHistory(req, seriesShortId, browseType = 'episode_watch', lastEpisodeNumber) {
         if (!seriesShortId) {
             return {
                 code: 400,
@@ -53,7 +65,7 @@ let BrowseHistoryController = class BrowseHistoryController {
         }
         const seriesIdNum = series.id;
         const episodeNumber = lastEpisodeNumber ? parseInt(lastEpisodeNumber, 10) : undefined;
-        await this.browseHistoryService.recordBrowseHistory(req.user.userId, seriesIdNum, browseType, episodeNumber, req);
+        await this.browseHistoryService.recordBrowseHistory(Number(req.user?.userId), seriesIdNum, browseType, episodeNumber, req);
         return {
             code: 200,
             msg: '浏览记录同步成功',
@@ -62,7 +74,7 @@ let BrowseHistoryController = class BrowseHistoryController {
     }
     async deleteBrowseHistory(req, seriesId) {
         const seriesIdNum = parseInt(seriesId, 10);
-        await this.browseHistoryService.deleteBrowseHistory(req.user.userId, seriesIdNum);
+        await this.browseHistoryService.deleteBrowseHistory(Number(req.user?.userId), seriesIdNum);
         return {
             code: 200,
             msg: '浏览记录删除成功',
@@ -92,6 +104,44 @@ let BrowseHistoryController = class BrowseHistoryController {
             msg: '过期记录清理完成',
             data: null
         };
+    }
+    async manualCleanupExcessRecords() {
+        try {
+            const result = await this.browseHistoryCleanupService.manualCleanup();
+            return {
+                code: 200,
+                msg: '浏览记录清理任务完成',
+                data: {
+                    processedUsers: result.processedUsers,
+                    totalCleanedRecords: result.totalCleanedRecords,
+                    duration: result.duration
+                }
+            };
+        }
+        catch {
+            return {
+                code: 500,
+                msg: '浏览记录清理任务失败',
+                data: null
+            };
+        }
+    }
+    async getCleanupStats() {
+        try {
+            const stats = await this.browseHistoryCleanupService.getCleanupStats();
+            return {
+                code: 200,
+                msg: '获取清理统计信息成功',
+                data: stats
+            };
+        }
+        catch {
+            return {
+                code: 500,
+                msg: '获取清理统计信息失败',
+                data: null
+            };
+        }
     }
 };
 exports.BrowseHistoryController = BrowseHistoryController;
@@ -156,9 +206,24 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], BrowseHistoryController.prototype, "cleanupExpiredRecords", null);
+__decorate([
+    (0, rate_limit_guard_1.RateLimit)(rate_limit_guard_1.RateLimitConfigs.STRICT),
+    (0, common_1.Post)('cleanup-excess'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], BrowseHistoryController.prototype, "manualCleanupExcessRecords", null);
+__decorate([
+    (0, rate_limit_guard_1.RateLimit)(rate_limit_guard_1.RateLimitConfigs.NORMAL),
+    (0, common_1.Get)('cleanup-stats'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], BrowseHistoryController.prototype, "getCleanupStats", null);
 exports.BrowseHistoryController = BrowseHistoryController = __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, rate_limit_guard_1.RateLimitGuard),
     (0, common_1.Controller)('video/browse-history'),
-    __metadata("design:paramtypes", [browse_history_service_1.BrowseHistoryService])
+    __metadata("design:paramtypes", [browse_history_service_1.BrowseHistoryService,
+        browse_history_cleanup_service_1.BrowseHistoryCleanupService])
 ], BrowseHistoryController);
 //# sourceMappingURL=browse-history.controller.js.map

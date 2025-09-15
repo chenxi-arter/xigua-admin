@@ -31,7 +31,6 @@ let Series = class Series {
     playCount;
     upStatus;
     upCount;
-    status;
     starring;
     actor;
     director;
@@ -118,10 +117,6 @@ __decorate([
     __metadata("design:type", Number)
 ], Series.prototype, "upCount", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ length: 255, default: 'on-going', name: 'status' }),
-    __metadata("design:type", String)
-], Series.prototype, "status", void 0);
-__decorate([
     (0, typeorm_1.Column)({ type: 'text', nullable: true, name: 'starring' }),
     __metadata("design:type", String)
 ], Series.prototype, "starring", void 0);
@@ -187,11 +182,11 @@ __decorate([
 ], Series.prototype, "isActive", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'timestamp', nullable: true, name: 'deleted_at' }),
-    __metadata("design:type", Date)
+    __metadata("design:type", Object)
 ], Series.prototype, "deletedAt", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'int', nullable: true, name: 'deleted_by' }),
-    __metadata("design:type", Number)
+    __metadata("design:type", Object)
 ], Series.prototype, "deletedBy", void 0);
 __decorate([
     (0, typeorm_1.BeforeInsert)(),

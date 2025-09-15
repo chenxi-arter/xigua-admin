@@ -190,6 +190,31 @@ let CategoryService = class CategoryService {
         await this.cacheManager.set(cacheKey, popularCategories, 3600000);
         return popularCategories;
     }
+    async getRawCategories() {
+        const cacheKey = 'categories:raw';
+        const startTime = Date.now();
+        try {
+            const cached = await this.cacheManager.get(cacheKey);
+            if (cached) {
+                this.logger.logCacheOperation('GET', cacheKey, true);
+                return cached;
+            }
+            this.logger.logCacheOperation('GET', cacheKey, false);
+            const categories = await this.categoryRepo.find({
+                where: { isEnabled: true },
+                order: { id: 'ASC' }
+            });
+            const duration = Date.now() - startTime;
+            this.logger.logDatabaseOperation('SELECT', 'category', { count: categories.length }, duration);
+            await this.cacheManager.set(cacheKey, categories, cache_keys_util_1.CacheKeys.TTL.LONG);
+            this.logger.logCacheOperation('SET', cacheKey, undefined, cache_keys_util_1.CacheKeys.TTL.LONG);
+            return categories;
+        }
+        catch (error) {
+            this.logger.error('获取原始分类数据失败', error.stack);
+            throw new Error('获取原始分类数据失败');
+        }
+    }
     async getCategoryList(versionNo) {
         const cacheKey = cache_keys_util_1.CacheKeys.categories() + ':list';
         const startTime = Date.now();

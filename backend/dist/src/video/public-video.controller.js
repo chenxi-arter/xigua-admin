@@ -39,13 +39,13 @@ let PublicVideoController = class PublicVideoController {
         const page = parseInt(dto.page || '1', 10);
         const size = parseInt(dto.size || '20', 10);
         if (dto.seriesShortId) {
-            return this.videoService.getEpisodeList(dto.seriesShortId, true, page, size, undefined, undefined);
+            return this.videoService.getEpisodeList(dto.seriesShortId, true, page, size, undefined);
         }
         else if (dto.seriesId) {
-            return this.videoService.getEpisodeList(dto.seriesId, false, page, size, undefined, undefined);
+            return this.videoService.getEpisodeList(dto.seriesId, false, page, size, undefined);
         }
         else {
-            return this.videoService.getEpisodeList(undefined, false, page, size, undefined, undefined);
+            return this.videoService.getEpisodeList(undefined, false, page, size, undefined);
         }
     }
 };

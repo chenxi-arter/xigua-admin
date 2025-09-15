@@ -39,7 +39,6 @@ export declare class IngestController {
         seriesId: number;
         shortId: string | null;
         externalId: string | null;
-        upCount: number;
         upStatus: string | null;
         totalEpisodes: number;
         isCompleted: boolean;

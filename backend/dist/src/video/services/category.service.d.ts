@@ -20,5 +20,6 @@ export declare class CategoryService {
     }>;
     private clearCategoryCache;
     getPopularCategories(limit?: number): Promise<{}>;
+    getRawCategories(): Promise<{}>;
     getCategoryList(versionNo?: number): Promise<{}>;
 }

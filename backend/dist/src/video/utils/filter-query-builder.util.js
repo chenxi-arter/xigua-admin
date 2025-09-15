@@ -5,12 +5,9 @@ class FilterQueryBuilderUtil {
     static applySorting(qb, sortType) {
         switch (sortType) {
             case 1:
-                qb.orderBy('series.createdAt', 'DESC');
-                break;
-            case 2:
                 qb.orderBy('series.playCount', 'DESC');
                 break;
-            case 3:
+            case 2:
                 qb.orderBy('series.score', 'DESC');
                 break;
             default:

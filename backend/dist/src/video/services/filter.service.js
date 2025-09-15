@@ -14,23 +14,27 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FilterService = void 0;
 const common_1 = require("@nestjs/common");
+const date_util_1 = require("../../common/utils/date.util");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const cache_manager_1 = require("@nestjs/cache-manager");
 const filter_type_entity_1 = require("../entity/filter-type.entity");
 const filter_option_entity_1 = require("../entity/filter-option.entity");
 const series_entity_1 = require("../entity/series.entity");
+const episode_entity_1 = require("../entity/episode.entity");
 const cache_keys_util_1 = require("../utils/cache-keys.util");
 const filter_query_builder_util_1 = require("../utils/filter-query-builder.util");
 let FilterService = class FilterService {
     filterTypeRepo;
     filterOptionRepo;
     seriesRepo;
+    episodeRepo;
     cacheManager;
-    constructor(filterTypeRepo, filterOptionRepo, seriesRepo, cacheManager) {
+    constructor(filterTypeRepo, filterOptionRepo, seriesRepo, episodeRepo, cacheManager) {
         this.filterTypeRepo = filterTypeRepo;
         this.filterOptionRepo = filterOptionRepo;
         this.seriesRepo = seriesRepo;
+        this.episodeRepo = episodeRepo;
         this.cacheManager = cacheManager;
     }
     async getFiltersTags(channelId) {
@@ -40,51 +44,34 @@ let FilterService = class FilterService {
             return cached;
         }
         try {
-            let filterTypes;
-            if (channelId && channelId !== '0' && channelId !== '1') {
-                filterTypes = await this.filterTypeRepo.find({
-                    relations: ['options'],
-                    order: { sortOrder: 'ASC' },
+            const filterTypes = await this.filterTypeRepo
+                .createQueryBuilder('filterType')
+                .leftJoinAndSelect('filterType.options', 'option', 'option.isActive = :isActive', { isActive: true })
+                .where('filterType.isActive = :isActive', { isActive: true })
+                .orderBy('filterType.indexPosition', 'ASC')
+                .addOrderBy('option.displayOrder', 'ASC')
+                .getMany();
+            console.log('DEBUG: Raw query results:');
+            filterTypes.forEach((ft, i) => {
+                console.log(`  ${i + 1}. FilterType ${ft.id} - ${ft.name} (${ft.options?.length || 0} options)`);
+                ft.options?.forEach((opt, j) => {
+                    console.log(`    ${j + 1}. Option ${opt.id}: ${opt.name} (display_order: ${opt.displayOrder}, filter_type_id: ${opt.filterTypeId})`);
                 });
-            }
-            else {
-                filterTypes = await this.filterTypeRepo.find({
-                    relations: ['options'],
-                    order: { sortOrder: 'ASC' },
-                });
-            }
+            });
             const filterGroups = [];
             for (const filterType of filterTypes) {
-                const items = [
-                    {
-                        index: 0,
-                        classifyId: 0,
-                        classifyName: '全部',
-                        isDefaultSelect: true,
-                    },
-                ];
+                const items = [];
                 if (filterType.options && filterType.options.length > 0) {
-                    const sortedOptions = filterType.options.sort((a, b) => a.sortOrder - b.sortOrder);
-                    let filteredOptions = sortedOptions;
-                    if (channelId && channelId !== '0' && channelId !== '1') {
-                        const channelNum = parseInt(channelId);
-                        if (channelNum === 2) {
-                            filteredOptions = sortedOptions.slice(0, Math.min(3, sortedOptions.length));
-                        }
-                        else if (channelNum === 3) {
-                            filteredOptions = sortedOptions.slice(0, Math.min(5, sortedOptions.length));
-                        }
-                        else if (channelNum >= 4) {
-                            filteredOptions = [...sortedOptions].reverse();
-                        }
-                    }
-                    for (let i = 0; i < filteredOptions.length; i++) {
-                        const option = filteredOptions[i];
+                    const sortedOptions = filterType.options
+                        .filter(option => option.isActive)
+                        .sort((a, b) => (a.displayOrder || a.sortOrder || 0) - (b.displayOrder || b.sortOrder || 0));
+                    for (const option of sortedOptions) {
+                        const displayOrder = option.displayOrder !== null && option.displayOrder !== undefined ? option.displayOrder : (option.sortOrder || 0);
                         items.push({
-                            index: i + 1,
-                            classifyId: option.id,
+                            index: displayOrder,
+                            classifyId: displayOrder,
                             classifyName: option.name,
-                            isDefaultSelect: false,
+                            isDefaultSelect: option.isDefault || displayOrder === 0,
                         });
                     }
                 }
@@ -100,7 +87,7 @@ let FilterService = class FilterService {
                 code: 200,
                 msg: null,
             };
-            await this.cacheManager.set(cacheKey, response, cache_keys_util_1.CacheKeys.TTL.SHORT);
+            await this.cacheManager.set(cacheKey, response, cache_keys_util_1.CacheKeys.TTL.MEDIUM);
             return response;
         }
         catch (error) {
@@ -121,12 +108,22 @@ let FilterService = class FilterService {
             const pageSize = 20;
             const offset = (pageNum - 1) * pageSize;
             const filterIds = this.parseFilterIds(ids);
+            const rawTokens = ids.split(',');
+            const idTokens = Array(6).fill('0');
+            for (let i = 0; i < Math.min(6, rawTokens.length); i++) {
+                idTokens[i] = (rawTokens[i] ?? '0');
+            }
             const queryBuilder = this.seriesRepo.createQueryBuilder('series')
                 .leftJoinAndSelect('series.category', 'category')
-                .leftJoinAndSelect('series.episodes', 'episodes')
-                .where('series.isActive = :isActive', { isActive: 1 });
-            await this.applyFilters(queryBuilder, filterIds, channelId);
-            this.applySorting(queryBuilder, filterIds.sortType);
+                .leftJoinAndSelect('series.regionOption', 'regionOption')
+                .leftJoinAndSelect('series.languageOption', 'languageOption')
+                .leftJoinAndSelect('series.statusOption', 'statusOption')
+                .leftJoinAndSelect('series.yearOption', 'yearOption')
+                .where('series.isActive = :isActive', { isActive: 1 })
+                .distinct(true);
+            queryBuilder.leftJoin('series_genre_options', 'sgo', 'sgo.series_id = series.id');
+            await this.applyFilters(queryBuilder, filterIds, channelId, idTokens);
+            this.applySorting(queryBuilder, filterIds.typeId);
             const [series, total] = await queryBuilder
                 .skip(offset)
                 .take(pageSize)
@@ -139,6 +136,49 @@ let FilterService = class FilterService {
                 };
                 return response;
             }
+            const seriesIds = series.map(s => s.id);
+            const now = new Date();
+            const tzOffsetMs = now.getTimezoneOffset() * 60000;
+            const localNow = new Date(now.getTime() - tzOffsetMs);
+            const dayStartLocal = new Date(localNow.getFullYear(), localNow.getMonth(), localNow.getDate());
+            const dayEndLocal = new Date(localNow.getFullYear(), localNow.getMonth(), localNow.getDate() + 1);
+            const dayStart = new Date(dayStartLocal.getTime() + tzOffsetMs);
+            const dayEnd = new Date(dayEndLocal.getTime() + tzOffsetMs);
+            let upCountMap = {};
+            if (seriesIds.length > 0) {
+                const rows = await this.episodeRepo.createQueryBuilder('ep')
+                    .select('ep.series_id', 'seriesId')
+                    .addSelect('COUNT(*)', 'cnt')
+                    .where('ep.series_id IN (:...ids)', { ids: seriesIds })
+                    .andWhere('ep.status = :published', { published: 'published' })
+                    .andWhere('ep.created_at >= :start AND ep.created_at < :end', { start: dayStart, end: dayEnd })
+                    .groupBy('ep.series_id')
+                    .getRawMany();
+                upCountMap = rows.reduce((acc, r) => {
+                    acc[Number(r.seriesId)] = Number(r.cnt) || 0;
+                    return acc;
+                }, {});
+            }
+            let statMap = {};
+            if (seriesIds.length > 0) {
+                const rows2 = await this.episodeRepo.createQueryBuilder('ep')
+                    .select('ep.series_id', 'seriesId')
+                    .addSelect('SUM(ep.like_count)', 'likeSum')
+                    .addSelect('SUM(ep.dislike_count)', 'dislikeSum')
+                    .addSelect('SUM(ep.favorite_count)', 'favoriteSum')
+                    .where('ep.series_id IN (:...ids)', { ids: seriesIds })
+                    .andWhere('ep.status = :published', { published: 'published' })
+                    .groupBy('ep.series_id')
+                    .getRawMany();
+                statMap = rows2.reduce((acc, r) => {
+                    acc[Number(r.seriesId)] = {
+                        like: Number(r.likeSum) || 0,
+                        dislike: Number(r.dislikeSum) || 0,
+                        favorite: Number(r.favoriteSum) || 0,
+                    };
+                    return acc;
+                }, {});
+            }
             const items = series.map(s => ({
                 id: s.id,
                 shortId: s.shortId || '',
@@ -148,14 +188,17 @@ let FilterService = class FilterService {
                 playCount: s.playCount || 0,
                 url: s.id.toString(),
                 type: s.category?.name || '未分类',
-                isSerial: (s.episodes && s.episodes.length > 1) || false,
-                upStatus: s.upStatus || '已完结',
-                upCount: s.upCount || 0,
+                isSerial: (s.totalEpisodes && s.totalEpisodes > 1) || false,
+                upStatus: s.upStatus || (s.statusOption?.name ? `${s.statusOption.name}` : '已完结'),
+                upCount: upCountMap[s.id] ?? 0,
+                likeCount: statMap[s.id]?.like ?? 0,
+                dislikeCount: statMap[s.id]?.dislike ?? 0,
+                favoriteCount: statMap[s.id]?.favorite ?? 0,
                 author: s.starring || s.actor || '',
                 description: s.description || '',
                 cidMapper: s.category?.id?.toString() || '0',
                 isRecommend: false,
-                createdAt: s.createdAt ? s.createdAt.toISOString() : new Date().toISOString(),
+                createdAt: s.createdAt ? date_util_1.DateUtil.formatDateTime(s.createdAt) : date_util_1.DateUtil.formatDateTime(new Date()),
             }));
             const response = {
                 data: {
@@ -178,8 +221,8 @@ let FilterService = class FilterService {
     parseFilterIds(ids) {
         const parts = ids.split(',').map(id => parseInt(id) || 0);
         return {
-            sortType: parts[0] || 0,
-            categoryId: parts[1] || 0,
+            typeId: parts[0] || 0,
+            genreId: parts[1] || 0,
             regionId: parts[2] || 0,
             languageId: parts[3] || 0,
             yearId: parts[4] || 0,
@@ -189,15 +232,15 @@ let FilterService = class FilterService {
     async applyFiltersToQueryBuilder(queryBuilder, filterIds, channelId) {
         await this.applyFilters(queryBuilder, filterIds, channelId);
     }
-    async applyFilters(queryBuilder, filterIds, channelId) {
+    async applyFilters(queryBuilder, filterIds, channelId, idTokens) {
         filter_query_builder_util_1.FilterQueryBuilderUtil.applyChannel(queryBuilder, channelId);
         const filterTypes = await this.filterTypeRepo.find({
-            order: { sortOrder: 'ASC' },
+            order: { indexPosition: 'ASC' },
             where: { isActive: true }
         });
         const idsArray = [
-            filterIds.sortType,
-            filterIds.categoryId,
+            filterIds.typeId,
+            filterIds.genreId,
             filterIds.regionId,
             filterIds.languageId,
             filterIds.yearId,
@@ -210,21 +253,53 @@ let FilterService = class FilterService {
                 const option = await this.filterOptionRepo.findOne({
                     where: {
                         filterTypeId: filterType.id,
-                        sortOrder: optionId,
+                        displayOrder: optionId,
                         isActive: true
                     }
                 });
                 if (option) {
-                    console.log(`[DEBUG] 应用筛选: ${filterType.code}, sort_order: ${optionId}, option_id: ${option.id}, option_name: ${option.name}`);
+                    console.log(`[DEBUG] 应用筛选: ${filterType.code}, display_order: ${optionId}, option_id: ${option.id}, option_name: ${option.name}`);
                     const isNumericChannel = /^\d+$/.test(channelId);
                     const hasChannelCategory = isNumericChannel && parseInt(channelId, 10) > 0;
                     if (filterType.code === 'type' && hasChannelCategory) {
                         continue;
                     }
                     switch (filterType.code) {
-                        case 'type':
-                            filter_query_builder_util_1.FilterQueryBuilderUtil.applyType(queryBuilder, option.id);
+                        case 'type': {
                             break;
+                        }
+                        case 'genre': {
+                            const raw = idTokens?.[1] || '';
+                            const displayOrders = raw.includes('-')
+                                ? raw.split('-').map(x => parseInt(x) || 0).filter(x => x > 0)
+                                : [optionId].filter(x => x > 0);
+                            if (displayOrders.length) {
+                                const genreRow = await this.filterTypeRepo.findOne({ where: { code: 'genre', isActive: true } });
+                                if (genreRow) {
+                                    const opts = await this.filterOptionRepo.createQueryBuilder('fo')
+                                        .select('fo.id', 'id')
+                                        .where('fo.filter_type_id = :ftid', { ftid: genreRow.id })
+                                        .andWhere('fo.display_order IN (:...dos)', { dos: displayOrders })
+                                        .andWhere('fo.is_active = 1')
+                                        .getRawMany();
+                                    const genreIds = opts.map((r) => Number(r.id)).filter(Boolean);
+                                    if (genreIds.length) {
+                                        if (displayOrders.length === 1) {
+                                            queryBuilder.andWhere('sgo.option_id IN (:...genreIds)', { genreIds });
+                                        }
+                                        else {
+                                            queryBuilder.andWhere('sgo.option_id IN (:...genreIds)', { genreIds });
+                                            queryBuilder.groupBy('series.id');
+                                            queryBuilder.having('COUNT(DISTINCT sgo.option_id) = :requiredCount', { requiredCount: genreIds.length });
+                                        }
+                                    }
+                                    else {
+                                        queryBuilder.andWhere('1 = 0');
+                                    }
+                                }
+                            }
+                            break;
+                        }
                         case 'region':
                             filter_query_builder_util_1.FilterQueryBuilderUtil.applyRegion(queryBuilder, option.id);
                             break;
@@ -237,21 +312,20 @@ let FilterService = class FilterService {
                         case 'status':
                             filter_query_builder_util_1.FilterQueryBuilderUtil.applyStatus(queryBuilder, option.id);
                             break;
-                        case 'sort':
-                            break;
                         default:
                             break;
                     }
                 }
                 else {
-                    console.log(`[DEBUG] 未找到筛选选项: filter_type_id=${filterType.id}, sort_order=${optionId}`);
+                    console.log(`[DEBUG] 未找到筛选选项: filter_type_id=${filterType.id}, display_order=${optionId}`);
+                    queryBuilder.andWhere('1 = 0');
                 }
             }
         }
     }
     async applyFilterByType() { }
-    applySorting(queryBuilder, sortType) {
-        filter_query_builder_util_1.FilterQueryBuilderUtil.applySorting(queryBuilder, sortType);
+    applySorting(queryBuilder, typeId) {
+        filter_query_builder_util_1.FilterQueryBuilderUtil.applySorting(queryBuilder, typeId);
     }
     async resolveYearNameFromDate(date) {
         if (!date)
@@ -316,15 +390,34 @@ let FilterService = class FilterService {
         try {
             const offset = (page - 1) * size;
             console.log('查询参数:', { offset, size });
+            const trimmedKeyword = keyword.trim();
             const queryBuilder = this.seriesRepo.createQueryBuilder('series')
                 .leftJoinAndSelect('series.category', 'category')
                 .leftJoinAndSelect('series.episodes', 'episodes')
-                .where('series.title LIKE :keyword', { keyword: `%${keyword.trim()}%` })
+                .leftJoinAndSelect('series.regionOption', 'regionOption')
+                .leftJoinAndSelect('series.languageOption', 'languageOption')
+                .leftJoinAndSelect('series.statusOption', 'statusOption')
+                .leftJoinAndSelect('series.yearOption', 'yearOption')
+                .where('series.title LIKE :keyword', { keyword: `%${trimmedKeyword}%` })
                 .andWhere('series.isActive = :isActive', { isActive: 1 });
             if (channeid && channeid.trim() !== '') {
                 queryBuilder.andWhere('series.category_id = :channeid', { channeid: parseInt(channeid) });
             }
-            queryBuilder.orderBy('series.createdAt', 'DESC');
+            queryBuilder
+                .addSelect(`
+          CASE 
+            WHEN series.title = :keyword THEN 1
+            WHEN series.title LIKE CONCAT(:keyword, '%') THEN 2
+            WHEN series.title LIKE CONCAT('%', :keyword, '%') THEN 3
+            ELSE 4
+          END
+        `, 'matchPriority')
+                .addSelect('LOCATE(:keyword, series.title)', 'matchPosition')
+                .addSelect('CHAR_LENGTH(series.title)', 'titleLength')
+                .orderBy('matchPriority', 'ASC')
+                .addOrderBy('matchPosition', 'ASC')
+                .addOrderBy('titleLength', 'ASC')
+                .addOrderBy('series.createdAt', 'DESC');
             console.log('SQL查询:', queryBuilder.getSql());
             console.log('查询参数:', queryBuilder.getParameters());
             const [series, total] = await queryBuilder
@@ -357,13 +450,13 @@ let FilterService = class FilterService {
                 url: s.id.toString(),
                 type: s.category?.name || '未分类',
                 isSerial: (s.episodes && s.episodes.length > 1) || false,
-                upStatus: s.upStatus || '已完结',
-                upCount: s.upCount || 0,
+                upStatus: s.upStatus || (s.statusOption?.name ? `${s.statusOption.name}` : '已完结'),
+                upCount: 0,
                 author: s.starring || s.actor || '',
                 description: s.description || '',
                 cidMapper: s.category?.id?.toString() || '0',
                 isRecommend: false,
-                createdAt: s.createdAt ? s.createdAt.toISOString() : new Date().toISOString(),
+                createdAt: s.createdAt ? date_util_1.DateUtil.formatDateTime(s.createdAt) : date_util_1.DateUtil.formatDateTime(new Date()),
                 channeid: s.categoryId || 0
             }));
             const response = {
@@ -395,6 +488,17 @@ let FilterService = class FilterService {
             };
         }
     }
+    formatDateTime(date) {
+        if (!date)
+            return '';
+        const beijingTime = new Date(date.getTime() + (date.getTimezoneOffset() * 60000) + (8 * 3600000));
+        const year = beijingTime.getFullYear();
+        const month = String(beijingTime.getMonth() + 1).padStart(2, '0');
+        const day = String(beijingTime.getDate()).padStart(2, '0');
+        const hours = String(beijingTime.getHours()).padStart(2, '0');
+        const minutes = String(beijingTime.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day} ${hours}:${minutes}`;
+    }
 };
 exports.FilterService = FilterService;
 exports.FilterService = FilterService = __decorate([
@@ -402,8 +506,10 @@ exports.FilterService = FilterService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(filter_type_entity_1.FilterType)),
     __param(1, (0, typeorm_1.InjectRepository)(filter_option_entity_1.FilterOption)),
     __param(2, (0, typeorm_1.InjectRepository)(series_entity_1.Series)),
-    __param(3, (0, common_1.Inject)(cache_manager_1.CACHE_MANAGER)),
+    __param(3, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),
+    __param(4, (0, common_1.Inject)(cache_manager_1.CACHE_MANAGER)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository, Object])
 ], FilterService);

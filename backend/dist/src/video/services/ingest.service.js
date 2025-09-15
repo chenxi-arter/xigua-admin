@@ -22,18 +22,24 @@ const episode_url_entity_1 = require("../entity/episode-url.entity");
 const access_key_util_1 = require("../../shared/utils/access-key.util");
 const filter_type_entity_1 = require("../entity/filter-type.entity");
 const filter_option_entity_1 = require("../entity/filter-option.entity");
+const filter_service_1 = require("./filter.service");
+const series_genre_option_entity_1 = require("../entity/series-genre-option.entity");
 let IngestService = class IngestService {
     seriesRepo;
     episodeRepo;
     urlRepo;
     filterTypeRepo;
     filterOptionRepo;
-    constructor(seriesRepo, episodeRepo, urlRepo, filterTypeRepo, filterOptionRepo) {
+    seriesGenreRepo;
+    filterService;
+    constructor(seriesRepo, episodeRepo, urlRepo, filterTypeRepo, filterOptionRepo, seriesGenreRepo, filterService) {
         this.seriesRepo = seriesRepo;
         this.episodeRepo = episodeRepo;
         this.urlRepo = urlRepo;
         this.filterTypeRepo = filterTypeRepo;
         this.filterOptionRepo = filterOptionRepo;
+        this.seriesGenreRepo = seriesGenreRepo;
+        this.filterService = filterService;
     }
     async updateSeriesProgress(seriesId, isCompleted, status) {
         const episodes = await this.episodeRepo.find({ where: { seriesId } });
@@ -48,8 +54,7 @@ let IngestService = class IngestService {
         const upStatus = completed
             ? '已完结'
             : (maxEpisodeNumber > 0 ? `更新至第${maxEpisodeNumber}集` : '未发布');
-        const upCount = maxEpisodeNumber;
-        await this.seriesRepo.update(seriesId, { totalEpisodes: total, upStatus, upCount });
+        await this.seriesRepo.update(seriesId, { totalEpisodes: total, upStatus });
     }
     async resolveOptionId(typeCode, name) {
         if (!name)
@@ -64,9 +69,70 @@ let IngestService = class IngestService {
         const existing = await this.filterOptionRepo.findOne({ where: { filterTypeId: fType.id, name } });
         if (existing)
             return existing.id;
-        const created = this.filterOptionRepo.create({ filterTypeId: fType.id, name, value: null, isDefault: false, isActive: true, sortOrder: 0 });
+        const maxDisplayOrder = await this.filterOptionRepo
+            .createQueryBuilder('option')
+            .select('MAX(option.display_order)', 'maxOrder')
+            .where('option.filter_type_id = :filterTypeId', { filterTypeId: fType.id })
+            .getRawOne();
+        const nextDisplayOrder = (maxDisplayOrder?.maxOrder || 0) + 1;
+        const created = this.filterOptionRepo.create({
+            filterTypeId: fType.id,
+            name,
+            value: name.toLowerCase(),
+            isDefault: false,
+            isActive: true,
+            sortOrder: nextDisplayOrder,
+            displayOrder: nextDisplayOrder
+        });
         const saved = await this.filterOptionRepo.save(created);
+        console.log(`[INGEST] 创建新筛选选项: ${typeCode}/${name}, display_order: ${nextDisplayOrder}, id: ${saved.id}`);
+        try {
+            await this.filterService.clearAllFilterTagsCache();
+        }
+        catch (e) {
+            console.warn('[INGEST] 清理筛选器标签缓存失败（忽略）:', e?.message || e);
+        }
         return saved.id;
+    }
+    inferCompletedFromStatus(statusOptionName) {
+        if (!statusOptionName)
+            return false;
+        const name = statusOptionName.toLowerCase();
+        const completedKeywords = ['完结', '完成', 'ended', 'finished', 'completed', '完'];
+        return completedKeywords.some(keyword => name.includes(keyword));
+    }
+    async resolveGenreOptionIds(payload) {
+        const ids = new Set();
+        if (Array.isArray(payload.genreOptionNames)) {
+            for (const name of payload.genreOptionNames) {
+                const id = await this.resolveOptionId('genre', name);
+                if (id)
+                    ids.add(id);
+            }
+        }
+        return Array.from(ids);
+    }
+    async upsertSeriesGenres(seriesId, optionIds, replace = false) {
+        if (!Array.isArray(optionIds))
+            return;
+        const unique = Array.from(new Set(optionIds.filter(x => typeof x === 'number' && x > 0)));
+        if (replace) {
+            if (unique.length === 0) {
+                await this.seriesGenreRepo.delete({ seriesId });
+                return;
+            }
+            await this.seriesGenreRepo.createQueryBuilder()
+                .delete()
+                .where('series_id = :sid AND option_id NOT IN (:...ids)', { sid: seriesId, ids: unique })
+                .execute();
+        }
+        for (const oid of unique) {
+            const exists = await this.seriesGenreRepo.findOne({ where: { seriesId, optionId: oid } });
+            if (!exists) {
+                const row = this.seriesGenreRepo.create({ seriesId, optionId: oid });
+                await this.seriesGenreRepo.save(row);
+            }
+        }
     }
     async upsertSeries(payload) {
         let series = null;
@@ -89,9 +155,8 @@ let IngestService = class IngestService {
                 description: payload.description,
                 coverUrl: payload.coverUrl,
                 categoryId: payload.categoryId,
-                status: payload.status ?? 'on-going',
                 releaseDate: payload.releaseDate ? new Date(payload.releaseDate) : undefined,
-                isCompleted: (payload.status ?? 'on-going') === 'completed',
+                isCompleted: payload.isCompleted,
                 score: payload.score ?? 0,
                 playCount: payload.playCount ?? 0,
                 starring: payload.starring,
@@ -109,8 +174,9 @@ let IngestService = class IngestService {
             series.description = payload.description;
             series.coverUrl = payload.coverUrl;
             series.categoryId = payload.categoryId;
-            if (payload.status !== undefined)
-                series.status = payload.status;
+            if (payload.isCompleted !== undefined) {
+                series.isCompleted = payload.isCompleted;
+            }
             if (payload.releaseDate !== undefined)
                 series.releaseDate = new Date(payload.releaseDate);
             if (payload.score !== undefined)
@@ -137,6 +203,15 @@ let IngestService = class IngestService {
                 series.yearOptionId = yearId;
         }
         series = await this.seriesRepo.save(series);
+        try {
+            const genreIds = await this.resolveGenreOptionIds(payload);
+            if (genreIds.length) {
+                await this.upsertSeriesGenres(series.id, genreIds, false);
+            }
+        }
+        catch (e) {
+            console.warn('[INGEST] 题材写入失败（忽略不中断）：', e?.message || e);
+        }
         for (const ep of payload.episodes || []) {
             let episode = await this.episodeRepo.findOne({ where: { seriesId: series.id, episodeNumber: ep.episodeNumber } });
             if (!episode) {
@@ -186,7 +261,7 @@ let IngestService = class IngestService {
                 }
             }
         }
-        await this.updateSeriesProgress(series.id, series.isCompleted, series.status);
+        await this.updateSeriesProgress(series.id, series.isCompleted);
         if (payload.status === 'deleted') {
             await this.seriesRepo.update(series.id, { isActive: 0, deletedAt: new Date() });
         }
@@ -212,9 +287,8 @@ let IngestService = class IngestService {
             update.coverUrl = payload.coverUrl;
         if (payload.categoryId !== undefined)
             update.categoryId = payload.categoryId;
-        if (payload.status !== undefined) {
-            update.status = payload.status;
-            update.isCompleted = payload.status === 'completed';
+        if (payload.isCompleted !== undefined) {
+            update.isCompleted = payload.isCompleted;
         }
         if (payload.releaseDate !== undefined)
             update.releaseDate = new Date(payload.releaseDate);
@@ -246,6 +320,18 @@ let IngestService = class IngestService {
         else if (Object.keys(update).length) {
             await this.seriesRepo.update(series.id, update);
             await this.seriesRepo.update(series.id, { isActive: 1, deletedAt: null });
+        }
+        try {
+            const genreIds = await this.resolveGenreOptionIds(payload);
+            if (genreIds.length) {
+                await this.upsertSeriesGenres(series.id, genreIds, !!payload.replaceGenres);
+            }
+            else if (payload.replaceGenres) {
+                await this.upsertSeriesGenres(series.id, [], true);
+            }
+        }
+        catch (e) {
+            console.warn('[INGEST] 更新题材失败（忽略不中断）：', e?.message || e);
         }
         if (Array.isArray(payload.episodes)) {
             const seenEpisodeNumbers = new Set();
@@ -322,7 +408,7 @@ let IngestService = class IngestService {
                 }
             }
         }
-        await this.updateSeriesProgress(series.id, (update.isCompleted ?? series.isCompleted), (payload.status ?? series.status));
+        await this.updateSeriesProgress(series.id, (update.isCompleted ?? series.isCompleted));
         return { seriesId: series.id, shortId: series.shortId, externalId: series.externalId ?? null };
     }
     async getSeriesProgressByExternalId(externalId) {
@@ -333,13 +419,13 @@ let IngestService = class IngestService {
                 details: { externalId }
             });
         }
-        await this.updateSeriesProgress(series.id, series.isCompleted, series.status);
+        await this.updateSeriesProgress(series.id, series.isCompleted);
+        await this.updateSeriesProgress(series.id, series.isCompleted);
         const refreshed = await this.seriesRepo.findOne({ where: { id: series.id } });
         return {
             seriesId: refreshed.id,
             shortId: refreshed.shortId ?? null,
             externalId: refreshed.externalId ?? null,
-            upCount: refreshed.upCount,
             upStatus: refreshed.upStatus ?? null,
             totalEpisodes: refreshed.totalEpisodes,
             isCompleted: !!refreshed.isCompleted,
@@ -354,10 +440,13 @@ exports.IngestService = IngestService = __decorate([
     __param(2, (0, typeorm_1.InjectRepository)(episode_url_entity_1.EpisodeUrl)),
     __param(3, (0, typeorm_1.InjectRepository)(filter_type_entity_1.FilterType)),
     __param(4, (0, typeorm_1.InjectRepository)(filter_option_entity_1.FilterOption)),
+    __param(5, (0, typeorm_1.InjectRepository)(series_genre_option_entity_1.SeriesGenreOption)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        filter_service_1.FilterService])
 ], IngestService);
 //# sourceMappingURL=ingest.service.js.map

@@ -5,6 +5,7 @@ const dotenv_1 = require("dotenv");
 const core_1 = require("@nestjs/core");
 const app_module_1 = require("./app.module");
 const common_1 = require("@nestjs/common");
+const date_util_1 = require("./common/utils/date.util");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.setGlobalPrefix('api');
@@ -26,6 +27,8 @@ async function bootstrap() {
         methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
         credentials: true,
     });
+    const appTimezone = process.env.APP_TIMEZONE || process.env.DB_TIMEZONE || 'Asia/Shanghai';
+    date_util_1.DateUtil.setTimezone(appTimezone);
     await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

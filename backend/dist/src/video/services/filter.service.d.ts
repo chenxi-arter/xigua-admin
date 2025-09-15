@@ -3,6 +3,7 @@ import { Cache } from 'cache-manager';
 import { FilterType } from '../entity/filter-type.entity';
 import { FilterOption } from '../entity/filter-option.entity';
 import { Series } from '../entity/series.entity';
+import { Episode } from '../entity/episode.entity';
 import { FilterTagsResponse } from '../dto/filter-tags.dto';
 import { FilterDataResponse } from '../dto/filter-data.dto';
 import { FuzzySearchResponse } from '../dto/fuzzy-search.dto';
@@ -10,14 +11,15 @@ export declare class FilterService {
     private readonly filterTypeRepo;
     private readonly filterOptionRepo;
     private readonly seriesRepo;
+    private readonly episodeRepo;
     private readonly cacheManager;
-    constructor(filterTypeRepo: Repository<FilterType>, filterOptionRepo: Repository<FilterOption>, seriesRepo: Repository<Series>, cacheManager: Cache);
+    constructor(filterTypeRepo: Repository<FilterType>, filterOptionRepo: Repository<FilterOption>, seriesRepo: Repository<Series>, episodeRepo: Repository<Episode>, cacheManager: Cache);
     getFiltersTags(channelId: string): Promise<FilterTagsResponse>;
     getFiltersData(channelId: string, ids: string, page: string): Promise<FilterDataResponse>;
     private parseFilterIds;
     applyFiltersToQueryBuilder(queryBuilder: any, filterIds: {
-        sortType: number;
-        categoryId: number;
+        typeId: number;
+        genreId: number;
         regionId: number;
         languageId: number;
         yearId: number;
@@ -30,4 +32,5 @@ export declare class FilterService {
     clearFilterCache(channelId?: string): Promise<void>;
     clearAllFilterTagsCache(): Promise<void>;
     fuzzySearch(keyword: string, channeid?: string, page?: number, size?: number): Promise<FuzzySearchResponse>;
+    private formatDateTime;
 }

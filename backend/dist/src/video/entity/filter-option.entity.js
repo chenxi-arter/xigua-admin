@@ -20,6 +20,7 @@ let FilterOption = class FilterOption {
     isDefault;
     isActive;
     sortOrder;
+    displayOrder;
     createdAt;
     updatedAt;
     filterType;
@@ -53,6 +54,10 @@ __decorate([
     (0, typeorm_1.Column)({ name: 'sort_order', default: 0, comment: '排序顺序' }),
     __metadata("design:type", Number)
 ], FilterOption.prototype, "sortOrder", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'display_order', default: 0, comment: '显示顺序（对应ids中的数字）' }),
+    __metadata("design:type", Number)
+], FilterOption.prototype, "displayOrder", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at', comment: '创建时间' }),
     __metadata("design:type", Date)

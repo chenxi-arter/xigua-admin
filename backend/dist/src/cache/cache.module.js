@@ -19,14 +19,24 @@ exports.RedisCacheModule = RedisCacheModule = __decorate([
         imports: [
             cache_manager_1.CacheModule.registerAsync({
                 imports: [config_1.ConfigModule],
-                useFactory: async (configService) => ({
-                    store: redisStore,
-                    host: configService.get('REDIS_HOST', 'localhost'),
-                    port: configService.get('REDIS_PORT', 6379),
-                    password: configService.get('REDIS_PASSWORD'),
-                    db: configService.get('REDIS_DB', 0),
-                    ttl: configService.get('REDIS_TTL', 300),
-                }),
+                useFactory: async (configService) => {
+                    const redisUsername = configService.get('REDIS_USERNAME') || configService.get('REDIS_USER');
+                    const redisPassword = configService.get('REDIS_PASSWORD') || configService.get('REDIS_PASS');
+                    const config = {
+                        store: redisStore,
+                        host: configService.get('REDIS_HOST', 'localhost'),
+                        port: configService.get('REDIS_PORT', 6379),
+                        db: configService.get('REDIS_DB', 0),
+                        ttl: configService.get('REDIS_TTL', 300),
+                    };
+                    if (redisUsername && redisUsername.trim() !== '') {
+                        config.username = redisUsername;
+                    }
+                    if (redisPassword && redisPassword.trim() !== '') {
+                        config.password = redisPassword;
+                    }
+                    return config;
+                },
                 inject: [config_1.ConfigService],
             }),
         ],

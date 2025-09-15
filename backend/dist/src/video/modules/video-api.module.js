@@ -11,18 +11,38 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const video_controller_1 = require("../video.controller");
 const public_video_controller_1 = require("../public-video.controller");
-const browse_history_controller_1 = require("../browse-history.controller");
 const home_controller_1 = require("../home.controller");
 const list_controller_1 = require("../list.controller");
 const category_controller_1 = require("../category.controller");
 const banner_controller_1 = require("../controllers/banner.controller");
+const progress_controller_1 = require("../controllers/progress.controller");
+const comment_controller_1 = require("../controllers/comment.controller");
+const url_controller_1 = require("../controllers/url.controller");
+const content_controller_1 = require("../controllers/content.controller");
+const interaction_controller_1 = require("../controllers/interaction.controller");
+const compat_browse_history_controller_1 = require("../controllers/compat-browse-history.controller");
 const video_service_1 = require("../video.service");
 const comment_service_1 = require("../services/comment.service");
+const playback_service_1 = require("../services/playback.service");
+const content_service_1 = require("../services/content.service");
+const home_service_1 = require("../services/home.service");
+const media_service_1 = require("../services/media.service");
+const url_service_1 = require("../services/url.service");
+const filter_service_1 = require("../services/filter.service");
+const series_service_1 = require("../services/series.service");
+const episode_service_1 = require("../services/episode.service");
+const watch_progress_service_1 = require("../services/watch-progress.service");
+const banner_service_1 = require("../services/banner.service");
+const category_service_1 = require("../services/category.service");
+const ingest_service_1 = require("../services/ingest.service");
+const app_logger_service_1 = require("../../common/logger/app-logger.service");
+const app_config_service_1 = require("../../common/config/app-config.service");
+const play_count_service_1 = require("../services/play-count.service");
+const episode_interaction_service_1 = require("../services/episode-interaction.service");
 const catalog_module_1 = require("./catalog.module");
 const series_module_1 = require("./series.module");
 const episode_module_1 = require("./episode.module");
 const banner_module_1 = require("./banner.module");
-const history_module_1 = require("./history.module");
 const series_entity_1 = require("../entity/series.entity");
 const episode_entity_1 = require("../entity/episode.entity");
 const episode_url_entity_1 = require("../entity/episode-url.entity");
@@ -33,7 +53,7 @@ const short_video_entity_1 = require("../entity/short-video.entity");
 const banner_entity_1 = require("../entity/banner.entity");
 const filter_type_entity_1 = require("../entity/filter-type.entity");
 const filter_option_entity_1 = require("../entity/filter-option.entity");
-const browse_history_entity_1 = require("../entity/browse-history.entity");
+const series_genre_option_entity_1 = require("../entity/series-genre-option.entity");
 let VideoApiModule = class VideoApiModule {
 };
 exports.VideoApiModule = VideoApiModule;
@@ -44,9 +64,9 @@ exports.VideoApiModule = VideoApiModule = __decorate([
             series_module_1.SeriesModule,
             episode_module_1.EpisodeModule,
             banner_module_1.BannerModule,
-            history_module_1.HistoryModule,
             typeorm_1.TypeOrmModule.forFeature([
-                series_entity_1.Series, episode_entity_1.Episode, episode_url_entity_1.EpisodeUrl, comment_entity_1.Comment, watch_progress_entity_1.WatchProgress, category_entity_1.Category, short_video_entity_1.ShortVideo, banner_entity_1.Banner, filter_type_entity_1.FilterType, filter_option_entity_1.FilterOption, browse_history_entity_1.BrowseHistory
+                series_entity_1.Series, episode_entity_1.Episode, episode_url_entity_1.EpisodeUrl, comment_entity_1.Comment, watch_progress_entity_1.WatchProgress, category_entity_1.Category, short_video_entity_1.ShortVideo, banner_entity_1.Banner, filter_type_entity_1.FilterType, filter_option_entity_1.FilterOption,
+                series_genre_option_entity_1.SeriesGenreOption
             ])
         ],
         controllers: [
@@ -56,9 +76,33 @@ exports.VideoApiModule = VideoApiModule = __decorate([
             list_controller_1.ListController,
             category_controller_1.CategoryController,
             banner_controller_1.BannerController,
-            browse_history_controller_1.BrowseHistoryController,
+            compat_browse_history_controller_1.CompatBrowseHistoryController,
+            progress_controller_1.ProgressController,
+            comment_controller_1.CommentController,
+            url_controller_1.UrlController,
+            content_controller_1.ContentController,
+            interaction_controller_1.InteractionController,
         ],
-        providers: [video_service_1.VideoService, comment_service_1.CommentService],
+        providers: [
+            video_service_1.VideoService,
+            playback_service_1.PlaybackService,
+            content_service_1.ContentService,
+            home_service_1.HomeService,
+            media_service_1.MediaService,
+            url_service_1.UrlService,
+            play_count_service_1.PlayCountService,
+            episode_interaction_service_1.EpisodeInteractionService,
+            filter_service_1.FilterService,
+            series_service_1.SeriesService,
+            episode_service_1.EpisodeService,
+            watch_progress_service_1.WatchProgressService,
+            banner_service_1.BannerService,
+            category_service_1.CategoryService,
+            ingest_service_1.IngestService,
+            comment_service_1.CommentService,
+            app_logger_service_1.AppLoggerService,
+            app_config_service_1.AppConfigService,
+        ],
         exports: [],
     })
 ], VideoApiModule);

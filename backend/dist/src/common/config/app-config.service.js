@@ -32,7 +32,8 @@ let AppConfigService = class AppConfigService {
         return {
             host: this.configService.get('REDIS_HOST', 'localhost'),
             port: this.configService.get('REDIS_PORT', 6379),
-            password: this.configService.get('REDIS_PASSWORD'),
+            username: this.configService.get('REDIS_USERNAME') || this.configService.get('REDIS_USER'),
+            password: this.configService.get('REDIS_PASSWORD') || this.configService.get('REDIS_PASS'),
             db: this.configService.get('REDIS_DB', 0),
             ttl: this.configService.get('REDIS_TTL', 300),
         };

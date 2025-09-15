@@ -14,6 +14,7 @@ export declare class AppConfigService {
     get redis(): {
         host: string;
         port: number;
+        username: string | undefined;
         password: string | undefined;
         db: number;
         ttl: number;

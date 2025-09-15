@@ -15,6 +15,9 @@ export interface FilterDataItem {
     isSerial: boolean;
     upStatus: string;
     upCount: number;
+    likeCount?: number;
+    dislikeCount?: number;
+    favoriteCount?: number;
     author: string;
     description: string;
     cidMapper: string;

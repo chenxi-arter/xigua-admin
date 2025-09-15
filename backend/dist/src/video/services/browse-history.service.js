@@ -18,6 +18,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const cache_manager_1 = require("@nestjs/cache-manager");
 const browse_history_entity_1 = require("../entity/browse-history.entity");
+const date_util_1 = require("../../common/utils/date.util");
 const series_entity_1 = require("../entity/series.entity");
 const user_entity_1 = require("../../user/entity/user.entity");
 let BrowseHistoryService = class BrowseHistoryService {
@@ -31,7 +32,7 @@ let BrowseHistoryService = class BrowseHistoryService {
         this.userRepo = userRepo;
         this.cacheManager = cacheManager;
     }
-    async recordBrowseHistory(userId, seriesId, browseType = 'episode_list', lastEpisodeNumber = null, req) {
+    async recordBrowseHistory(userId, seriesId, browseType = 'episode_watch', lastEpisodeNumber = null, req) {
         try {
             await this.checkUserOperationLimit(userId);
             if (req) {
@@ -46,15 +47,15 @@ let BrowseHistoryService = class BrowseHistoryService {
             let browseHistory = await this.browseHistoryRepo.findOne({
                 where: {
                     userId,
-                    seriesId,
-                    browseType
+                    seriesId
                 }
             });
             if (browseHistory) {
                 browseHistory.visitCount += 1;
                 browseHistory.updatedAt = new Date();
-                if (lastEpisodeNumber !== undefined) {
-                    browseHistory.lastEpisodeNumber = lastEpisodeNumber === undefined ? null : lastEpisodeNumber;
+                browseHistory.browseType = browseType;
+                if (lastEpisodeNumber !== undefined && lastEpisodeNumber !== null && lastEpisodeNumber > 0) {
+                    browseHistory.lastEpisodeNumber = lastEpisodeNumber;
                 }
                 if (req) {
                     browseHistory.userAgent = req.headers['user-agent'] || browseHistory.userAgent;
@@ -62,6 +63,7 @@ let BrowseHistoryService = class BrowseHistoryService {
                 }
             }
             else {
+                await this.checkAndEnforceUserRecordLimit(userId);
                 browseHistory = new browse_history_entity_1.BrowseHistory();
                 browseHistory.userId = userId;
                 browseHistory.seriesId = seriesId;
@@ -75,20 +77,35 @@ let BrowseHistoryService = class BrowseHistoryService {
             await this.clearBrowseHistoryCache(userId);
         }
         catch (error) {
-            console.error('记录浏览历史失败:', error);
+            console.error('记录浏览历史失败:', error?.message || error);
         }
     }
-    async getUserBrowseHistory(userId, page = 1, size = 20) {
+    async getUserBrowseHistory(userId, page = 1, size = 10) {
         try {
-            const cacheKey = `browse_history_${userId}_${page}_${size}`;
-            const cached = await this.cacheManager.get(cacheKey);
-            if (cached) {
-                return cached;
-            }
             const offset = (page - 1) * size;
-            const [browseHistories, total] = await this.browseHistoryRepo
+            const latestRecordIds = await this.browseHistoryRepo
                 .createQueryBuilder('bh')
+                .select('MAX(bh.id)', 'maxId')
+                .addSelect('bh.seriesId')
                 .where('bh.userId = :userId', { userId })
+                .andWhere('bh.browseType = :browseType', { browseType: 'episode_watch' })
+                .groupBy('bh.seriesId')
+                .getRawMany();
+            const latestIds = latestRecordIds.map((row) => Number(row.maxId));
+            if (latestIds.length === 0) {
+                return {
+                    list: [],
+                    total: 0,
+                    page,
+                    size,
+                    hasMore: false
+                };
+            }
+            const [browseHistories] = await this.browseHistoryRepo
+                .createQueryBuilder('bh')
+                .leftJoinAndSelect('bh.series', 'series')
+                .leftJoinAndSelect('series.category', 'category')
+                .where('bh.id IN (:...ids)', { ids: latestIds })
                 .orderBy('bh.updatedAt', 'DESC')
                 .skip(offset)
                 .take(size)
@@ -97,57 +114,67 @@ let BrowseHistoryService = class BrowseHistoryService {
                 list: browseHistories.map(bh => ({
                     id: bh.id,
                     seriesId: bh.seriesId,
-                    seriesTitle: `系列${bh.seriesId}`,
-                    seriesShortId: '',
-                    seriesCoverUrl: '',
-                    categoryName: '',
+                    seriesTitle: bh.series?.title || `系列${bh.seriesId}`,
+                    seriesShortId: bh.series?.shortId || '',
+                    seriesCoverUrl: bh.series?.coverUrl || '',
+                    categoryName: bh.series?.category?.name || '',
                     browseType: bh.browseType,
+                    browseTypeDesc: this.getBrowseTypeDescription(bh.browseType),
                     lastEpisodeNumber: bh.lastEpisodeNumber,
+                    lastEpisodeTitle: bh.lastEpisodeNumber ? `第${bh.lastEpisodeNumber}集` : null,
                     visitCount: bh.visitCount,
-                    lastVisitTime: bh.updatedAt,
-                    durationSeconds: bh.durationSeconds
+                    lastVisitTime: date_util_1.DateUtil.formatDateTime(bh.updatedAt),
+                    watchStatus: this.getWatchStatus(bh.browseType, bh.lastEpisodeNumber)
                 })),
-                total,
+                total: latestIds.length,
                 page,
                 size,
-                hasMore: total > page * size
+                hasMore: latestIds.length > page * size
             };
-            await this.cacheManager.set(cacheKey, result, 300000);
             return result;
         }
         catch (error) {
-            console.error('获取浏览历史失败:', error);
+            console.error('获取浏览历史失败:', error?.message || error);
             throw new Error('获取浏览历史失败');
         }
     }
     async getRecentBrowsedSeries(userId, limit = 10) {
         try {
-            const cacheKey = `recent_browsed_${userId}_${limit}`;
-            const cached = await this.cacheManager.get(cacheKey);
-            if (cached) {
-                return cached;
+            const latestRecordIds = await this.browseHistoryRepo
+                .createQueryBuilder('bh')
+                .select('MAX(bh.id)', 'maxId')
+                .addSelect('bh.seriesId')
+                .where('bh.userId = :userId', { userId })
+                .andWhere('bh.browseType = :browseType', { browseType: 'episode_watch' })
+                .groupBy('bh.seriesId')
+                .orderBy('MAX(bh.updatedAt)', 'DESC')
+                .limit(limit)
+                .getRawMany();
+            const latestIds = latestRecordIds.map((row) => Number(row.maxId));
+            if (latestIds.length === 0) {
+                return [];
             }
             const recentBrowsed = await this.browseHistoryRepo
                 .createQueryBuilder('bh')
-                .where('bh.userId = :userId', { userId })
+                .leftJoinAndSelect('bh.series', 'series')
+                .leftJoinAndSelect('series.category', 'category')
+                .where('bh.id IN (:...ids)', { ids: latestIds })
                 .orderBy('bh.updatedAt', 'DESC')
-                .take(limit)
                 .getMany();
             const result = recentBrowsed.map(bh => ({
                 seriesId: bh.seriesId,
-                seriesTitle: `系列${bh.seriesId}`,
-                seriesShortId: '',
-                seriesCoverUrl: '',
-                categoryName: '',
+                seriesTitle: bh.series?.title || `系列${bh.seriesId}`,
+                seriesShortId: bh.series?.shortId || '',
+                seriesCoverUrl: bh.series?.coverUrl || '',
+                categoryName: bh.series?.category?.name || '',
                 lastEpisodeNumber: bh.lastEpisodeNumber,
-                lastVisitTime: bh.updatedAt,
+                lastVisitTime: date_util_1.DateUtil.formatDateTime(bh.updatedAt),
                 visitCount: bh.visitCount
             }));
-            await this.cacheManager.set(cacheKey, result, 180000);
             return result;
         }
         catch (error) {
-            console.error('获取最近浏览失败:', error);
+            console.error('获取最近浏览失败:', error?.message || error);
             return [];
         }
     }
@@ -163,7 +190,7 @@ let BrowseHistoryService = class BrowseHistoryService {
             console.log(`清理了 ${result.affected} 条过期浏览记录`);
         }
         catch (error) {
-            console.error('清理过期浏览记录失败:', error);
+            console.error('清理过期浏览记录失败:', error?.message || error);
         }
     }
     async getSystemStats() {
@@ -183,7 +210,7 @@ let BrowseHistoryService = class BrowseHistoryService {
             };
         }
         catch (error) {
-            console.error('获取系统统计信息失败:', error);
+            console.error('获取系统统计信息失败:', error?.message || error);
             return {
                 totalRecords: 0,
                 activeUsers: 0,
@@ -202,7 +229,7 @@ let BrowseHistoryService = class BrowseHistoryService {
             }
         }
         catch (error) {
-            console.error('清除浏览历史缓存失败:', error);
+            console.error('清除浏览历史缓存失败:', error?.message || error);
         }
     }
     getClientIp(req) {
@@ -235,10 +262,10 @@ let BrowseHistoryService = class BrowseHistoryService {
             await this.cacheManager.set(ipOperationKey, ipOperationCount + 1, 60000);
         }
         catch (error) {
-            if (error.message.includes('IP地址')) {
+            if (error?.message?.includes('IP地址')) {
                 throw error;
             }
-            console.error('检查IP黑名单失败:', error);
+            console.error('检查IP黑名单失败:', error?.message || error);
         }
     }
     async checkUserOperationLimit(userId) {
@@ -251,10 +278,10 @@ let BrowseHistoryService = class BrowseHistoryService {
             await this.cacheManager.set(cacheKey, operationCount + 1, 60000);
         }
         catch (error) {
-            if (error.message === '操作过于频繁，请稍后再试') {
+            if (error?.message === '操作过于频繁，请稍后再试') {
                 throw error;
             }
-            console.error('检查用户操作限制失败:', error);
+            console.error('检查用户操作限制失败:', error?.message || error);
         }
     }
     async deleteBrowseHistory(userId, seriesId) {
@@ -294,8 +321,62 @@ let BrowseHistoryService = class BrowseHistoryService {
             });
         }
         catch (error) {
-            console.error('通过ShortID查找系列失败:', error);
+            console.error('通过ShortID查找系列失败:', error?.message || error);
             return null;
+        }
+    }
+    getBrowseTypeDescription(browseType) {
+        if (browseType === 'episode_watch') {
+            return '观看剧集';
+        }
+        return '未知浏览类型';
+    }
+    getWatchStatus(browseType, lastEpisodeNumber) {
+        if (browseType === 'episode_watch' && lastEpisodeNumber) {
+            return `观看至第${lastEpisodeNumber}集`;
+        }
+        return '浏览中';
+    }
+    formatDateTime(date) {
+        if (!date)
+            return '';
+        const beijingTime = new Date(date.getTime() + (date.getTimezoneOffset() * 60000) + (8 * 3600000));
+        const year = beijingTime.getFullYear();
+        const month = String(beijingTime.getMonth() + 1).padStart(2, '0');
+        const day = String(beijingTime.getDate()).padStart(2, '0');
+        const hours = String(beijingTime.getHours()).padStart(2, '0');
+        const minutes = String(beijingTime.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day} ${hours}:${minutes}`;
+    }
+    async checkAndEnforceUserRecordLimit(userId) {
+        const MAX_RECORDS_PER_USER = 100;
+        try {
+            const currentCount = await this.browseHistoryRepo.count({
+                where: { userId }
+            });
+            if (currentCount >= MAX_RECORDS_PER_USER) {
+                const recordsToDelete = currentCount - MAX_RECORDS_PER_USER + 1;
+                const recordsToDeleteIds = await this.browseHistoryRepo
+                    .createQueryBuilder('bh')
+                    .select('bh.id')
+                    .where('bh.userId = :userId', { userId })
+                    .orderBy('bh.updatedAt', 'ASC')
+                    .limit(recordsToDelete)
+                    .getMany();
+                if (recordsToDeleteIds.length > 0) {
+                    await this.browseHistoryRepo
+                        .createQueryBuilder()
+                        .delete()
+                        .where('id IN (:...ids)', {
+                        ids: recordsToDeleteIds.map(record => record.id)
+                    })
+                        .execute();
+                    console.log(`用户 ${userId} 自动清理了 ${recordsToDeleteIds.length} 条最旧的浏览记录`);
+                }
+            }
+        }
+        catch (error) {
+            console.error(`检查用户 ${userId} 记录数量限制失败:`, error);
         }
     }
 };

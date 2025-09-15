@@ -18,92 +18,203 @@ const video_service_1 = require("./video.service");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const media_query_dto_1 = require("./dto/media-query.dto");
 const episode_list_dto_1 = require("./dto/episode-list.dto");
-let VideoController = class VideoController {
+const base_controller_1 = require("./controllers/base.controller");
+let VideoController = class VideoController extends base_controller_1.BaseController {
     videoService;
     constructor(videoService) {
+        super();
         this.videoService = videoService;
     }
     async saveProgress(req, episodeIdentifier, stopAtSecond) {
-        const isShortId = typeof episodeIdentifier === 'string' && episodeIdentifier.length === 11 && !/^\d+$/.test(episodeIdentifier);
-        if (isShortId) {
-            const episode = await this.videoService.getEpisodeByShortId(episodeIdentifier);
-            if (!episode) {
-                throw new common_1.BadRequestException('剧集不存在');
+        try {
+            if (!episodeIdentifier) {
+                return this.error('剧集标识符不能为空', 400);
             }
-            return this.videoService.saveProgress(req.user.userId, episode.id, stopAtSecond);
+            if (!stopAtSecond || stopAtSecond < 0) {
+                return this.error('观看进度必须大于等于0', 400);
+            }
+            const isShortId = typeof episodeIdentifier === 'string' &&
+                episodeIdentifier.length === 11 &&
+                !/^\d+$/.test(episodeIdentifier);
+            if (isShortId) {
+                const episode = await this.videoService.getEpisodeByShortId(episodeIdentifier);
+                if (!episode) {
+                    return this.error('剧集不存在', 404);
+                }
+                const result = await this.videoService.saveProgressWithBrowseHistory(req.user.userId, episode.id, stopAtSecond, req);
+                return this.success(result, '观看进度保存成功');
+            }
+            else {
+                const result = await this.videoService.saveProgressWithBrowseHistory(req.user.userId, Number(episodeIdentifier), stopAtSecond, req);
+                return this.success(result, '观看进度保存成功');
+            }
         }
-        else {
-            return this.videoService.saveProgress(req.user.userId, Number(episodeIdentifier), stopAtSecond);
+        catch (error) {
+            return this.handleServiceError(error, '保存观看进度失败');
         }
     }
     async getProgress(req, episodeIdentifier) {
-        const isShortId = episodeIdentifier.length === 11 && !/^\d+$/.test(episodeIdentifier);
-        if (isShortId) {
-            const episode = await this.videoService.getEpisodeByShortId(episodeIdentifier);
-            if (!episode) {
-                throw new common_1.BadRequestException('剧集不存在');
+        try {
+            if (!episodeIdentifier) {
+                return this.error('剧集标识符不能为空', 400);
             }
-            return this.videoService.getProgress(req.user.userId, episode.id);
+            const isShortId = episodeIdentifier.length === 11 && !/^\d+$/.test(episodeIdentifier);
+            if (isShortId) {
+                const episode = await this.videoService.getEpisodeByShortId(episodeIdentifier);
+                if (!episode) {
+                    return this.error('剧集不存在', 404);
+                }
+                const result = await this.videoService.getProgress(req.user.userId, episode.id);
+                return this.success(result, '获取观看进度成功');
+            }
+            else {
+                const result = await this.videoService.getProgress(req.user.userId, Number(episodeIdentifier));
+                return this.success(result, '获取观看进度成功');
+            }
         }
-        else {
-            return this.videoService.getProgress(req.user.userId, Number(episodeIdentifier));
+        catch (error) {
+            return this.handleServiceError(error, '获取观看进度失败');
         }
     }
     async addComment(req, episodeIdentifier, content, appearSecond) {
-        const isShortId = typeof episodeIdentifier === 'string' && episodeIdentifier.length === 11 && !/^\d+$/.test(episodeIdentifier);
-        if (isShortId) {
-            const episode = await this.videoService.getEpisodeByShortId(episodeIdentifier);
-            if (!episode) {
-                throw new common_1.BadRequestException('剧集不存在');
+        try {
+            if (!episodeIdentifier) {
+                return this.error('剧集标识符不能为空', 400);
             }
-            return this.videoService.addComment(req.user.userId, episode.id, content, appearSecond);
+            if (!content || content.trim().length === 0) {
+                return this.error('评论内容不能为空', 400);
+            }
+            if (content.length > 500) {
+                return this.error('评论内容不能超过500个字符', 400);
+            }
+            const isShortId = typeof episodeIdentifier === 'string' &&
+                episodeIdentifier.length === 11 &&
+                !/^\d+$/.test(episodeIdentifier);
+            if (isShortId) {
+                const episode = await this.videoService.getEpisodeByShortId(episodeIdentifier);
+                if (!episode) {
+                    return this.error('剧集不存在', 404);
+                }
+                const result = await this.videoService.addComment(req.user.userId, episode.id, content.trim(), appearSecond);
+                return this.success(result, '评论发表成功');
+            }
+            else {
+                const result = await this.videoService.addComment(req.user.userId, Number(episodeIdentifier), content.trim(), appearSecond);
+                return this.success(result, '评论发表成功');
+            }
         }
-        else {
-            return this.videoService.addComment(req.user.userId, Number(episodeIdentifier), content, appearSecond);
+        catch (error) {
+            return this.handleServiceError(error, '发表评论失败');
         }
     }
     async listMediaUser(req, dto) {
-        return this.videoService.listMedia(dto.categoryId, dto.type, req.user.userId);
+        try {
+            const { page, size } = this.normalizePagination(dto.page, dto.size, 50);
+            const result = await this.videoService.listMedia(dto.categoryId, dto.type, req.user.userId, dto.sort || 'latest', page, size);
+            return this.success(result, '获取媒体列表成功');
+        }
+        catch (error) {
+            return this.handleServiceError(error, '获取媒体列表失败');
+        }
     }
     async createEpisodeUrl(episodeId, quality, ossUrl, cdnUrl, subtitleUrl) {
-        return this.videoService.createEpisodeUrl(episodeId, quality, ossUrl, cdnUrl, subtitleUrl);
+        try {
+            if (!episodeId || episodeId <= 0) {
+                return this.error('剧集ID无效', 400);
+            }
+            if (!quality || quality.trim().length === 0) {
+                return this.error('清晰度不能为空', 400);
+            }
+            if (!ossUrl || ossUrl.trim().length === 0) {
+                return this.error('OSS地址不能为空', 400);
+            }
+            if (!cdnUrl || cdnUrl.trim().length === 0) {
+                return this.error('CDN地址不能为空', 400);
+            }
+            const result = await this.videoService.createEpisodeUrl(episodeId, quality.trim(), ossUrl.trim(), cdnUrl.trim(), subtitleUrl?.trim());
+            return this.success(result, '播放地址创建成功');
+        }
+        catch (error) {
+            return this.handleServiceError(error, '创建播放地址失败');
+        }
     }
     async getEpisodeUrlByAccessKey(accessKey) {
-        return this.videoService.getEpisodeUrlByAccessKey(accessKey);
+        try {
+            if (!accessKey || accessKey.trim().length === 0) {
+                return this.error('访问密钥不能为空', 400);
+            }
+            const result = await this.videoService.getEpisodeUrlByAccessKey(accessKey.trim());
+            return this.success(result, '获取播放地址成功');
+        }
+        catch (error) {
+            return this.handleServiceError(error, '获取播放地址失败');
+        }
     }
     async postEpisodeUrlByKey(body) {
-        const { type, accessKey, key } = body || {};
-        if (type && accessKey) {
-            const normalized = String(type).toLowerCase();
-            if (normalized !== 'episode' && normalized !== 'url') {
-                throw new common_1.BadRequestException("type 仅支持 'episode' 或 'url'");
+        try {
+            const { type, accessKey, key } = body || {};
+            if (type && accessKey) {
+                const normalized = String(type).toLowerCase();
+                if (normalized !== 'episode' && normalized !== 'url') {
+                    return this.error("type仅支持'episode'或'url'", 400);
+                }
+                const prefix = normalized === 'episode' ? 'ep' : 'url';
+                const result = await this.videoService.getEpisodeUrlByKey(prefix, String(accessKey));
+                return this.success(result, '获取播放地址成功');
             }
-            const prefix = normalized === 'episode' ? 'ep' : 'url';
-            return this.videoService.getEpisodeUrlByKey(prefix, String(accessKey));
+            if (key && typeof key === 'string' && key.includes(':')) {
+                const [prefix, raw] = key.split(':', 2);
+                const result = await this.videoService.getEpisodeUrlByKey(prefix, raw);
+                return this.success(result, '获取播放地址成功');
+            }
+            return this.error("请求体应包含{type:'episode'|'url', accessKey}，或兼容的{key:'ep:<accessKey>'}格式", 400);
         }
-        if (key && typeof key === 'string' && key.includes(':')) {
-            const [prefix, raw] = key.split(':', 2);
-            return this.videoService.getEpisodeUrlByKey(prefix, raw);
+        catch (error) {
+            return this.handleServiceError(error, '获取播放地址失败');
         }
-        throw new common_1.BadRequestException("请求体应包含 { type: 'episode'|'url', accessKey }，或兼容的 { key: 'ep:<accessKey>' } 格式");
     }
     async updateEpisodeSequel(episodeId, hasSequel) {
-        return this.videoService.updateEpisodeSequel(episodeId, hasSequel);
+        try {
+            if (!episodeId || episodeId <= 0) {
+                return this.error('剧集ID无效', 400);
+            }
+            if (typeof hasSequel !== 'boolean') {
+                return this.error('续集状态必须是布尔值', 400);
+            }
+            const result = await this.videoService.updateEpisodeSequel(episodeId, hasSequel);
+            return this.success(result, '续集状态更新成功');
+        }
+        catch (error) {
+            return this.handleServiceError(error, '更新续集状态失败');
+        }
     }
     async generateAccessKeysForExisting() {
-        return this.videoService.generateAccessKeysForExisting();
+        try {
+            const result = await this.videoService.generateAccessKeysForExisting();
+            return this.success(result, '访问密钥生成完成');
+        }
+        catch (error) {
+            return this.handleServiceError(error, '生成访问密钥失败');
+        }
     }
     async getEpisodeList(dto, req) {
-        const page = parseInt(dto.page || '1', 10);
-        const size = parseInt(dto.size || '20', 10);
-        if (dto.seriesShortId) {
-            return this.videoService.getEpisodeList(dto.seriesShortId, true, page, size, req.user?.userId, req);
+        try {
+            const { page, size } = this.normalizePagination(dto.page, dto.size, 50);
+            if (dto.seriesShortId) {
+                const result = await this.videoService.getEpisodeList(dto.seriesShortId, true, page, size, req.user?.userId);
+                return result;
+            }
+            else if (dto.seriesId) {
+                const result = await this.videoService.getEpisodeList(dto.seriesId, false, page, size, req.user?.userId);
+                return result;
+            }
+            else {
+                const result = await this.videoService.getEpisodeList(undefined, false, page, size, req.user?.userId);
+                return result;
+            }
         }
-        else if (dto.seriesId) {
-            return this.videoService.getEpisodeList(dto.seriesId, false, page, size, req.user?.userId, req);
-        }
-        else {
-            return this.videoService.getEpisodeList(undefined, false, page, size, req.user?.userId, req);
+        catch (error) {
+            return this.handleServiceError(error, '获取剧集列表失败');
         }
     }
 };

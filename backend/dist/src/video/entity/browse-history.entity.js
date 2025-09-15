@@ -18,7 +18,6 @@ let BrowseHistory = class BrowseHistory {
     userId;
     seriesId;
     browseType;
-    durationSeconds;
     lastEpisodeNumber;
     visitCount;
     userAgent;
@@ -42,13 +41,9 @@ __decorate([
     __metadata("design:type", Number)
 ], BrowseHistory.prototype, "seriesId", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'varchar', length: 50, default: 'episode_list', name: 'browse_type' }),
+    (0, typeorm_1.Column)({ type: 'varchar', length: 50, default: 'episode_watch', name: 'browse_type' }),
     __metadata("design:type", String)
 ], BrowseHistory.prototype, "browseType", void 0);
-__decorate([
-    (0, typeorm_1.Column)({ type: 'int', default: 0, name: 'duration_seconds' }),
-    __metadata("design:type", Number)
-], BrowseHistory.prototype, "durationSeconds", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'int', nullable: true, name: 'last_episode_number' }),
     __metadata("design:type", Object)
