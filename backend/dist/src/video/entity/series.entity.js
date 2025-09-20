@@ -165,7 +165,7 @@ __decorate([
     __metadata("design:type", Number)
 ], Series.prototype, "yearOptionId", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'date', nullable: true, name: 'release_date' }),
+    (0, typeorm_1.Column)({ type: 'datetime', nullable: true, name: 'release_date' }),
     __metadata("design:type", Date)
 ], Series.prototype, "releaseDate", void 0);
 __decorate([
@@ -173,7 +173,7 @@ __decorate([
     __metadata("design:type", Boolean)
 ], Series.prototype, "isCompleted", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'timestamp', nullable: true, name: 'updated_at' }),
+    (0, typeorm_1.UpdateDateColumn)({ name: 'updated_at' }),
     __metadata("design:type", Date)
 ], Series.prototype, "updatedAt", void 0);
 __decorate([
@@ -181,7 +181,7 @@ __decorate([
     __metadata("design:type", Number)
 ], Series.prototype, "isActive", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'timestamp', nullable: true, name: 'deleted_at' }),
+    (0, typeorm_1.Column)({ type: 'datetime', nullable: true, name: 'deleted_at' }),
     __metadata("design:type", Object)
 ], Series.prototype, "deletedAt", void 0);
 __decorate([

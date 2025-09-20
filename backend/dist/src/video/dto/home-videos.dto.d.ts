@@ -6,9 +6,10 @@ export interface BannerItem {
     showURL: string;
     title: string;
     id: number;
-    shortId?: string;
+    shortId: string | null;
     channeID: number;
     url: string;
+    isAd: boolean;
 }
 export interface FilterItem {
     channeID: number;

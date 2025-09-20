@@ -35,7 +35,7 @@ __decorate([
     __metadata("design:type", Number)
 ], WatchProgress.prototype, "stopAtSecond", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'updated_at' }),
+    (0, typeorm_1.Column)({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP', name: 'updated_at' }),
     __metadata("design:type", Date)
 ], WatchProgress.prototype, "updatedAt", void 0);
 __decorate([

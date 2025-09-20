@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.HomeService = void 0;
 const common_1 = require("@nestjs/common");
 const date_util_1 = require("../../common/utils/date.util");
+const debug_util_1 = require("../../common/utils/debug.util");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const cache_manager_1 = require("@nestjs/cache-manager");
@@ -40,17 +41,17 @@ let HomeService = class HomeService {
         const cacheKey = cache_keys_util_1.CacheKeys.homeVideos(channeid, page);
         const cached = await this.cacheManager.get(cacheKey);
         if (cached) {
-            console.log(`💾 首页视频缓存命中: ${cacheKey}`);
+            debug_util_1.DebugUtil.cache('首页视频缓存命中', cacheKey);
             return cached;
         }
         try {
             const result = await this.getHomeModules(channeid, page);
             await this.cacheManager.set(cacheKey, result, 300000);
-            console.log(`💾 首页视频已缓存: ${cacheKey}`);
+            debug_util_1.DebugUtil.cache('首页视频已缓存', cacheKey);
             return result;
         }
         catch (error) {
-            console.error('获取首页视频失败:', error);
+            debug_util_1.DebugUtil.error('获取首页视频失败', error);
             throw new Error('获取首页视频失败');
         }
     }
@@ -101,7 +102,7 @@ let HomeService = class HomeService {
             };
         }
         catch (error) {
-            console.error('获取首页模块失败:', error);
+            debug_util_1.DebugUtil.error('获取首页模块失败', error);
             throw new Error('获取首页模块失败');
         }
     }
@@ -109,7 +110,7 @@ let HomeService = class HomeService {
         const cacheKey = cache_keys_util_1.CacheKeys.categories();
         const cached = await this.cacheManager.get(cacheKey);
         if (cached) {
-            console.log(`💾 分类列表缓存命中: ${cacheKey}`);
+            debug_util_1.DebugUtil.cache('分类列表缓存命中', cacheKey);
             return cached;
         }
         try {
@@ -130,11 +131,11 @@ let HomeService = class HomeService {
                 msg: null
             };
             await this.cacheManager.set(cacheKey, result, 3600000);
-            console.log(`💾 分类列表已缓存: ${cacheKey}`);
+            debug_util_1.DebugUtil.cache('分类列表已缓存', cacheKey);
             return result;
         }
         catch (error) {
-            console.error('获取分类列表失败:', error);
+            debug_util_1.DebugUtil.error('获取分类列表失败', error);
             throw new Error('获取分类列表失败');
         }
     }
@@ -144,7 +145,9 @@ let HomeService = class HomeService {
             const queryBuilder = this.seriesRepo.createQueryBuilder('series')
                 .leftJoinAndSelect('series.category', 'category')
                 .where('series.isActive = :isActive', { isActive: 1 })
-                .orderBy('series.createdAt', 'DESC')
+                .orderBy('series.updatedAt', 'DESC')
+                .addOrderBy('series.createdAt', 'DESC')
+                .addOrderBy('series.id', 'DESC')
                 .skip(offset)
                 .take(size);
             if (categoryId && categoryId > 0) {
@@ -171,7 +174,7 @@ let HomeService = class HomeService {
             }));
         }
         catch (error) {
-            console.error('获取视频列表失败:', error);
+            debug_util_1.DebugUtil.error('获取视频列表失败', error);
             return [];
         }
     }

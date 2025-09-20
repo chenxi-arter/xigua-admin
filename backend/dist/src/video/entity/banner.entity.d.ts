@@ -9,6 +9,7 @@ export declare class Banner {
     linkUrl?: string;
     weight: number;
     isActive: boolean;
+    isAd: boolean;
     startTime?: Date;
     endTime?: Date;
     description?: string;

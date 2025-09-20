@@ -66,10 +66,11 @@ let BannerService = class BannerService {
             .execute();
     }
     async getBannerDailyStats(id, from, to) {
-        return this.metricRepo.find({
+        const options = {
             where: { bannerId: id, date: (0, typeorm_2.Between)(from, to) },
             order: { date: 'ASC' },
-        });
+        };
+        return this.metricRepo.find(options);
     }
     async updateBanner(id, updateBannerDto) {
         const banner = await this.bannerRepo.findOne({
@@ -164,9 +165,10 @@ let BannerService = class BannerService {
             showURL: banner.imageUrl,
             title: banner.title,
             id: banner.seriesId || banner.id,
-            shortId: banner.series?.shortId,
+            shortId: banner.series?.shortId ?? null,
             channeID: banner.categoryId,
             url: banner.linkUrl || (banner.seriesId ? banner.seriesId.toString() : banner.id.toString()),
+            isAd: !!banner.isAd,
         }));
     }
     async updateBannerWeights(updates) {
@@ -195,6 +197,7 @@ let BannerService = class BannerService {
             linkUrl: banner.linkUrl,
             weight: banner.weight,
             isActive: banner.isActive,
+            isAd: !!banner.isAd,
             startTime: banner.startTime,
             endTime: banner.endTime,
             description: banner.description,

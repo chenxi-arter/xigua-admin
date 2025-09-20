@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const cache_manager_1 = require("@nestjs/cache-manager");
+const debug_util_1 = require("../../common/utils/debug.util");
 const series_entity_1 = require("../entity/series.entity");
 const episode_entity_1 = require("../entity/episode.entity");
 const category_entity_1 = require("../entity/category.entity");
@@ -52,7 +53,7 @@ let SeriesService = class SeriesService {
             return result;
         }
         catch (error) {
-            console.error('根据分类获取系列列表失败:', error);
+            debug_util_1.DebugUtil.error('根据分类获取系列列表失败', error);
             throw new Error('根据分类获取系列列表失败');
         }
     }
@@ -73,7 +74,7 @@ let SeriesService = class SeriesService {
             return series;
         }
         catch (error) {
-            console.error('获取系列详情失败:', error);
+            debug_util_1.DebugUtil.error('获取系列详情失败', error);
             return null;
         }
     }
@@ -101,7 +102,7 @@ let SeriesService = class SeriesService {
             return series;
         }
         catch (error) {
-            console.error('获取热门系列失败:', error);
+            debug_util_1.DebugUtil.error('获取热门系列失败', error);
             throw new Error('获取热门系列失败');
         }
     }
@@ -118,7 +119,9 @@ let SeriesService = class SeriesService {
                 .createQueryBuilder('series')
                 .leftJoinAndSelect('series.category', 'category')
                 .leftJoinAndSelect('series.episodes', 'episodes')
-                .orderBy('series.createdAt', 'DESC')
+                .orderBy('series.updatedAt', 'DESC')
+                .addOrderBy('series.createdAt', 'DESC')
+                .addOrderBy('series.id', 'DESC')
                 .limit(limit);
             if (categoryId) {
                 queryBuilder.where('series.categoryId = :categoryId', { categoryId });
@@ -128,7 +131,7 @@ let SeriesService = class SeriesService {
             return series;
         }
         catch (error) {
-            console.error('获取最新系列失败:', error);
+            debug_util_1.DebugUtil.error('获取最新系列失败', error);
             throw new Error('获取最新系列失败');
         }
     }
@@ -152,7 +155,7 @@ let SeriesService = class SeriesService {
             return { series, total };
         }
         catch (error) {
-            console.error('搜索系列失败:', error);
+            debug_util_1.DebugUtil.error('搜索系列失败', error);
             throw new Error('搜索系列失败');
         }
     }
@@ -178,7 +181,7 @@ let SeriesService = class SeriesService {
             return series;
         }
         catch (error) {
-            console.error('获取推荐系列失败:', error);
+            debug_util_1.DebugUtil.error('获取推荐系列失败', error);
             throw new Error('获取推荐系列失败');
         }
     }
@@ -188,7 +191,7 @@ let SeriesService = class SeriesService {
             await this.clearSeriesCache(seriesId);
         }
         catch (error) {
-            console.error('增加播放次数失败:', error);
+            debug_util_1.DebugUtil.error('增加播放次数失败', error);
         }
     }
     async updateSeriesScore(seriesId, score) {
@@ -197,7 +200,7 @@ let SeriesService = class SeriesService {
             await this.clearSeriesCache(seriesId);
         }
         catch (error) {
-            console.error('更新系列评分失败:', error);
+            debug_util_1.DebugUtil.error('更新系列评分失败', error);
             throw new Error('更新系列评分失败');
         }
     }
@@ -209,7 +212,7 @@ let SeriesService = class SeriesService {
             return savedSeries;
         }
         catch (error) {
-            console.error('创建系列失败:', error);
+            debug_util_1.DebugUtil.error('创建系列失败', error);
             throw new Error('创建系列失败');
         }
     }
@@ -224,7 +227,7 @@ let SeriesService = class SeriesService {
             return updatedSeries;
         }
         catch (error) {
-            console.error('更新系列失败:', error);
+            debug_util_1.DebugUtil.error('更新系列失败', error);
             throw new Error('更新系列失败');
         }
     }
@@ -240,7 +243,7 @@ let SeriesService = class SeriesService {
             await this.clearSeriesCache(seriesId);
         }
         catch (error) {
-            console.error('删除系列失败:', error);
+            debug_util_1.DebugUtil.error('删除系列失败', error);
             throw new Error('删除系列失败');
         }
     }
@@ -265,7 +268,7 @@ let SeriesService = class SeriesService {
             }
         }
         catch (error) {
-            console.error('清除系列缓存失败:', error);
+            debug_util_1.DebugUtil.error('清除系列缓存失败', error);
         }
     }
 };

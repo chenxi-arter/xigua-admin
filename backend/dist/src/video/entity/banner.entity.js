@@ -22,6 +22,7 @@ let Banner = class Banner {
     linkUrl;
     weight;
     isActive;
+    isAd;
     startTime;
     endTime;
     description;
@@ -39,9 +40,7 @@ __decorate([
 ], Banner.prototype, "id", void 0);
 __decorate([
     (0, typeorm_1.Column)({
-        length: 255,
-        charset: 'utf8mb4',
-        collation: 'utf8mb4_unicode_ci'
+        length: 255
     }),
     __metadata("design:type", String)
 ], Banner.prototype, "title", void 0);
@@ -70,6 +69,10 @@ __decorate([
     __metadata("design:type", Boolean)
 ], Banner.prototype, "isActive", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ default: false, name: 'is_ad' }),
+    __metadata("design:type", Boolean)
+], Banner.prototype, "isAd", void 0);
+__decorate([
     (0, typeorm_1.Column)({ nullable: true, name: 'start_time' }),
     __metadata("design:type", Date)
 ], Banner.prototype, "startTime", void 0);
@@ -80,9 +83,7 @@ __decorate([
 __decorate([
     (0, typeorm_1.Column)({
         type: 'text',
-        nullable: true,
-        charset: 'utf8mb4',
-        collation: 'utf8mb4_unicode_ci'
+        nullable: true
     }),
     __metadata("design:type", String)
 ], Banner.prototype, "description", void 0);

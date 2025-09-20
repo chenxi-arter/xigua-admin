@@ -54,7 +54,7 @@ let IngestService = class IngestService {
         const upStatus = completed
             ? '已完结'
             : (maxEpisodeNumber > 0 ? `更新至第${maxEpisodeNumber}集` : '未发布');
-        await this.seriesRepo.update(seriesId, { totalEpisodes: total, upStatus });
+        await this.seriesRepo.update(seriesId, { totalEpisodes: total, upStatus, updatedAt: new Date() });
     }
     async resolveOptionId(typeCode, name) {
         if (!name)
@@ -263,10 +263,10 @@ let IngestService = class IngestService {
         }
         await this.updateSeriesProgress(series.id, series.isCompleted);
         if (payload.status === 'deleted') {
-            await this.seriesRepo.update(series.id, { isActive: 0, deletedAt: new Date() });
+            await this.seriesRepo.update(series.id, { isActive: 0, deletedAt: new Date(), updatedAt: new Date() });
         }
         else {
-            await this.seriesRepo.update(series.id, { isActive: 1 });
+            await this.seriesRepo.update(series.id, { isActive: 1, updatedAt: new Date() });
         }
         return { seriesId: series.id, shortId: series.shortId, externalId: series.externalId ?? null, action };
     }
@@ -315,11 +315,11 @@ let IngestService = class IngestService {
         if (yearId !== undefined)
             update.yearOptionId = yearId;
         if (payload.status === 'deleted') {
-            await this.seriesRepo.update(series.id, { isActive: 0, deletedAt: new Date() });
+            await this.seriesRepo.update(series.id, { isActive: 0, deletedAt: new Date(), updatedAt: new Date() });
         }
         else if (Object.keys(update).length) {
-            await this.seriesRepo.update(series.id, update);
-            await this.seriesRepo.update(series.id, { isActive: 1, deletedAt: null });
+            await this.seriesRepo.update(series.id, { ...update, updatedAt: new Date() });
+            await this.seriesRepo.update(series.id, { isActive: 1, deletedAt: null, updatedAt: new Date() });
         }
         try {
             const genreIds = await this.resolveGenreOptionIds(payload);

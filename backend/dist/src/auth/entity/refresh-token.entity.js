@@ -37,7 +37,7 @@ __decorate([
     __metadata("design:type", String)
 ], RefreshToken.prototype, "token", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'expires_at', type: 'timestamp' }),
+    (0, typeorm_1.Column)({ name: 'expires_at', type: 'datetime', nullable: true }),
     __metadata("design:type", Date)
 ], RefreshToken.prototype, "expiresAt", void 0);
 __decorate([

@@ -46,11 +46,11 @@ __decorate([
     __metadata("design:type", Boolean)
 ], Category.prototype, "isEnabled", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' }),
+    (0, typeorm_1.Column)({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP', name: 'created_at' }),
     __metadata("design:type", Date)
 ], Category.prototype, "createdAt", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP', name: 'updated_at' }),
+    (0, typeorm_1.Column)({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP', name: 'updated_at' }),
     __metadata("design:type", Date)
 ], Category.prototype, "updatedAt", void 0);
 __decorate([

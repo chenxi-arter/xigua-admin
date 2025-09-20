@@ -41,6 +41,8 @@ export declare class DatabaseConfig {
         extra: {
             connectionLimit: number | undefined;
             charset: string;
+            dateStrings: boolean;
+            typeCast: (field: any, next: () => any) => any;
         };
         autoLoadEntities: boolean;
         retryAttempts: number;

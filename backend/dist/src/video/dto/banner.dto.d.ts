@@ -6,6 +6,7 @@ export declare class CreateBannerDto {
     linkUrl?: string;
     weight?: number;
     isActive?: boolean;
+    isAd?: boolean;
     startTime?: string;
     endTime?: string;
     description?: string;
@@ -18,6 +19,7 @@ export declare class UpdateBannerDto {
     linkUrl?: string;
     weight?: number;
     isActive?: boolean;
+    isAd?: boolean;
     startTime?: string;
     endTime?: string;
     description?: string;
@@ -37,6 +39,7 @@ export interface BannerResponseDto {
     linkUrl?: string;
     weight: number;
     isActive: boolean;
+    isAd: boolean;
     startTime?: Date;
     endTime?: Date;
     description?: string;

@@ -35,7 +35,7 @@ __decorate([
     __metadata("design:type", Number)
 ], SeriesGenreOption.prototype, "optionId", void 0);
 __decorate([
-    (0, typeorm_1.CreateDateColumn)({ name: 'created_at', type: 'timestamp' }),
+    (0, typeorm_1.CreateDateColumn)({ name: 'created_at', type: 'datetime' }),
     __metadata("design:type", Date)
 ], SeriesGenreOption.prototype, "createdAt", void 0);
 __decorate([

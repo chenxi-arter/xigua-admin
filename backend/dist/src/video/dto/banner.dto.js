@@ -21,6 +21,7 @@ class CreateBannerDto {
     linkUrl;
     weight = 0;
     isActive = true;
+    isAd = false;
     startTime;
     endTime;
     description;
@@ -69,6 +70,11 @@ __decorate([
 ], CreateBannerDto.prototype, "isActive", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)({ message: '广告标记必须是布尔值' }),
+    __metadata("design:type", Boolean)
+], CreateBannerDto.prototype, "isAd", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsDateString)({}, { message: '开始时间格式不正确' }),
     __metadata("design:type", String)
 ], CreateBannerDto.prototype, "startTime", void 0);
@@ -91,6 +97,7 @@ class UpdateBannerDto {
     linkUrl;
     weight;
     isActive;
+    isAd;
     startTime;
     endTime;
     description;
@@ -140,6 +147,11 @@ __decorate([
     (0, class_validator_1.IsBoolean)({ message: '启用状态必须是布尔值' }),
     __metadata("design:type", Boolean)
 ], UpdateBannerDto.prototype, "isActive", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)({ message: '广告标记必须是布尔值' }),
+    __metadata("design:type", Boolean)
+], UpdateBannerDto.prototype, "isAd", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsDateString)({}, { message: '开始时间格式不正确' }),

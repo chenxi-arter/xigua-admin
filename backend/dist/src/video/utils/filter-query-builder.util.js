@@ -11,7 +11,9 @@ class FilterQueryBuilderUtil {
                 qb.orderBy('series.score', 'DESC');
                 break;
             default:
-                qb.orderBy('series.createdAt', 'DESC');
+                qb.orderBy('series.updatedAt', 'DESC')
+                    .addOrderBy('series.createdAt', 'DESC')
+                    .addOrderBy('series.id', 'DESC');
         }
     }
     static applyChannel(qb, channelId) {

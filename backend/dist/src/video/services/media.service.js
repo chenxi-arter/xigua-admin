@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MediaService = void 0;
 const common_1 = require("@nestjs/common");
 const date_util_1 = require("../../common/utils/date.util");
+const debug_util_1 = require("../../common/utils/debug.util");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const cache_manager_1 = require("@nestjs/cache-manager");
@@ -43,7 +44,9 @@ let MediaService = class MediaService {
             }
             switch (sort) {
                 case 'latest':
-                    queryBuilder.orderBy('series.createdAt', 'DESC');
+                    queryBuilder.orderBy('series.updatedAt', 'DESC')
+                        .addOrderBy('series.createdAt', 'DESC')
+                        .addOrderBy('series.id', 'DESC');
                     break;
                 case 'like':
                     queryBuilder.orderBy('series.score', 'DESC');
@@ -52,7 +55,9 @@ let MediaService = class MediaService {
                     queryBuilder.orderBy('series.playCount', 'DESC');
                     break;
                 default:
-                    queryBuilder.orderBy('series.createdAt', 'DESC');
+                    queryBuilder.orderBy('series.updatedAt', 'DESC')
+                        .addOrderBy('series.createdAt', 'DESC')
+                        .addOrderBy('series.id', 'DESC');
             }
             const [series, total] = await queryBuilder
                 .skip(offset)
@@ -87,7 +92,7 @@ let MediaService = class MediaService {
             };
         }
         catch (error) {
-            console.error('获取媒体列表失败:', error);
+            debug_util_1.DebugUtil.error('获取媒体列表失败', error);
             throw new Error('获取媒体列表失败');
         }
     }
@@ -95,7 +100,7 @@ let MediaService = class MediaService {
         const cacheKey = cache_keys_util_1.CacheKeys.seriesList(categoryId, page, size);
         const cached = await this.cacheManager.get(cacheKey);
         if (cached) {
-            console.log(`💾 系列列表缓存命中: ${cacheKey}`);
+            debug_util_1.DebugUtil.cache('系列列表缓存命中', cacheKey);
             return cached;
         }
         try {
@@ -103,7 +108,9 @@ let MediaService = class MediaService {
             const queryBuilder = this.seriesRepo.createQueryBuilder('series')
                 .leftJoinAndSelect('series.category', 'category')
                 .where('series.isActive = :isActive', { isActive: 1 })
-                .orderBy('series.createdAt', 'DESC');
+                .orderBy('series.updatedAt', 'DESC')
+                .addOrderBy('series.createdAt', 'DESC')
+                .addOrderBy('series.id', 'DESC');
             if (categoryId && categoryId > 0) {
                 queryBuilder.andWhere('series.categoryId = :categoryId', { categoryId });
             }
@@ -136,11 +143,11 @@ let MediaService = class MediaService {
                 msg: null
             };
             await this.cacheManager.set(cacheKey, result, 1800000);
-            console.log(`💾 系列列表已缓存: ${cacheKey}`);
+            debug_util_1.DebugUtil.cache('系列列表已缓存', cacheKey);
             return result;
         }
         catch (error) {
-            console.error('获取系列列表失败:', error);
+            debug_util_1.DebugUtil.error('获取系列列表失败', error);
             throw new Error('获取系列列表失败');
         }
     }
@@ -148,7 +155,7 @@ let MediaService = class MediaService {
         const cacheKey = cache_keys_util_1.CacheKeys.seriesByCategory(categoryId);
         const cached = await this.cacheManager.get(cacheKey);
         if (cached) {
-            console.log(`💾 分类系列缓存命中: ${cacheKey}`);
+            debug_util_1.DebugUtil.cache('分类系列缓存命中', cacheKey);
             return cached;
         }
         try {
@@ -181,11 +188,11 @@ let MediaService = class MediaService {
                 msg: null
             };
             await this.cacheManager.set(cacheKey, result, 1800000);
-            console.log(`💾 分类系列已缓存: ${cacheKey}`);
+            debug_util_1.DebugUtil.cache('分类系列已缓存', cacheKey);
             return result;
         }
         catch (error) {
-            console.error('根据分类获取系列列表失败:', error);
+            debug_util_1.DebugUtil.error('根据分类获取系列列表失败', error);
             throw new Error('根据分类获取系列列表失败');
         }
     }
@@ -195,7 +202,9 @@ let MediaService = class MediaService {
             const queryBuilder = this.seriesRepo.createQueryBuilder('series')
                 .leftJoinAndSelect('series.category', 'category')
                 .where('series.isActive = :isActive', { isActive: 1 })
-                .orderBy('series.createdAt', 'DESC')
+                .orderBy('series.updatedAt', 'DESC')
+                .addOrderBy('series.createdAt', 'DESC')
+                .addOrderBy('series.id', 'DESC')
                 .skip(offset)
                 .take(size);
             if (categoryId && categoryId > 0) {
@@ -222,7 +231,7 @@ let MediaService = class MediaService {
             }));
         }
         catch (error) {
-            console.error('获取视频列表失败:', error);
+            debug_util_1.DebugUtil.error('获取视频列表失败', error);
             return [];
         }
     }
