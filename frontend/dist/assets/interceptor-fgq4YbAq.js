@@ -1,0 +1,1 @@
+import{r as p,_ as a}from"./index-vKgYhTR5.js";function m(l,{args:r=[],done:i,canceled:s,error:t}){if(l){const f=l.apply(null,r);p(f)?f.then(o=>{o?i():s&&s()}).catch(t||a):f?i():s&&s()}else i()}export{m as c};

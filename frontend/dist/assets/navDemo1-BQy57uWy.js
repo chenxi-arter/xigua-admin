@@ -1,0 +1,1 @@
+import{_ as t,b as o,f as s,o as c}from"./index-Ha6_R1b4.js";const n={},a={class:"coming-soon"};function r(l,e){return c(),o("div",a,e[0]||(e[0]=[s("div",{class:"content"},[s("h1",{class:"title"},"敬请期待"),s("p",{class:"subtitle"},"我们正在为您准备全新的体验"),s("div",{class:"underline"})],-1)]))}const i=t(n,[["render",r],["__scopeId","data-v-06c76971"]]);export{i as default};
