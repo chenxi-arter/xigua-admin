@@ -15,6 +15,7 @@ const user_entity_1 = require("./entity/user.entity");
 const user_service_1 = require("./user.service");
 const user_controller_1 = require("./user.controller");
 const jwt_strategy_1 = require("../auth/strategies/jwt.strategy");
+const telegram_auth_service_1 = require("../auth/telegram-auth.service");
 const auth_module_1 = require("../auth/auth.module");
 let UserModule = class UserModule {
 };
@@ -25,10 +26,10 @@ exports.UserModule = UserModule = __decorate([
             typeorm_1.TypeOrmModule.forFeature([user_entity_1.User]),
             passport_1.PassportModule,
             jwt_1.JwtModule.register({}),
-            auth_module_1.AuthModule,
+            (0, common_1.forwardRef)(() => auth_module_1.AuthModule),
         ],
         controllers: [user_controller_1.UserController],
-        providers: [user_service_1.UserService, jwt_strategy_1.JwtStrategy],
+        providers: [user_service_1.UserService, jwt_strategy_1.JwtStrategy, telegram_auth_service_1.TelegramAuthService],
         exports: [user_service_1.UserService],
     })
 ], UserModule);

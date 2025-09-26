@@ -10,10 +10,18 @@ export declare class PlaybackService {
     private readonly cacheManager;
     constructor(episodeRepo: Repository<Episode>, watchProgressRepo: Repository<WatchProgress>, watchProgressService: WatchProgressService, cacheManager: Cache);
     saveProgress(userId: number, episodeId: number, stopAtSecond: number): Promise<{
-        ok: boolean;
+        readonly ok: false;
+        readonly reason: "episode_not_found";
+    } | {
+        readonly ok: true;
+        readonly reason?: undefined;
     }>;
     saveProgressWithBrowseHistory(userId: number, episodeId: number, stopAtSecond: number, req?: any): Promise<{
-        ok: boolean;
+        readonly ok: false;
+        readonly reason: "episode_not_found";
+    } | {
+        readonly ok: true;
+        readonly reason?: undefined;
     }>;
     getProgress(userId: number, episodeId: number): Promise<{
         stopAtSecond: number;

@@ -1,69 +1,59 @@
 import { UserService } from './user.service';
-import { TelegramUserDto } from './dto/telegram-user.dto';
+import { BindTelegramDto, BindTelegramResponseDto } from './dto/bind-telegram.dto';
 import { AuthService } from '../auth/auth.service';
-import { RefreshTokenDto } from '../auth/dto/refresh-token.dto';
+import { BindEmailDto } from './dto/bind-email.dto';
+import { UpdateNicknameDto, UpdateNicknameResponseDto } from './dto/update-nickname.dto';
+import { UpdatePasswordDto, UpdatePasswordResponseDto } from './dto/update-password.dto';
+interface AuthenticatedRequest extends Request {
+    user: {
+        userId: number;
+    };
+}
 export declare class UserController {
     private readonly userService;
     private readonly authService;
     constructor(userService: UserService, authService: AuthService);
-    telegramLogin(dto: TelegramUserDto): Promise<{
-        access_token: string;
-        refresh_token: string;
-        expires_in: number;
-        token_type: string;
-    }>;
-    telegramLoginGet(dto: TelegramUserDto): Promise<{
-        access_token: string;
-        refresh_token: string;
-        expires_in: number;
-        token_type: string;
-    }>;
-    getMe(req: any): Promise<{
+    getMe(req: AuthenticatedRequest): Promise<{
         message: string;
-        id?: undefined;
+        email?: undefined;
         username?: undefined;
+        nickname?: undefined;
         firstName?: undefined;
         lastName?: undefined;
+        photoUrl?: undefined;
+        hasTelegram?: undefined;
+        tgusername?: undefined;
         isActive?: undefined;
         createdAt?: undefined;
     } | {
-        id: number;
+        email: string | null;
         username: string;
+        nickname: string;
         firstName: string;
         lastName: string;
+        photoUrl: string | null;
+        hasTelegram: boolean;
+        tgusername: number | null;
         isActive: boolean;
         createdAt: Date;
         message?: undefined;
     }>;
-    refreshToken(dto: RefreshTokenDto, req: any): Promise<{
-        access_token: string;
-        expires_in: number;
-        token_type: string;
-    }>;
-    verifyRefreshToken(dto: RefreshTokenDto): Promise<{
-        valid: boolean;
-        message: any;
-    }>;
-    logout(dto: RefreshTokenDto): Promise<{
-        message: string;
+    bindTelegram(dto: BindTelegramDto, req: AuthenticatedRequest): Promise<BindTelegramResponseDto>;
+    bindEmail(dto: BindEmailDto, req: AuthenticatedRequest): Promise<{
         success: boolean;
-    }>;
-    logoutAll(req: any): Promise<{
         message: string;
-        success: boolean;
-    }>;
-    getActiveDevices(req: any): Promise<{
-        devices: {
+        user: {
             id: number;
-            deviceInfo: string;
-            ipAddress: string;
-            createdAt: Date;
-            expiresAt: Date;
-        }[];
-        total: number;
+            shortId: string;
+            email: string;
+            username: string;
+            firstName: string;
+            lastName: string;
+            telegramId: number;
+            isActive: boolean;
+        };
     }>;
-    revokeDevice(tokenId: string, req: any): Promise<{
-        message: string;
-        success: boolean;
-    }>;
+    updateNickname(dto: UpdateNicknameDto, req: AuthenticatedRequest): Promise<UpdateNicknameResponseDto>;
+    updatePassword(dto: UpdatePasswordDto, req: AuthenticatedRequest): Promise<UpdatePasswordResponseDto>;
 }
+export {};

@@ -9,9 +9,17 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.TelegramUserDto = void 0;
+exports.TelegramUserDto = exports.LoginType = void 0;
 const class_validator_1 = require("class-validator");
+var LoginType;
+(function (LoginType) {
+    LoginType["WEBAPP"] = "webapp";
+    LoginType["BOT"] = "bot";
+})(LoginType || (exports.LoginType = LoginType = {}));
 class TelegramUserDto {
+    loginType;
+    initData;
+    deviceInfo;
     id;
     first_name;
     last_name;
@@ -22,10 +30,26 @@ class TelegramUserDto {
 }
 exports.TelegramUserDto = TelegramUserDto;
 __decorate([
+    (0, class_validator_1.IsEnum)(LoginType),
+    __metadata("design:type", String)
+], TelegramUserDto.prototype, "loginType", void 0);
+__decorate([
+    (0, class_validator_1.ValidateIf)((o) => o.loginType === LoginType.WEBAPP),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], TelegramUserDto.prototype, "initData", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], TelegramUserDto.prototype, "deviceInfo", void 0);
+__decorate([
+    (0, class_validator_1.ValidateIf)((o) => o.loginType === LoginType.BOT),
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], TelegramUserDto.prototype, "id", void 0);
 __decorate([
+    (0, class_validator_1.ValidateIf)((o) => o.loginType === LoginType.BOT),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], TelegramUserDto.prototype, "first_name", void 0);
@@ -40,10 +64,12 @@ __decorate([
     __metadata("design:type", String)
 ], TelegramUserDto.prototype, "username", void 0);
 __decorate([
+    (0, class_validator_1.ValidateIf)((o) => o.loginType === LoginType.BOT),
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], TelegramUserDto.prototype, "auth_date", void 0);
 __decorate([
+    (0, class_validator_1.ValidateIf)((o) => o.loginType === LoginType.BOT),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], TelegramUserDto.prototype, "hash", void 0);

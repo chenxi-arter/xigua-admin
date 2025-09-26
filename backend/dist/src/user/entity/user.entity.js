@@ -16,10 +16,15 @@ const watch_progress_entity_1 = require("../../video/entity/watch-progress.entit
 const short_id_util_1 = require("../../shared/utils/short-id.util");
 let User = class User {
     id;
+    email;
+    password_hash;
+    telegram_id;
     shortId;
     first_name;
     last_name;
     username;
+    nickname;
+    photo_url;
     is_active;
     created_at;
     comments;
@@ -32,25 +37,45 @@ let User = class User {
 };
 exports.User = User;
 __decorate([
-    (0, typeorm_1.PrimaryColumn)({ type: 'bigint' }),
+    (0, typeorm_1.PrimaryGeneratedColumn)({ type: 'bigint' }),
     __metadata("design:type", Number)
 ], User.prototype, "id", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, unique: true, nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "email", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "password_hash", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'bigint', unique: true, nullable: true }),
+    __metadata("design:type", Number)
+], User.prototype, "telegram_id", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', length: 11, unique: true, nullable: true, name: 'short_id' }),
     __metadata("design:type", String)
 ], User.prototype, "shortId", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'varchar', length: 255 }),
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: true }),
     __metadata("design:type", String)
 ], User.prototype, "first_name", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'varchar', length: 255 }),
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, nullable: true }),
     __metadata("design:type", String)
 ], User.prototype, "last_name", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'varchar', length: 255, unique: true }),
+    (0, typeorm_1.Column)({ type: 'varchar', length: 255, unique: true, nullable: true }),
     __metadata("design:type", String)
 ], User.prototype, "username", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 50, nullable: true }),
+    __metadata("design:type", String)
+], User.prototype, "nickname", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'text', nullable: true }),
+    __metadata("design:type", Object)
+], User.prototype, "photo_url", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'tinyint', default: 1 }),
     __metadata("design:type", Boolean)

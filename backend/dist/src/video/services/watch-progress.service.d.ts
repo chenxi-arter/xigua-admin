@@ -6,7 +6,11 @@ export declare class WatchProgressService {
     private readonly episodeRepo;
     constructor(watchProgressRepo: Repository<WatchProgress>, episodeRepo: Repository<Episode>);
     updateWatchProgress(userId: number, episodeId: number, stopAtSecond: number): Promise<{
-        ok: boolean;
+        readonly ok: false;
+        readonly reason: "episode_not_found";
+    } | {
+        readonly ok: true;
+        readonly reason?: undefined;
     }>;
     getUserWatchProgress(userId: number, episodeId?: number): Promise<{
         userId: number;

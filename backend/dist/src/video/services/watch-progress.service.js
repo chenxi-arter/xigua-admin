@@ -30,7 +30,7 @@ let WatchProgressService = class WatchProgressService {
             where: { id: episodeId },
         });
         if (!episode) {
-            throw new Error('剧集不存在');
+            return { ok: false, reason: 'episode_not_found' };
         }
         let watchProgress = await this.watchProgressRepo.findOne({
             where: {

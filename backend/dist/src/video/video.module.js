@@ -106,6 +106,19 @@ exports.VideoModule = VideoModule = __decorate([
             ingest_controller_1.IngestController,
             test_ingest_controller_1.TestIngestController
         ],
+        exports: [
+            video_service_1.VideoService,
+            playback_service_1.PlaybackService,
+            content_service_1.ContentService,
+            home_service_1.HomeService,
+            media_service_1.MediaService,
+            url_service_1.UrlService,
+            filter_service_1.FilterService,
+            comment_service_1.CommentService,
+            series_service_1.SeriesService,
+            category_service_1.CategoryService,
+            ingest_service_1.IngestService,
+        ],
     })
 ], VideoModule);
 //# sourceMappingURL=video.module.js.map

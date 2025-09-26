@@ -17,15 +17,35 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const series_entity_1 = require("../../video/entity/series.entity");
+const video_service_1 = require("../../video/video.service");
 let AdminSeriesController = class AdminSeriesController {
     seriesRepo;
-    constructor(seriesRepo) {
+    videoService;
+    constructor(seriesRepo, videoService) {
         this.seriesRepo = seriesRepo;
+        this.videoService = videoService;
     }
-    async list(page = 1, size = 20) {
+    async list(page = 1, size = 20, includeDeleted) {
         const take = Math.max(Number(size) || 20, 1);
         const skip = (Math.max(Number(page) || 1, 1) - 1) * take;
-        const [items, total] = await this.seriesRepo.findAndCount({ skip, take, order: { id: 'DESC' } });
+        const where = includeDeleted === 'true' ? {} : { isActive: 1 };
+        const [items, total] = await this.seriesRepo.findAndCount({
+            skip,
+            take,
+            order: { id: 'DESC' },
+            where
+        });
+        return { total, items, page: Number(page) || 1, size: take };
+    }
+    async getDeleted(page = 1, size = 20) {
+        const take = Math.max(Number(size) || 20, 1);
+        const skip = (Math.max(Number(page) || 1, 1) - 1) * take;
+        const [items, total] = await this.seriesRepo.findAndCount({
+            skip,
+            take,
+            order: { deletedAt: 'DESC' },
+            where: { isActive: 0 }
+        });
         return { total, items, page: Number(page) || 1, size: take };
     }
     async get(id) {
@@ -40,8 +60,12 @@ let AdminSeriesController = class AdminSeriesController {
         return this.seriesRepo.findOne({ where: { id: Number(id) } });
     }
     async remove(id) {
-        await this.seriesRepo.delete({ id: Number(id) });
-        return { success: true };
+        const result = await this.videoService.softDeleteSeries(Number(id));
+        return result;
+    }
+    async restore(id) {
+        const result = await this.videoService.restoreSeries(Number(id));
+        return result;
     }
 };
 exports.AdminSeriesController = AdminSeriesController;
@@ -49,10 +73,19 @@ __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)('page')),
     __param(1, (0, common_1.Query)('size')),
+    __param(2, (0, common_1.Query)('includeDeleted')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object, String]),
+    __metadata("design:returntype", Promise)
+], AdminSeriesController.prototype, "list", null);
+__decorate([
+    (0, common_1.Get)('deleted'),
+    __param(0, (0, common_1.Query)('page')),
+    __param(1, (0, common_1.Query)('size')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
-], AdminSeriesController.prototype, "list", null);
+], AdminSeriesController.prototype, "getDeleted", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
@@ -82,9 +115,17 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AdminSeriesController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Post)(':id/restore'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AdminSeriesController.prototype, "restore", null);
 exports.AdminSeriesController = AdminSeriesController = __decorate([
     (0, common_1.Controller)('admin/series'),
     __param(0, (0, typeorm_1.InjectRepository)(series_entity_1.Series)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        video_service_1.VideoService])
 ], AdminSeriesController);
 //# sourceMappingURL=admin-series.controller.js.map

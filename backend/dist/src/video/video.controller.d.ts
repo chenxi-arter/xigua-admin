@@ -6,7 +6,11 @@ export declare class VideoController extends BaseController {
     private readonly videoService;
     constructor(videoService: VideoService);
     saveProgress(req: any, episodeIdentifier: string | number, stopAtSecond: number): Promise<void | import("./controllers/base.controller").ApiResponse<null> | import("./controllers/base.controller").ApiResponse<{
-        ok: boolean;
+        readonly ok: false;
+        readonly reason: "episode_not_found";
+    } | {
+        readonly ok: true;
+        readonly reason?: undefined;
     }>>;
     getProgress(req: any, episodeIdentifier: string): Promise<void | import("./controllers/base.controller").ApiResponse<null> | import("./controllers/base.controller").ApiResponse<{
         stopAtSecond: number;

@@ -17,19 +17,24 @@ const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
+const config_1 = require("@nestjs/config");
 const refresh_token_entity_1 = require("./entity/refresh-token.entity");
 const crypto_1 = require("crypto");
 let AuthService = class AuthService {
     jwtService;
     refreshTokenRepo;
-    constructor(jwtService, refreshTokenRepo) {
+    configService;
+    constructor(jwtService, refreshTokenRepo, configService) {
         this.jwtService = jwtService;
         this.refreshTokenRepo = refreshTokenRepo;
+        this.configService = configService;
     }
     async generateTokens(user, deviceInfo, ipAddress) {
+        const jwtSecret = this.configService.get('JWT_SECRET');
+        const jwtExpiresIn = this.configService.get('JWT_EXPIRES_IN') || '1h';
         const accessToken = this.jwtService.sign({ sub: user.id }, {
-            secret: process.env.JWT_SECRET,
-            expiresIn: process.env.JWT_EXPIRES_IN || '1h',
+            secret: jwtSecret,
+            expiresIn: jwtExpiresIn,
         });
         const refreshTokenValue = (0, crypto_1.randomBytes)(32).toString('hex');
         const refreshToken = this.refreshTokenRepo.create({
@@ -70,9 +75,11 @@ let AuthService = class AuthService {
             this.isIpSuspicious(refreshToken.ipAddress, ipAddress)) {
             console.warn(`IP地址变化检测: ${refreshToken.ipAddress} -> ${ipAddress}`);
         }
+        const jwtSecret = this.configService.get('JWT_SECRET');
+        const jwtExpiresIn = this.configService.get('JWT_EXPIRES_IN') || '1h';
         const accessToken = this.jwtService.sign({ sub: refreshToken.userId }, {
-            secret: process.env.JWT_SECRET,
-            expiresIn: process.env.JWT_EXPIRES_IN || '1h',
+            secret: jwtSecret,
+            expiresIn: jwtExpiresIn,
         });
         return {
             access_token: accessToken,
@@ -137,6 +144,7 @@ exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __param(1, (0, typeorm_1.InjectRepository)(refresh_token_entity_1.RefreshToken)),
     __metadata("design:paramtypes", [jwt_1.JwtService,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        config_1.ConfigService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

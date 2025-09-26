@@ -21,12 +21,14 @@ const browse_history_entity_1 = require("../video/entity/browse-history.entity")
 const controllers_1 = require("./controllers");
 const admin_series_controller_1 = require("./controllers/admin-series.controller");
 const admin_dashboard_controller_1 = require("./controllers/admin-dashboard.controller");
+const video_module_1 = require("../video/video.module");
 let AdminModule = class AdminModule {
 };
 exports.AdminModule = AdminModule;
 exports.AdminModule = AdminModule = __decorate([
     (0, common_1.Module)({
         imports: [
+            video_module_1.VideoModule,
             typeorm_1.TypeOrmModule.forFeature([
                 user_entity_1.User,
                 banner_entity_1.Banner,

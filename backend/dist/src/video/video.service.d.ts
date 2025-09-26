@@ -28,10 +28,18 @@ export declare class VideoService {
     private readonly cacheManager;
     constructor(playbackService: PlaybackService, contentService: ContentService, homeService: HomeService, mediaService: MediaService, urlService: UrlService, filterService: FilterService, commentService: CommentService, seriesService: SeriesService, categoryService: CategoryService, episodeRepo: Repository<Episode>, seriesRepo: Repository<Series>, commentRepo: Repository<Comment>, cacheManager: Cache);
     saveProgress(userId: number, episodeId: number, stopAtSecond: number): Promise<{
-        ok: boolean;
+        readonly ok: false;
+        readonly reason: "episode_not_found";
+    } | {
+        readonly ok: true;
+        readonly reason?: undefined;
     }>;
     saveProgressWithBrowseHistory(userId: number, episodeId: number, stopAtSecond: number, req?: any): Promise<{
-        ok: boolean;
+        readonly ok: false;
+        readonly reason: "episode_not_found";
+    } | {
+        readonly ok: true;
+        readonly reason?: undefined;
     }>;
     getProgress(userId: number, episodeId: number): Promise<{
         stopAtSecond: number;
