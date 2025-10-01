@@ -11,6 +11,7 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const user_entity_1 = require("../user/entity/user.entity");
 const banner_entity_1 = require("../video/entity/banner.entity");
+const category_entity_1 = require("../video/entity/category.entity");
 const series_entity_1 = require("../video/entity/series.entity");
 const episode_entity_1 = require("../video/entity/episode.entity");
 const episode_url_entity_1 = require("../video/entity/episode-url.entity");
@@ -19,6 +20,9 @@ const comment_entity_1 = require("../video/entity/comment.entity");
 const watch_progress_entity_1 = require("../video/entity/watch-progress.entity");
 const browse_history_entity_1 = require("../video/entity/browse-history.entity");
 const controllers_1 = require("./controllers");
+const admin_categories_controller_1 = require("./controllers/admin-categories.controller");
+const ingest_controller_1 = require("./controllers/ingest.controller");
+const test_ingest_controller_1 = require("./controllers/test-ingest.controller");
 const admin_series_controller_1 = require("./controllers/admin-series.controller");
 const admin_dashboard_controller_1 = require("./controllers/admin-dashboard.controller");
 const video_module_1 = require("../video/video.module");
@@ -39,14 +43,18 @@ exports.AdminModule = AdminModule = __decorate([
                 comment_entity_1.Comment,
                 watch_progress_entity_1.WatchProgress,
                 browse_history_entity_1.BrowseHistory,
+                category_entity_1.Category,
             ])
         ],
         controllers: [
             controllers_1.AdminUsersController,
             controllers_1.AdminBannersController,
+            admin_categories_controller_1.AdminCategoriesController,
             controllers_1.AdminEpisodesController,
             admin_series_controller_1.AdminSeriesController,
             admin_dashboard_controller_1.AdminDashboardController,
+            ingest_controller_1.IngestController,
+            test_ingest_controller_1.TestIngestController,
         ],
     })
 ], AdminModule);

@@ -25,16 +25,49 @@ let AdminEpisodesController = class AdminEpisodesController {
         this.episodeRepo = episodeRepo;
         this.episodeUrlRepo = episodeUrlRepo;
     }
+    normalize(raw) {
+        const toInt = (v) => (typeof v === 'string' || typeof v === 'number') ? Number(v) : undefined;
+        const toStr = (v) => (typeof v === 'string') ? v : undefined;
+        const payload = {};
+        const seriesId = toInt(raw.seriesId);
+        if (seriesId !== undefined)
+            payload.seriesId = seriesId;
+        const episodeNumber = toInt(raw.episodeNumber);
+        if (episodeNumber !== undefined)
+            payload.episodeNumber = episodeNumber;
+        const duration = toInt(raw.duration);
+        if (duration !== undefined)
+            payload.duration = duration;
+        const status = toStr(raw.status);
+        if (status !== undefined)
+            payload.status = status;
+        const title = toStr(raw.title);
+        if (title !== undefined)
+            payload.title = title;
+        const playCount = toInt(raw.playCount);
+        if (playCount !== undefined)
+            payload.playCount = playCount;
+        const likeCount = toInt(raw.likeCount);
+        if (likeCount !== undefined)
+            payload.likeCount = likeCount;
+        const dislikeCount = toInt(raw.dislikeCount);
+        if (dislikeCount !== undefined)
+            payload.dislikeCount = dislikeCount;
+        const favoriteCount = toInt(raw.favoriteCount);
+        if (favoriteCount !== undefined)
+            payload.favoriteCount = favoriteCount;
+        return payload;
+    }
     async list(page = 1, size = 20, seriesId) {
         const take = Math.max(Number(size) || 20, 1);
         const skip = (Math.max(Number(page) || 1, 1) - 1) * take;
-        const where = seriesId ? { seriesId: Number(seriesId) } : {};
+        const whereClause = seriesId ? { seriesId: Number(seriesId) } : undefined;
         const [items, total] = await this.episodeRepo.findAndCount({
             skip,
             take,
             order: { id: 'DESC' },
             relations: ['series'],
-            where,
+            where: whereClause,
         });
         return { total, items, page: Number(page) || 1, size: take };
     }
@@ -42,11 +75,12 @@ let AdminEpisodesController = class AdminEpisodesController {
         return this.episodeRepo.findOne({ where: { id: Number(id) }, relations: ['series', 'urls'] });
     }
     async create(body) {
-        const entity = this.episodeRepo.create(body);
+        const entity = this.episodeRepo.create(this.normalize(body));
         return this.episodeRepo.save(entity);
     }
     async update(id, body) {
-        await this.episodeRepo.update({ id: Number(id) }, body);
+        const payload = this.normalize(body);
+        await this.episodeRepo.update({ id: Number(id) }, payload);
         return this.episodeRepo.findOne({ where: { id: Number(id) }, relations: ['series', 'urls'] });
     }
     async remove(id) {

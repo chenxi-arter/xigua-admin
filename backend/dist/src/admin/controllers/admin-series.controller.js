@@ -25,6 +25,66 @@ let AdminSeriesController = class AdminSeriesController {
         this.seriesRepo = seriesRepo;
         this.videoService = videoService;
     }
+    normalize(raw) {
+        const toInt = (v) => (typeof v === 'string' || typeof v === 'number') ? Number(v) : undefined;
+        const toFloat = (v) => (typeof v === 'string' || typeof v === 'number') ? Number(v) : undefined;
+        const toBoolNum = (v) => v === undefined ? undefined : ((v === true || v === 'true' || v === 1 || v === '1') ? 1 : 0);
+        const toDate = (v) => (typeof v === 'string' || v instanceof Date) ? new Date(v) : undefined;
+        const payload = {};
+        if (typeof raw.title === 'string')
+            payload.title = raw.title;
+        if (typeof raw.description === 'string')
+            payload.description = raw.description;
+        if (typeof raw.coverUrl === 'string')
+            payload.coverUrl = raw.coverUrl;
+        if (typeof raw.externalId === 'string')
+            payload.externalId = raw.externalId;
+        if (typeof raw.starring === 'string')
+            payload.starring = raw.starring;
+        if (typeof raw.actor === 'string')
+            payload.actor = raw.actor;
+        if (typeof raw.director === 'string')
+            payload.director = raw.director;
+        if (typeof raw.upStatus === 'string')
+            payload.upStatus = raw.upStatus;
+        const categoryId = toInt(raw.categoryId);
+        if (categoryId !== undefined)
+            payload.categoryId = categoryId;
+        const score = toFloat(raw.score);
+        if (score !== undefined)
+            payload.score = score;
+        const playCount = toInt(raw.playCount);
+        if (playCount !== undefined)
+            payload.playCount = playCount;
+        const upCount = toInt(raw.upCount);
+        if (upCount !== undefined)
+            payload.upCount = upCount;
+        const regionOptionId = toInt(raw.regionOptionId);
+        if (regionOptionId !== undefined)
+            payload.regionOptionId = regionOptionId;
+        const languageOptionId = toInt(raw.languageOptionId);
+        if (languageOptionId !== undefined)
+            payload.languageOptionId = languageOptionId;
+        const statusOptionId = toInt(raw.statusOptionId);
+        if (statusOptionId !== undefined)
+            payload.statusOptionId = statusOptionId;
+        const yearOptionId = toInt(raw.yearOptionId);
+        if (yearOptionId !== undefined)
+            payload.yearOptionId = yearOptionId;
+        const deletedBy = toInt(raw.deletedBy);
+        if (deletedBy !== undefined)
+            payload.deletedBy = deletedBy;
+        const isCompleted = (raw.isCompleted === true || raw.isCompleted === 'true' || raw.isCompleted === 1 || raw.isCompleted === '1');
+        if (raw.isCompleted !== undefined)
+            payload.isCompleted = isCompleted;
+        const isActive = toBoolNum(raw.isActive);
+        if (isActive !== undefined)
+            payload.isActive = isActive;
+        const releaseDate = toDate(raw.releaseDate);
+        if (releaseDate !== undefined)
+            payload.releaseDate = releaseDate;
+        return payload;
+    }
     async list(page = 1, size = 20, includeDeleted) {
         const take = Math.max(Number(size) || 20, 1);
         const skip = (Math.max(Number(page) || 1, 1) - 1) * take;
@@ -52,11 +112,12 @@ let AdminSeriesController = class AdminSeriesController {
         return this.seriesRepo.findOne({ where: { id: Number(id) } });
     }
     async create(body) {
-        const entity = this.seriesRepo.create(body);
+        const entity = this.seriesRepo.create(this.normalize(body));
         return this.seriesRepo.save(entity);
     }
     async update(id, body) {
-        await this.seriesRepo.update({ id: Number(id) }, body);
+        const payload = this.normalize(body);
+        await this.seriesRepo.update({ id: Number(id) }, payload);
         return this.seriesRepo.findOne({ where: { id: Number(id) } });
     }
     async remove(id) {

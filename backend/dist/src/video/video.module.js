@@ -9,7 +9,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.VideoModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
-const cache_module_1 = require("../cache/cache.module");
 const series_entity_1 = require("./entity/series.entity");
 const episode_entity_1 = require("./entity/episode.entity");
 const episode_url_entity_1 = require("./entity/episode-url.entity");
@@ -48,8 +47,6 @@ const banner_module_1 = require("./modules/banner.module");
 const history_module_1 = require("./modules/history.module");
 const channel_exists_validator_1 = require("./validators/channel-exists.validator");
 const ingest_service_1 = require("./services/ingest.service");
-const ingest_controller_1 = require("./controllers/ingest.controller");
-const test_ingest_controller_1 = require("./controllers/test-ingest.controller");
 const play_count_service_1 = require("./services/play-count.service");
 let VideoModule = class VideoModule {
 };
@@ -57,7 +54,6 @@ exports.VideoModule = VideoModule;
 exports.VideoModule = VideoModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            cache_module_1.RedisCacheModule,
             catalog_module_1.CatalogModule,
             series_module_1.SeriesModule,
             episode_module_1.EpisodeModule,
@@ -102,9 +98,7 @@ exports.VideoModule = VideoModule = __decorate([
             channel_exists_validator_1.IsValidChannelExistsConstraint,
         ],
         controllers: [
-            cache_monitor_controller_1.CacheMonitorController,
-            ingest_controller_1.IngestController,
-            test_ingest_controller_1.TestIngestController
+            cache_monitor_controller_1.CacheMonitorController
         ],
         exports: [
             video_service_1.VideoService,

@@ -5,6 +5,7 @@ export declare class AdminSeriesController {
     private readonly seriesRepo;
     private readonly videoService;
     constructor(seriesRepo: Repository<Series>, videoService: VideoService);
+    private normalize;
     list(page?: number, size?: number, includeDeleted?: string): Promise<{
         total: number;
         items: Series[];

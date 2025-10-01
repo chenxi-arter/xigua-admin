@@ -3,6 +3,7 @@ import { Banner } from '../../video/entity/banner.entity';
 export declare class AdminBannersController {
     private readonly bannerRepo;
     constructor(bannerRepo: Repository<Banner>);
+    private normalize;
     list(page?: number, size?: number): Promise<{
         total: number;
         items: Banner[];
