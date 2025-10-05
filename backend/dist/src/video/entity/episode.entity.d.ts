@@ -1,7 +1,6 @@
 import { Series } from './series.entity';
 import { EpisodeUrl } from './episode-url.entity';
 import { WatchProgress } from './watch-progress.entity';
-import { Comment } from './comment.entity';
 export declare class Episode {
     id: number;
     shortId: string;
@@ -11,10 +10,10 @@ export declare class Episode {
     title: string;
     duration: number;
     status: string;
+    isVertical: boolean;
     series: Series;
     urls: EpisodeUrl[];
     watchProgresses: WatchProgress[];
-    comments: Comment[];
     playCount: number;
     likeCount: number;
     dislikeCount: number;

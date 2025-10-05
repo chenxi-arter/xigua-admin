@@ -28,6 +28,17 @@ let AdminEpisodesController = class AdminEpisodesController {
     normalize(raw) {
         const toInt = (v) => (typeof v === 'string' || typeof v === 'number') ? Number(v) : undefined;
         const toStr = (v) => (typeof v === 'string') ? v : undefined;
+        const toBool = (v) => {
+            if (v === undefined || v === null)
+                return undefined;
+            if (typeof v === 'boolean')
+                return v;
+            if (v === 'true' || v === '1' || v === 1)
+                return true;
+            if (v === 'false' || v === '0' || v === 0)
+                return false;
+            return undefined;
+        };
         const payload = {};
         const seriesId = toInt(raw.seriesId);
         if (seriesId !== undefined)
@@ -44,6 +55,9 @@ let AdminEpisodesController = class AdminEpisodesController {
         const title = toStr(raw.title);
         if (title !== undefined)
             payload.title = title;
+        const isVertical = toBool(raw.isVertical);
+        if (isVertical !== undefined)
+            payload.isVertical = isVertical;
         const playCount = toInt(raw.playCount);
         if (playCount !== undefined)
             payload.playCount = playCount;

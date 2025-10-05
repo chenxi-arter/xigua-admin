@@ -16,7 +16,6 @@ exports.UserService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
-const jwt_1 = require("@nestjs/jwt");
 const user_entity_1 = require("./entity/user.entity");
 const telegram_user_dto_1 = require("./dto/telegram-user.dto");
 const telegram_validator_1 = require("./telegram.validator");
@@ -25,12 +24,10 @@ const telegram_auth_service_1 = require("../auth/telegram-auth.service");
 const password_util_1 = require("../common/utils/password.util");
 let UserService = class UserService {
     userRepo;
-    jwtService;
     authService;
     telegramAuthService;
-    constructor(userRepo, jwtService, authService, telegramAuthService) {
+    constructor(userRepo, authService, telegramAuthService) {
         this.userRepo = userRepo;
-        this.jwtService = jwtService;
         this.authService = authService;
         this.telegramAuthService = telegramAuthService;
     }
@@ -341,7 +338,6 @@ exports.UserService = UserService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        jwt_1.JwtService,
         auth_service_1.AuthService,
         telegram_auth_service_1.TelegramAuthService])
 ], UserService);

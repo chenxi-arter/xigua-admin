@@ -14,7 +14,6 @@ const typeorm_1 = require("typeorm");
 const series_entity_1 = require("./series.entity");
 const episode_url_entity_1 = require("./episode-url.entity");
 const watch_progress_entity_1 = require("./watch-progress.entity");
-const comment_entity_1 = require("./comment.entity");
 const short_id_util_1 = require("../../shared/utils/short-id.util");
 const access_key_util_1 = require("../../shared/utils/access-key.util");
 let Episode = class Episode {
@@ -26,10 +25,10 @@ let Episode = class Episode {
     title;
     duration;
     status;
+    isVertical;
     series;
     urls;
     watchProgresses;
-    comments;
     playCount;
     likeCount;
     dislikeCount;
@@ -80,6 +79,10 @@ __decorate([
     __metadata("design:type", String)
 ], Episode.prototype, "status", void 0);
 __decorate([
+    (0, typeorm_1.Column)({ type: 'boolean', default: false, name: 'is_vertical' }),
+    __metadata("design:type", Boolean)
+], Episode.prototype, "isVertical", void 0);
+__decorate([
     (0, typeorm_1.ManyToOne)(() => series_entity_1.Series, s => s.episodes),
     (0, typeorm_1.JoinColumn)({ name: 'series_id' }),
     __metadata("design:type", series_entity_1.Series)
@@ -92,10 +95,6 @@ __decorate([
     (0, typeorm_1.OneToMany)(() => watch_progress_entity_1.WatchProgress, wp => wp.episode),
     __metadata("design:type", Array)
 ], Episode.prototype, "watchProgresses", void 0);
-__decorate([
-    (0, typeorm_1.OneToMany)(() => comment_entity_1.Comment, c => c.episode),
-    __metadata("design:type", Array)
-], Episode.prototype, "comments", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'int', default: 0, name: 'play_count' }),
     __metadata("design:type", Number)

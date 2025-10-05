@@ -9,6 +9,18 @@ const date_util_1 = require("./common/utils/date.util");
 async function bootstrap() {
     const app = await core_1.NestFactory.create(app_client_module_1.ClientAppModule);
     app.setGlobalPrefix('api');
+    app.use((req, _res, next) => {
+        const headerOverride = req.header('x-http-method-override');
+        const queryOverride = typeof req.query._method === 'string' ? req.query._method : undefined;
+        const override = headerOverride || queryOverride;
+        if (override) {
+            const upper = override.toUpperCase();
+            if (upper === 'PUT' || upper === 'DELETE' || upper === 'PATCH') {
+                req.method = upper;
+            }
+        }
+        next();
+    });
     app.useGlobalPipes(new common_1.ValidationPipe({
         transform: true,
         whitelist: false,
@@ -23,9 +35,11 @@ async function bootstrap() {
         }
     }));
     app.enableCors({
-        origin: '*',
-        methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+        origin: true,
+        methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
         credentials: true,
+        allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'X-HTTP-Method-Override'],
+        optionsSuccessStatus: 204,
     });
     const appTimezone = process.env.APP_TIMEZONE || process.env.DB_TIMEZONE || 'Asia/Shanghai';
     date_util_1.DateUtil.setTimezone(appTimezone);

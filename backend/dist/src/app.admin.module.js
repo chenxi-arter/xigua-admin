@@ -11,6 +11,8 @@ const common_1 = require("@nestjs/common");
 const schedule_1 = require("@nestjs/schedule");
 const core_module_1 = require("./core/core.module");
 const shared_module_1 = require("./shared/shared.module");
+const auth_module_1 = require("./auth/auth.module");
+const user_module_1 = require("./user/user.module");
 const admin_module_1 = require("./admin/admin.module");
 let AdminAppModule = class AdminAppModule {
 };
@@ -21,6 +23,8 @@ exports.AdminAppModule = AdminAppModule = __decorate([
             schedule_1.ScheduleModule.forRoot(),
             core_module_1.CoreModule,
             shared_module_1.SharedModule,
+            auth_module_1.AuthModule,
+            user_module_1.UserModule,
             admin_module_1.AdminModule,
         ],
     })

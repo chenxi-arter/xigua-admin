@@ -10,6 +10,7 @@ export declare class EpisodeInputDto {
     title: string;
     duration: number;
     status: string;
+    isVertical?: boolean;
     urls: EpisodeUrlInputDto[];
 }
 export declare class IngestSeriesDto {

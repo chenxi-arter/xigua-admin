@@ -17,10 +17,16 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const banner_entity_1 = require("../../video/entity/banner.entity");
+const r2_storage_service_1 = require("../../core/storage/r2-storage.service");
+const platform_express_1 = require("@nestjs/platform-express");
+const axios_1 = require("axios");
+const https = require("https");
 let AdminBannersController = class AdminBannersController {
     bannerRepo;
-    constructor(bannerRepo) {
+    storage;
+    constructor(bannerRepo, storage) {
         this.bannerRepo = bannerRepo;
+        this.storage = storage;
     }
     normalize(raw) {
         const toInt = (v) => (typeof v === 'string' || typeof v === 'number') ? Number(v) : undefined;
@@ -86,6 +92,37 @@ let AdminBannersController = class AdminBannersController {
         await this.bannerRepo.delete({ id: Number(id) });
         return { success: true };
     }
+    async uploadImage(id, file) {
+        if (!file || !file.buffer)
+            throw new common_1.BadRequestException('file is required');
+        const { url, key } = await this.storage.uploadBuffer(file.buffer, file.originalname, {
+            keyPrefix: 'banners/',
+            contentType: file.mimetype,
+        });
+        const imageUrl = url ?? key;
+        await this.bannerRepo.update({ id: Number(id) }, { imageUrl });
+        return this.bannerRepo.findOne({ where: { id: Number(id) } });
+    }
+    async uploadImageFromUrl(id, src) {
+        if (!src)
+            throw new common_1.BadRequestException('url is required');
+        const allowInsecure = process.env.ALLOW_INSECURE_EXTERNAL_FETCH === 'true';
+        const httpsAgent = new https.Agent({ rejectUnauthorized: !allowInsecure });
+        const resp = await axios_1.default.get(src, {
+            responseType: 'arraybuffer',
+            httpsAgent,
+            timeout: 15000,
+        });
+        const buffer = Buffer.from(resp.data);
+        const contentType = resp.headers['content-type'];
+        const { url, key } = await this.storage.uploadBuffer(buffer, undefined, {
+            keyPrefix: 'banners/',
+            contentType,
+        });
+        const imageUrl = url ?? key;
+        await this.bannerRepo.update({ id: Number(id) }, { imageUrl });
+        return this.bannerRepo.findOne({ where: { id: Number(id) } });
+    }
 };
 exports.AdminBannersController = AdminBannersController;
 __decorate([
@@ -125,9 +162,27 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AdminBannersController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Post)(':id/image'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.UploadedFile)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], AdminBannersController.prototype, "uploadImage", null);
+__decorate([
+    (0, common_1.Post)(':id/image-from-url'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)('url')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], AdminBannersController.prototype, "uploadImageFromUrl", null);
 exports.AdminBannersController = AdminBannersController = __decorate([
     (0, common_1.Controller)('admin/banners'),
     __param(0, (0, typeorm_1.InjectRepository)(banner_entity_1.Banner)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        r2_storage_service_1.R2StorageService])
 ], AdminBannersController);
 //# sourceMappingURL=admin-banners.controller.js.map

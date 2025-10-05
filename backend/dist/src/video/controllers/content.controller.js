@@ -37,7 +37,7 @@ let ContentController = class ContentController extends base_controller_1.BaseCo
     }
     async getEpisodeList(dto, req) {
         try {
-            const { page, size } = this.normalizePagination(dto.page, dto.size, 50);
+            const { page, size } = this.normalizePagination(dto.page, dto.size, 200);
             if (dto.seriesShortId) {
                 const result = await this.videoService.getEpisodeList(dto.seriesShortId, true, page, size, req.user?.userId);
                 return this.success(result, '获取剧集列表成功', 200);

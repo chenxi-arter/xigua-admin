@@ -165,6 +165,7 @@ let ContentService = class ContentService {
                     title: ep.title,
                     duration: ep.duration,
                     status: ep.status,
+                    isVertical: Boolean(ep.isVertical),
                     createdAt: date_util_1.DateUtil.formatDateTime(ep.createdAt),
                     updatedAt: date_util_1.DateUtil.formatDateTime(ep.updatedAt),
                     seriesId: ep.seriesId,

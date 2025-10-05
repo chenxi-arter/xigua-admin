@@ -42,7 +42,7 @@ exports.AuthModule = AuthModule = __decorate([
         ],
         controllers: [auth_controller_1.AuthController],
         providers: [jwt_strategy_1.JwtStrategy, telegram_strategy_1.TelegramStrategy, auth_service_1.AuthService, telegram_auth_service_1.TelegramAuthService],
-        exports: [passport_1.PassportModule, auth_service_1.AuthService, telegram_auth_service_1.TelegramAuthService],
+        exports: [passport_1.PassportModule, jwt_1.JwtModule, auth_service_1.AuthService, telegram_auth_service_1.TelegramAuthService],
     })
 ], AuthModule);
 //# sourceMappingURL=auth.module.js.map

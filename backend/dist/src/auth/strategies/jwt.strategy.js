@@ -32,7 +32,8 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
         if (!payload?.sub) {
             throw new common_1.UnauthorizedException('登录信息无效或已过期');
         }
-        return { userId: payload.sub };
+        const userId = typeof payload.sub === 'string' ? parseInt(payload.sub, 10) : payload.sub;
+        return { userId };
     }
 };
 exports.JwtStrategy = JwtStrategy;

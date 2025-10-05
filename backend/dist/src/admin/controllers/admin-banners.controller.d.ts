@@ -1,8 +1,10 @@
 import { Repository } from 'typeorm';
 import { Banner } from '../../video/entity/banner.entity';
+import { R2StorageService } from '../../core/storage/r2-storage.service';
 export declare class AdminBannersController {
     private readonly bannerRepo;
-    constructor(bannerRepo: Repository<Banner>);
+    private readonly storage;
+    constructor(bannerRepo: Repository<Banner>, storage: R2StorageService);
     private normalize;
     list(page?: number, size?: number): Promise<{
         total: number;
@@ -16,4 +18,10 @@ export declare class AdminBannersController {
     remove(id: string): Promise<{
         success: boolean;
     }>;
+    uploadImage(id: string, file?: {
+        buffer?: Buffer;
+        originalname?: string;
+        mimetype?: string;
+    }): Promise<Banner | null>;
+    uploadImageFromUrl(id: string, src?: string): Promise<Banner | null>;
 }

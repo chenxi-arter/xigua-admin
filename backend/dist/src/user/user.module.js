@@ -9,11 +9,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
-const jwt_1 = require("@nestjs/jwt");
 const passport_1 = require("@nestjs/passport");
 const user_entity_1 = require("./entity/user.entity");
+const favorite_entity_1 = require("./entity/favorite.entity");
+const episode_entity_1 = require("../video/entity/episode.entity");
 const user_service_1 = require("./user.service");
+const favorite_service_1 = require("./services/favorite.service");
 const user_controller_1 = require("./user.controller");
+const favorite_controller_1 = require("./controllers/favorite.controller");
 const jwt_strategy_1 = require("../auth/strategies/jwt.strategy");
 const telegram_auth_service_1 = require("../auth/telegram-auth.service");
 const auth_module_1 = require("../auth/auth.module");
@@ -23,14 +26,13 @@ exports.UserModule = UserModule;
 exports.UserModule = UserModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([user_entity_1.User]),
+            typeorm_1.TypeOrmModule.forFeature([user_entity_1.User, favorite_entity_1.Favorite, episode_entity_1.Episode]),
             passport_1.PassportModule,
-            jwt_1.JwtModule.register({}),
             (0, common_1.forwardRef)(() => auth_module_1.AuthModule),
         ],
-        controllers: [user_controller_1.UserController],
-        providers: [user_service_1.UserService, jwt_strategy_1.JwtStrategy, telegram_auth_service_1.TelegramAuthService],
-        exports: [user_service_1.UserService],
+        controllers: [user_controller_1.UserController, favorite_controller_1.FavoriteController],
+        providers: [user_service_1.UserService, favorite_service_1.FavoriteService, jwt_strategy_1.JwtStrategy, telegram_auth_service_1.TelegramAuthService],
+        exports: [user_service_1.UserService, favorite_service_1.FavoriteService],
     })
 ], UserModule);
 //# sourceMappingURL=user.module.js.map

@@ -10,6 +10,7 @@ export declare class EpisodeUpdateDto {
     title?: string;
     duration?: number;
     status?: string;
+    isVertical?: boolean;
     urls?: EpisodeUrlUpdateDto[];
 }
 export declare class UpdateIngestSeriesDto {

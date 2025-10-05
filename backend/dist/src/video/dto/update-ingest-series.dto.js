@@ -55,6 +55,7 @@ class EpisodeUpdateDto {
     title;
     duration;
     status;
+    isVertical;
     urls;
 }
 exports.EpisodeUpdateDto = EpisodeUpdateDto;
@@ -81,6 +82,11 @@ __decorate([
     (0, class_validator_1.IsIn)(['published', 'hidden', 'draft']),
     __metadata("design:type", String)
 ], EpisodeUpdateDto.prototype, "status", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], EpisodeUpdateDto.prototype, "isVertical", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsArray)(),

@@ -163,7 +163,7 @@ export declare class VideoService {
     fuzzySearch(keyword: string, channelId?: string, page?: number, size?: number): Promise<import("./dto/fuzzy-search.dto").FuzzySearchResponse>;
     getConditionFilterData(dto: any): Promise<import("./dto/filter-data.dto").FilterDataResponse>;
     clearFilterCache(channeid?: string): Promise<void>;
-    addComment(userId: number, episodeId: number, content: string, appearSecond?: number): Promise<Comment>;
+    addComment(userId: number, episodeShortId: string, content: string, appearSecond?: number): Promise<Comment>;
     getSeriesByCategory(categoryId: number, page?: number, pageSize?: number): Promise<{
         series: Series[];
         total: number;

@@ -1,5 +1,4 @@
 import { Repository } from 'typeorm';
-import { JwtService } from '@nestjs/jwt';
 import { User } from './entity/user.entity';
 import { TelegramUserDto } from './dto/telegram-user.dto';
 import { RegisterDto, RegisterResponseDto } from './dto/register.dto';
@@ -18,10 +17,9 @@ interface TokenResult {
 }
 export declare class UserService {
     private readonly userRepo;
-    private readonly jwtService;
     private readonly authService;
     private readonly telegramAuthService;
-    constructor(userRepo: Repository<User>, jwtService: JwtService, authService: AuthService, telegramAuthService: TelegramAuthService);
+    constructor(userRepo: Repository<User>, authService: AuthService, telegramAuthService: TelegramAuthService);
     telegramLogin(dto: TelegramUserDto): Promise<TokenResult>;
     private validateBotToken;
     bindEmail(userId: number, dto: BindEmailDto): Promise<{

@@ -55,6 +55,7 @@ class EpisodeInputDto {
     title;
     duration;
     status;
+    isVertical;
     urls;
 }
 exports.EpisodeInputDto = EpisodeInputDto;
@@ -79,6 +80,11 @@ __decorate([
     (0, class_validator_1.IsIn)(['published', 'hidden', 'draft']),
     __metadata("design:type", String)
 ], EpisodeInputDto.prototype, "status", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
+    __metadata("design:type", Boolean)
+], EpisodeInputDto.prototype, "isVertical", void 0);
 __decorate([
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.ArrayMinSize)(1),

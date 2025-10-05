@@ -28,52 +28,160 @@ let CommentService = class CommentService {
         this.episodeRepo = episodeRepo;
         this.cacheManager = cacheManager;
     }
-    async addComment(userId, episodeId, content, appearSecond) {
+    async addComment(userId, episodeShortId, content, appearSecond) {
         const comment = this.commentRepo.create({
             userId,
-            episodeId,
+            episodeShortId,
             content,
             appearSecond: appearSecond ?? 0,
         });
         const saved = await this.commentRepo.save(comment);
-        await this.clearCommentCache(episodeId.toString());
+        await this.clearCommentCache(episodeShortId);
         return saved;
     }
-    async getCommentsByEpisode(episodeId, page = 1, size = 20) {
+    async getCommentsByEpisodeShortId(episodeShortId, page = 1, size = 20, replyPreviewCount = 2) {
         const skip = (page - 1) * size;
         const [comments, total] = await this.commentRepo.findAndCount({
-            where: { episodeId },
+            where: { episodeShortId, rootId: null },
             order: { createdAt: 'DESC' },
             skip,
             take: size,
             relations: ['user'],
         });
+        const formattedComments = await Promise.all(comments.map(async (comment) => {
+            const recentReplies = await this.commentRepo.find({
+                where: { rootId: comment.id },
+                order: { createdAt: 'DESC' },
+                take: replyPreviewCount,
+                relations: ['user'],
+            });
+            return {
+                id: comment.id,
+                content: comment.content,
+                appearSecond: comment.appearSecond,
+                replyCount: comment.replyCount,
+                createdAt: comment.createdAt,
+                username: comment.user?.username || null,
+                nickname: comment.user?.nickname || null,
+                photoUrl: comment.user?.photo_url || null,
+                recentReplies: recentReplies.map(reply => ({
+                    id: reply.id,
+                    content: reply.content,
+                    floorNumber: reply.floorNumber,
+                    createdAt: reply.createdAt,
+                    username: reply.user?.username || null,
+                    nickname: reply.user?.nickname || null,
+                })),
+            };
+        }));
         return {
-            comments,
+            comments: formattedComments,
             total,
             page,
             size,
             totalPages: Math.ceil(total / size),
         };
     }
-    async getDanmuByEpisode(episodeId) {
+    async addReply(userId, episodeShortId, parentId, content) {
+        const parentComment = await this.commentRepo.findOne({
+            where: { id: parentId },
+            relations: ['user'],
+        });
+        if (!parentComment) {
+            throw new Error('父评论不存在');
+        }
+        const rootId = parentComment.rootId || parentComment.id;
+        const maxFloor = await this.commentRepo
+            .createQueryBuilder('comment')
+            .select('MAX(comment.floorNumber)', 'max')
+            .where('comment.rootId = :rootId OR comment.id = :rootId', { rootId })
+            .getRawOne();
+        const floorNumber = (maxFloor?.max || 0) + 1;
+        const reply = this.commentRepo.create({
+            userId,
+            episodeShortId,
+            parentId,
+            rootId,
+            replyToUserId: parentComment.userId,
+            floorNumber,
+            content,
+            appearSecond: 0,
+        });
+        const saved = await this.commentRepo.save(reply);
+        await this.commentRepo.increment({ id: rootId }, 'replyCount', 1);
+        await this.clearCommentCache(episodeShortId);
+        const savedWithUser = await this.commentRepo.findOne({
+            where: { id: saved.id },
+            relations: ['user'],
+        });
+        if (!savedWithUser) {
+            throw new Error('保存的评论未找到');
+        }
+        return {
+            id: savedWithUser.id,
+            parentId: savedWithUser.parentId,
+            rootId: savedWithUser.rootId,
+            floorNumber: savedWithUser.floorNumber,
+            content: savedWithUser.content,
+            createdAt: savedWithUser.createdAt,
+            username: savedWithUser.user?.username || null,
+            nickname: savedWithUser.user?.nickname || null,
+            photoUrl: savedWithUser.user?.photo_url || null,
+            replyToUsername: parentComment.user?.username || null,
+            replyToNickname: parentComment.user?.nickname || null,
+        };
+    }
+    async getCommentReplies(commentId, page = 1, size = 20) {
+        const rootComment = await this.commentRepo.findOne({
+            where: { id: commentId },
+            relations: ['user'],
+        });
+        if (!rootComment) {
+            throw new Error('评论不存在');
+        }
+        const skip = (page - 1) * size;
+        const [replies, total] = await this.commentRepo.findAndCount({
+            where: { rootId: commentId },
+            order: { floorNumber: 'ASC' },
+            skip,
+            take: size,
+            relations: ['user'],
+        });
+        return {
+            rootComment: {
+                id: rootComment.id,
+                content: rootComment.content,
+                username: rootComment.user?.username || null,
+                nickname: rootComment.user?.nickname || null,
+                photoUrl: rootComment.user?.photo_url || null,
+                replyCount: rootComment.replyCount,
+                createdAt: rootComment.createdAt,
+            },
+            replies: replies.map(reply => ({
+                id: reply.id,
+                parentId: reply.parentId,
+                floorNumber: reply.floorNumber,
+                content: reply.content,
+                createdAt: reply.createdAt,
+                username: reply.user?.username || null,
+                nickname: reply.user?.nickname || null,
+                photoUrl: reply.user?.photo_url || null,
+            })),
+            total,
+            page,
+            size,
+            totalPages: Math.ceil(total / size),
+        };
+    }
+    async getDanmuByEpisodeShortId(episodeShortId) {
         return this.commentRepo.find({
             where: {
-                episodeId,
+                episodeShortId,
                 appearSecond: { $gt: 0 },
             },
             order: { appearSecond: 'ASC' },
             relations: ['user'],
         });
-    }
-    async getDanmuByEpisodeShortId(episodeShortId) {
-        const episode = await this.episodeRepo.findOne({
-            where: { shortId: episodeShortId }
-        });
-        if (!episode) {
-            throw new Error('剧集不存在');
-        }
-        return this.getDanmuByEpisode(episode.id);
     }
     async deleteComment(commentId, userId) {
         const comment = await this.commentRepo.findOne({
@@ -86,7 +194,7 @@ let CommentService = class CommentService {
             throw new Error('无权删除此评论');
         }
         await this.commentRepo.remove(comment);
-        await this.clearCommentCache(comment.episodeId.toString());
+        await this.clearCommentCache(comment.episodeShortId);
         return { ok: true };
     }
     async getUserComments(userId, page = 1, size = 20) {
@@ -106,13 +214,13 @@ let CommentService = class CommentService {
             totalPages: Math.ceil(total / size),
         };
     }
-    async getCommentStats(episodeId) {
+    async getCommentStats(episodeShortId) {
         const totalComments = await this.commentRepo.count({
-            where: { episodeId },
+            where: { episodeShortId },
         });
         const danmuCount = await this.commentRepo.count({
             where: {
-                episodeId,
+                episodeShortId,
                 appearSecond: { $gt: 0 },
             },
         });
@@ -139,14 +247,14 @@ let CommentService = class CommentService {
         if (!comment) {
             throw new Error('评论不存在');
         }
-        await this.clearCommentCache(comment.episodeId.toString());
+        await this.clearCommentCache(comment.episodeShortId);
         return { ok: true };
     }
-    async clearCommentCache(episodeId) {
+    async clearCommentCache(episodeShortId) {
         try {
-            await this.cacheManager.del(`video_details_${episodeId}`);
-            await this.cacheManager.del(`comments_${episodeId}`);
-            await this.cacheManager.del(`danmu_${episodeId}`);
+            await this.cacheManager.del(`video_details_${episodeShortId}`);
+            await this.cacheManager.del(`comments_${episodeShortId}`);
+            await this.cacheManager.del(`danmu_${episodeShortId}`);
         }
         catch (error) {
             console.error('清除评论缓存失败:', error);

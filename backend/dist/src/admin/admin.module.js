@@ -26,6 +26,7 @@ const test_ingest_controller_1 = require("./controllers/test-ingest.controller")
 const admin_series_controller_1 = require("./controllers/admin-series.controller");
 const admin_dashboard_controller_1 = require("./controllers/admin-dashboard.controller");
 const video_module_1 = require("../video/video.module");
+const core_module_1 = require("../core/core.module");
 let AdminModule = class AdminModule {
 };
 exports.AdminModule = AdminModule;
@@ -33,6 +34,7 @@ exports.AdminModule = AdminModule = __decorate([
     (0, common_1.Module)({
         imports: [
             video_module_1.VideoModule,
+            core_module_1.CoreModule,
             typeorm_1.TypeOrmModule.forFeature([
                 user_entity_1.User,
                 banner_entity_1.Banner,

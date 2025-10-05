@@ -221,6 +221,7 @@ let IngestService = class IngestService {
                     title: ep.title ?? `第${ep.episodeNumber}集`,
                     duration: ep.duration ?? 0,
                     status: ep.status ?? 'published',
+                    isVertical: ep.isVertical ?? false,
                 });
             }
             else {
@@ -230,6 +231,8 @@ let IngestService = class IngestService {
                     episode.duration = ep.duration;
                 if (ep.status !== undefined)
                     episode.status = ep.status;
+                if (ep.isVertical !== undefined)
+                    episode.isVertical = ep.isVertical;
             }
             episode = await this.episodeRepo.save(episode);
             if (Array.isArray(ep.urls)) {
@@ -345,6 +348,7 @@ let IngestService = class IngestService {
                         title: ep.title ?? `第${ep.episodeNumber}集`,
                         duration: ep.duration ?? 0,
                         status: ep.status ?? 'published',
+                        isVertical: ep.isVertical ?? false,
                     });
                 }
                 else {
@@ -354,6 +358,8 @@ let IngestService = class IngestService {
                         episode.duration = ep.duration;
                     if (ep.status !== undefined)
                         episode.status = ep.status;
+                    if (ep.isVertical !== undefined)
+                        episode.isVertical = ep.isVertical;
                 }
                 episode = await this.episodeRepo.save(episode);
                 if (Array.isArray(ep.urls)) {

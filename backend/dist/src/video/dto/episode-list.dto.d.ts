@@ -12,6 +12,7 @@ export interface EpisodeBasicInfo {
     title: string;
     duration: number;
     status: string;
+    isVertical: boolean;
     createdAt: string;
     updatedAt: string;
     seriesId: number;

@@ -127,8 +127,8 @@ let VideoService = class VideoService {
     async clearFilterCache(channeid) {
         return this.filterService.clearFilterCache(channeid);
     }
-    async addComment(userId, episodeId, content, appearSecond) {
-        return this.commentService.addComment(userId, episodeId, content, appearSecond);
+    async addComment(userId, episodeShortId, content, appearSecond) {
+        return this.commentService.addComment(userId, episodeShortId, content, appearSecond);
     }
     async getSeriesByCategory(categoryId, page = 1, pageSize = 20) {
         return this.seriesService.getSeriesByCategory(categoryId, page, pageSize);

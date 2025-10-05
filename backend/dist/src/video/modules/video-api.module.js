@@ -20,7 +20,9 @@ const comment_controller_1 = require("../controllers/comment.controller");
 const url_controller_1 = require("../controllers/url.controller");
 const content_controller_1 = require("../controllers/content.controller");
 const interaction_controller_1 = require("../controllers/interaction.controller");
+const comments_controller_1 = require("../controllers/comments.controller");
 const compat_browse_history_controller_1 = require("../controllers/compat-browse-history.controller");
+const recommend_controller_1 = require("../controllers/recommend.controller");
 const video_service_1 = require("../video.service");
 const comment_service_1 = require("../services/comment.service");
 const playback_service_1 = require("../services/playback.service");
@@ -35,6 +37,7 @@ const watch_progress_service_1 = require("../services/watch-progress.service");
 const banner_service_1 = require("../services/banner.service");
 const category_service_1 = require("../services/category.service");
 const ingest_service_1 = require("../services/ingest.service");
+const recommend_service_1 = require("../services/recommend.service");
 const app_logger_service_1 = require("../../common/logger/app-logger.service");
 const app_config_service_1 = require("../../common/config/app-config.service");
 const play_count_service_1 = require("../services/play-count.service");
@@ -67,7 +70,8 @@ exports.VideoApiModule = VideoApiModule = __decorate([
             typeorm_1.TypeOrmModule.forFeature([
                 series_entity_1.Series, episode_entity_1.Episode, episode_url_entity_1.EpisodeUrl, comment_entity_1.Comment, watch_progress_entity_1.WatchProgress, category_entity_1.Category, short_video_entity_1.ShortVideo, banner_entity_1.Banner, filter_type_entity_1.FilterType, filter_option_entity_1.FilterOption,
                 series_genre_option_entity_1.SeriesGenreOption
-            ])
+            ]),
+            (0, common_1.forwardRef)(() => Promise.resolve().then(() => require('../../user/user.module')).then(m => m.UserModule)),
         ],
         controllers: [
             public_video_controller_1.PublicVideoController,
@@ -82,6 +86,8 @@ exports.VideoApiModule = VideoApiModule = __decorate([
             url_controller_1.UrlController,
             content_controller_1.ContentController,
             interaction_controller_1.InteractionController,
+            comments_controller_1.CommentsController,
+            recommend_controller_1.RecommendController,
         ],
         providers: [
             video_service_1.VideoService,
@@ -100,6 +106,7 @@ exports.VideoApiModule = VideoApiModule = __decorate([
             category_service_1.CategoryService,
             ingest_service_1.IngestService,
             comment_service_1.CommentService,
+            recommend_service_1.RecommendService,
             app_logger_service_1.AppLoggerService,
             app_config_service_1.AppConfigService,
         ],

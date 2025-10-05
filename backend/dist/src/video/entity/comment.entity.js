@@ -12,16 +12,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Comment = void 0;
 const typeorm_1 = require("typeorm");
 const user_entity_1 = require("../../user/entity/user.entity");
-const episode_entity_1 = require("./episode.entity");
 let Comment = class Comment {
     id;
     userId;
-    episodeId;
+    episodeShortId;
+    parentId;
+    rootId;
+    replyToUserId;
+    floorNumber;
+    replyCount;
     content;
     appearSecond;
     createdAt;
     user;
-    episode;
 };
 exports.Comment = Comment;
 __decorate([
@@ -33,9 +36,29 @@ __decorate([
     __metadata("design:type", Number)
 ], Comment.prototype, "userId", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ name: 'episode_id' }),
+    (0, typeorm_1.Column)({ name: 'episode_short_id', type: 'varchar', length: 20 }),
+    __metadata("design:type", String)
+], Comment.prototype, "episodeShortId", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'parent_id', type: 'int', nullable: true }),
     __metadata("design:type", Number)
-], Comment.prototype, "episodeId", void 0);
+], Comment.prototype, "parentId", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'root_id', type: 'int', nullable: true }),
+    __metadata("design:type", Number)
+], Comment.prototype, "rootId", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'reply_to_user_id', type: 'bigint', nullable: true }),
+    __metadata("design:type", Number)
+], Comment.prototype, "replyToUserId", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'floor_number', type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], Comment.prototype, "floorNumber", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'reply_count', type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], Comment.prototype, "replyCount", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'text', name: 'content' }),
     __metadata("design:type", String)
@@ -53,11 +76,6 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: 'user_id' }),
     __metadata("design:type", user_entity_1.User)
 ], Comment.prototype, "user", void 0);
-__decorate([
-    (0, typeorm_1.ManyToOne)(() => episode_entity_1.Episode, ep => ep.comments),
-    (0, typeorm_1.JoinColumn)({ name: 'episode_id' }),
-    __metadata("design:type", episode_entity_1.Episode)
-], Comment.prototype, "episode", void 0);
 exports.Comment = Comment = __decorate([
     (0, typeorm_1.Entity)('comments')
 ], Comment);
