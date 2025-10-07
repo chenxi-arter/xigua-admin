@@ -1,0 +1,1 @@
+import{f as R,X as r}from"./index-BTFYkjdL.js";const a="van-hairline",l=`${a}--bottom`,T=`${a}--surround`,B=`${a}--top-bottom`,E="van-haptics-feedback",e=Symbol("van-form"),m=5;function p(n,{args:i=[],done:o,canceled:s,error:O}){if(n){const t=n.apply(null,i);R(t)?t.then(f=>{f?o():s&&s()}).catch(O||r):t?o():s&&s()}else o()}export{B,e as F,E as H,m as T,T as a,l as b,p as c};
