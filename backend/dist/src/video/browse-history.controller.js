@@ -29,7 +29,7 @@ let BrowseHistoryController = class BrowseHistoryController extends base_control
     }
     async getUserBrowseHistory(req, page = '1', size = '10') {
         try {
-            const { page: pageNum, size: sizeNum } = this.normalizePagination(page, size, 50);
+            const { page: pageNum, size: sizeNum } = this.normalizePagination(page, size, 200);
             const result = await this.browseHistoryService.getUserBrowseHistory(Number(req.user?.userId), pageNum, sizeNum);
             return this.success(result, '获取浏览记录成功');
         }

@@ -27,7 +27,7 @@ let ContentController = class ContentController extends base_controller_1.BaseCo
     }
     async listMediaUser(req, dto) {
         try {
-            const { page, size } = this.normalizePagination(dto.page, dto.size, 50);
+            const { page, size } = this.normalizePagination(dto.page, dto.size, 200);
             const result = await this.videoService.listMedia(dto.categoryId, dto.type, req.user.userId, dto.sort || 'latest', page, size);
             return this.success(result, '获取媒体列表成功', 200);
         }

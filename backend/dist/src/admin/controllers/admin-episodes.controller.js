@@ -73,7 +73,7 @@ let AdminEpisodesController = class AdminEpisodesController {
         return payload;
     }
     async list(page = 1, size = 20, seriesId) {
-        const take = Math.max(Number(size) || 20, 1);
+        const take = Math.min(200, Math.max(Number(size) || 20, 1));
         const skip = (Math.max(Number(page) || 1, 1) - 1) * take;
         const whereClause = seriesId ? { seriesId: Number(seriesId) } : undefined;
         const [items, total] = await this.episodeRepo.findAndCount({

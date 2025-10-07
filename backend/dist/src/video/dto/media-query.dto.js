@@ -47,8 +47,8 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Type)(() => Number),
-    (0, enhanced_validation_decorator_1.NumberRange)(1, 50, { message: '每页数量必须在1到50之间' }),
-    (0, class_transformer_1.Transform)(({ value }) => Math.min(50, Math.max(1, Number(value) || 20))),
+    (0, enhanced_validation_decorator_1.NumberRange)(1, 200, { message: '每页数量必须在1到200之间' }),
+    (0, class_transformer_1.Transform)(({ value }) => Math.min(200, Math.max(1, Number(value) || 20))),
     __metadata("design:type", Object)
 ], MediaQueryDto.prototype, "size", void 0);
 //# sourceMappingURL=media-query.dto.js.map

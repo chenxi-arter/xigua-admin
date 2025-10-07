@@ -103,7 +103,7 @@ let VideoController = class VideoController extends base_controller_1.BaseContro
     }
     async listMediaUser(req, dto) {
         try {
-            const { page, size } = this.normalizePagination(dto.page, dto.size, 50);
+            const { page, size } = this.normalizePagination(dto.page, dto.size, 200);
             const result = await this.videoService.listMedia(dto.categoryId, dto.type, req.user.userId, dto.sort || 'latest', page, size);
             return this.success(result, '获取媒体列表成功');
         }
@@ -193,7 +193,7 @@ let VideoController = class VideoController extends base_controller_1.BaseContro
     }
     async getEpisodeList(dto, req) {
         try {
-            const { page, size } = this.normalizePagination(dto.page, dto.size, 50);
+            const { page, size } = this.normalizePagination(dto.page, dto.size, 200);
             if (dto.seriesShortId) {
                 const result = await this.videoService.getEpisodeList(dto.seriesShortId, true, page, size, req.user?.userId);
                 return result;

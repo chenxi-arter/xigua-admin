@@ -36,8 +36,8 @@ let PublicVideoController = class PublicVideoController {
         return this.videoService.listMedia(categoryId, type, undefined, sort, page, size);
     }
     async getPublicEpisodeList(dto) {
-        const page = parseInt(dto.page || '1', 10);
-        const size = parseInt(dto.size || '20', 10);
+        const page = Math.max(1, parseInt(dto.page || '1', 10));
+        const size = Math.min(200, Math.max(1, parseInt(dto.size || '20', 10)));
         if (dto.seriesShortId) {
             return this.videoService.getEpisodeList(dto.seriesShortId, true, page, size, undefined);
         }
