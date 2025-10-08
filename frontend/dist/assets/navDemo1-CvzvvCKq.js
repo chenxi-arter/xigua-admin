@@ -1,0 +1,1 @@
+import{_ as t,c,a as s,o}from"./index-B-NUcGvg.js";const a={},n={class:"coming-soon"};function r(l,e){return o(),c("div",n,e[0]||(e[0]=[s("div",{class:"content"},[s("h1",{class:"title"},"敬请期待"),s("p",{class:"subtitle"},"我们正在为您准备全新的体验"),s("div",{class:"underline"})],-1)]))}const i=t(a,[["render",r],["__scopeId","data-v-06c76971"]]);export{i as default};

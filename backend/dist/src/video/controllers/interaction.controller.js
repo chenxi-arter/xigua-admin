@@ -56,7 +56,18 @@ let InteractionController = class InteractionController extends base_controller_
         if (type === 'favorite' && req && typeof req === 'object' && 'user' in req) {
             const user = req.user;
             if (user && typeof user.userId === 'number') {
-                await this.favoriteService.addFavorite(user.userId, episode.seriesId, episode.id);
+                try {
+                    await this.favoriteService.addFavorite(user.userId, episode.seriesId, episode.id);
+                }
+                catch (error) {
+                    console.error('收藏操作失败:', error);
+                    if (error && typeof error === 'object' && 'code' in error && error.code === 'ER_DUP_ENTRY') {
+                        console.log('用户已收藏该剧集，跳过重复收藏');
+                    }
+                    else {
+                        throw error;
+                    }
+                }
             }
         }
         await this.interactionService.increment(episode.id, type);
