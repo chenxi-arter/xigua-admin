@@ -18,6 +18,7 @@ export interface EpisodeBasicInfo {
     seriesId: number;
     seriesTitle: string;
     seriesShortId: string;
+    seriesScore?: number;
     episodeAccessKey?: string;
     likeCount?: number;
     dislikeCount?: number;

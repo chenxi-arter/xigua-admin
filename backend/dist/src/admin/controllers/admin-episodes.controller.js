@@ -101,6 +101,35 @@ let AdminEpisodesController = class AdminEpisodesController {
         await this.episodeRepo.delete({ id: Number(id) });
         return { success: true };
     }
+    async getDownloadUrls(id) {
+        const episode = await this.episodeRepo.findOne({
+            where: { id: Number(id) },
+            relations: ['series', 'urls']
+        });
+        if (!episode) {
+            return { success: false, message: '剧集不存在' };
+        }
+        const downloadUrls = episode.urls?.map(url => ({
+            id: url.id,
+            quality: url.quality,
+            cdnUrl: url.cdnUrl,
+            ossUrl: url.ossUrl,
+            originUrl: url.originUrl,
+            subtitleUrl: url.subtitleUrl,
+            accessKey: url.accessKey,
+        })) || [];
+        return {
+            success: true,
+            episodeId: episode.id,
+            episodeShortId: episode.shortId,
+            episodeTitle: episode.title,
+            episodeNumber: episode.episodeNumber,
+            seriesId: episode.seriesId,
+            seriesTitle: episode.series?.title || '',
+            duration: episode.duration,
+            downloadUrls
+        };
+    }
 };
 exports.AdminEpisodesController = AdminEpisodesController;
 __decorate([
@@ -141,6 +170,13 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AdminEpisodesController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Get)(':id/download-urls'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AdminEpisodesController.prototype, "getDownloadUrls", null);
 exports.AdminEpisodesController = AdminEpisodesController = __decorate([
     (0, common_1.Controller)('admin/episodes'),
     __param(0, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),

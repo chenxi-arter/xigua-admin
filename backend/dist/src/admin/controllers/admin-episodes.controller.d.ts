@@ -18,4 +18,35 @@ export declare class AdminEpisodesController {
     remove(id: string): Promise<{
         success: boolean;
     }>;
+    getDownloadUrls(id: string): Promise<{
+        success: boolean;
+        message: string;
+        episodeId?: undefined;
+        episodeShortId?: undefined;
+        episodeTitle?: undefined;
+        episodeNumber?: undefined;
+        seriesId?: undefined;
+        seriesTitle?: undefined;
+        duration?: undefined;
+        downloadUrls?: undefined;
+    } | {
+        success: boolean;
+        episodeId: number;
+        episodeShortId: string;
+        episodeTitle: string;
+        episodeNumber: number;
+        seriesId: number;
+        seriesTitle: string;
+        duration: number;
+        downloadUrls: {
+            id: number;
+            quality: string;
+            cdnUrl: string;
+            ossUrl: string;
+            originUrl: string;
+            subtitleUrl: string | null;
+            accessKey: string;
+        }[];
+        message?: undefined;
+    }>;
 }

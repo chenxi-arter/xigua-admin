@@ -171,6 +171,7 @@ let ContentService = class ContentService {
                     seriesId: ep.seriesId,
                     seriesTitle: ep.series?.title || '',
                     seriesShortId: ep.series?.shortId || '',
+                    seriesScore: ep.series?.score || 0,
                     likeCount: ep.likeCount || 0,
                     dislikeCount: ep.dislikeCount || 0,
                     favoriteCount: ep.favoriteCount || 0,
