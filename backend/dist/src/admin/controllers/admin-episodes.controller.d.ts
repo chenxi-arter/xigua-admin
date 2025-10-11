@@ -6,7 +6,7 @@ export declare class AdminEpisodesController {
     private readonly episodeUrlRepo;
     constructor(episodeRepo: Repository<Episode>, episodeUrlRepo: Repository<EpisodeUrl>);
     private normalize;
-    list(page?: number, size?: number, seriesId?: string): Promise<{
+    list(page?: number, size?: number, seriesId?: string, minDuration?: string, maxDuration?: string): Promise<{
         total: number;
         items: Episode[];
         page: number;

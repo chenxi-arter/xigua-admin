@@ -72,16 +72,30 @@ let AdminEpisodesController = class AdminEpisodesController {
             payload.favoriteCount = favoriteCount;
         return payload;
     }
-    async list(page = 1, size = 20, seriesId) {
+    async list(page = 1, size = 20, seriesId, minDuration, maxDuration) {
         const take = Math.min(200, Math.max(Number(size) || 20, 1));
         const skip = (Math.max(Number(page) || 1, 1) - 1) * take;
-        const whereClause = seriesId ? { seriesId: Number(seriesId) } : undefined;
+        const whereClause = {};
+        if (seriesId) {
+            whereClause.seriesId = Number(seriesId);
+        }
+        const minDur = minDuration ? Number(minDuration) : undefined;
+        const maxDur = maxDuration ? Number(maxDuration) : undefined;
+        if (minDur !== undefined && !isNaN(minDur) && maxDur !== undefined && !isNaN(maxDur)) {
+            whereClause.duration = (0, typeorm_2.Between)(minDur, maxDur);
+        }
+        else if (minDur !== undefined && !isNaN(minDur)) {
+            whereClause.duration = (0, typeorm_2.MoreThanOrEqual)(minDur);
+        }
+        else if (maxDur !== undefined && !isNaN(maxDur)) {
+            whereClause.duration = (0, typeorm_2.LessThanOrEqual)(maxDur);
+        }
         const [items, total] = await this.episodeRepo.findAndCount({
             skip,
             take,
             order: { id: 'DESC' },
             relations: ['series'],
-            where: whereClause,
+            where: Object.keys(whereClause).length > 0 ? whereClause : undefined,
         });
         return { total, items, page: Number(page) || 1, size: take };
     }
@@ -137,8 +151,10 @@ __decorate([
     __param(0, (0, common_1.Query)('page')),
     __param(1, (0, common_1.Query)('size')),
     __param(2, (0, common_1.Query)('seriesId')),
+    __param(3, (0, common_1.Query)('minDuration')),
+    __param(4, (0, common_1.Query)('maxDuration')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object, String]),
+    __metadata("design:paramtypes", [Object, Object, String, String, String]),
     __metadata("design:returntype", Promise)
 ], AdminEpisodesController.prototype, "list", null);
 __decorate([
