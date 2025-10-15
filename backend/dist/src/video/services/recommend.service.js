@@ -32,6 +32,11 @@ let RecommendService = class RecommendService {
     async getRecommendList(page = 1, size = 20) {
         try {
             const offset = (page - 1) * size;
+            const cacheKey = `recommend:list:${page}:${size}`;
+            const cachedData = await this.cacheManager.get(cacheKey);
+            if (cachedData) {
+                return cachedData;
+            }
             const query = `
         SELECT 
           e.id,
@@ -51,6 +56,9 @@ let RecommendService = class RecommendService {
           s.title as seriesTitle,
           s.cover_url as seriesCoverUrl,
           s.description as seriesDescription,
+          s.score as seriesScore,
+          s.starring as seriesStarring,
+          s.actor as seriesActor,
           (
             COALESCE(e.like_count, 0) * 3 + 
             COALESCE(e.favorite_count, 0) * 5 +
@@ -71,7 +79,7 @@ let RecommendService = class RecommendService {
                     where: { episodeId: episode.id },
                     select: ['quality', 'accessKey'],
                 });
-                const createdAt = date_util_1.DateUtil.formatDateTime(new Date(episode.createdAt));
+                const createdAt = date_util_1.DateUtil.formatDateTime(episode.createdAt);
                 return {
                     shortId: episode.shortId,
                     episodeNumber: episode.episodeNumber,
@@ -85,6 +93,9 @@ let RecommendService = class RecommendService {
                     seriesTitle: episode.seriesTitle,
                     seriesCoverUrl: episode.seriesCoverUrl || '',
                     seriesDescription: episode.seriesDescription || '',
+                    seriesScore: episode.seriesScore || '0.0',
+                    seriesStarring: episode.seriesStarring || '',
+                    seriesActor: episode.seriesActor || '',
                     playCount: episode.playCount || 0,
                     likeCount: episode.likeCount || 0,
                     dislikeCount: episode.dislikeCount || 0,
@@ -99,12 +110,14 @@ let RecommendService = class RecommendService {
                     recommendScore: parseFloat(episode.recommendScore),
                 };
             }));
-            return {
+            const result = {
                 list: enrichedList,
                 page,
                 size,
                 hasMore,
             };
+            await this.cacheManager.set(cacheKey, result, 5 * 60 * 1000);
+            return result;
         }
         catch (error) {
             console.error('获取推荐列表失败:', error);

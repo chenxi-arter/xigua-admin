@@ -12,6 +12,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const series_entity_1 = require("./entity/series.entity");
 const episode_entity_1 = require("./entity/episode.entity");
 const episode_url_entity_1 = require("./entity/episode-url.entity");
+const episode_reaction_entity_1 = require("./entity/episode-reaction.entity");
 const comment_entity_1 = require("./entity/comment.entity");
 const watch_progress_entity_1 = require("./entity/watch-progress.entity");
 const browse_history_entity_1 = require("./entity/browse-history.entity");
@@ -48,6 +49,7 @@ const history_module_1 = require("./modules/history.module");
 const channel_exists_validator_1 = require("./validators/channel-exists.validator");
 const ingest_service_1 = require("./services/ingest.service");
 const play_count_service_1 = require("./services/play-count.service");
+const episode_interaction_service_1 = require("./services/episode-interaction.service");
 let VideoModule = class VideoModule {
 };
 exports.VideoModule = VideoModule;
@@ -63,6 +65,7 @@ exports.VideoModule = VideoModule = __decorate([
                 series_entity_1.Series,
                 episode_entity_1.Episode,
                 episode_url_entity_1.EpisodeUrl,
+                episode_reaction_entity_1.EpisodeReaction,
                 comment_entity_1.Comment,
                 watch_progress_entity_1.WatchProgress,
                 category_entity_1.Category,
@@ -74,7 +77,8 @@ exports.VideoModule = VideoModule = __decorate([
                 series_genre_option_entity_1.SeriesGenreOption,
                 browse_history_entity_1.BrowseHistory
             ]),
-            video_api_module_1.VideoApiModule
+            video_api_module_1.VideoApiModule,
+            (0, common_1.forwardRef)(() => Promise.resolve().then(() => require('../user/user.module')).then(m => m.UserModule)),
         ],
         providers: [
             video_service_1.VideoService,
@@ -87,6 +91,7 @@ exports.VideoModule = VideoModule = __decorate([
             watch_progress_service_1.WatchProgressService,
             comment_service_1.CommentService,
             episode_service_1.EpisodeService,
+            episode_interaction_service_1.EpisodeInteractionService,
             category_service_1.CategoryService,
             ingest_service_1.IngestService,
             filter_service_1.FilterService,

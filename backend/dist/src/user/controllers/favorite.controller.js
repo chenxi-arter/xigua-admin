@@ -56,7 +56,7 @@ let FavoriteController = class FavoriteController {
                 message: '剧集不存在',
             };
         }
-        const removed = await this.favoriteService.removeFavorite(userId, episode.seriesId, episode.id);
+        const removed = await this.favoriteService.removeFavorite(userId, episode.seriesId);
         return {
             code: 200,
             message: removed ? '取消收藏成功' : '未找到该收藏',
@@ -64,8 +64,7 @@ let FavoriteController = class FavoriteController {
                 removed,
                 shortId,
                 seriesId: episode.seriesId,
-                episodeId: episode.id,
-                favoriteType: 'episode',
+                favoriteType: 'series',
             },
         };
     }

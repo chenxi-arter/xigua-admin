@@ -46,6 +46,9 @@ let InteractionController = class InteractionController extends base_controller_
         const type = body?.type;
         if (!type)
             return this.error('type 必填', 400);
+        const userId = req.user?.userId;
+        if (!userId)
+            return this.error('未认证', 401);
         if (type === 'play') {
             await this.episodeService.incrementPlayCount(episode.id);
             return this.success({ episodeId: episode.id, shortId, type: 'play' }, '已更新');
@@ -53,25 +56,64 @@ let InteractionController = class InteractionController extends base_controller_
         if (!['like', 'dislike', 'favorite'].includes(type)) {
             return this.error('type 必须是 play|like|dislike|favorite', 400);
         }
-        if (type === 'favorite' && req && typeof req === 'object' && 'user' in req) {
-            const user = req.user;
-            if (user && typeof user.userId === 'number') {
-                try {
-                    await this.favoriteService.addFavorite(user.userId, episode.seriesId, episode.id);
+        if (type === 'like' || type === 'dislike') {
+            const result = await this.interactionService.recordReaction(userId, episode.id, type);
+            return this.success({
+                episodeId: episode.id,
+                shortId,
+                type,
+                changed: result.changed,
+                previousType: result.previousType
+            }, result.changed ? '已更新' : '已是该状态');
+        }
+        if (type === 'favorite') {
+            try {
+                await this.favoriteService.addFavorite(userId, episode.seriesId);
+            }
+            catch (error) {
+                console.error('收藏操作失败:', error);
+                if (error && typeof error === 'object' && 'code' in error && error.code === 'ER_DUP_ENTRY') {
+                    console.log('用户已收藏该系列，跳过重复收藏');
                 }
-                catch (error) {
-                    console.error('收藏操作失败:', error);
-                    if (error && typeof error === 'object' && 'code' in error && error.code === 'ER_DUP_ENTRY') {
-                        console.log('用户已收藏该剧集，跳过重复收藏');
-                    }
-                    else {
-                        throw error;
-                    }
+                else {
+                    throw error;
                 }
             }
+            await this.interactionService.increment(episode.id, type);
+            return this.success({
+                episodeId: episode.id,
+                shortId,
+                type,
+                seriesId: episode.seriesId
+            }, '已收藏系列');
         }
-        await this.interactionService.increment(episode.id, type);
-        return this.success({ episodeId: episode.id, shortId, type }, '已更新');
+        return this.error('未知操作类型', 400);
+    }
+    async removeReaction(body, req) {
+        const shortId = body?.shortId?.trim();
+        if (!shortId)
+            throw new common_1.BadRequestException('shortId 必填');
+        const userId = req.user?.userId;
+        if (!userId)
+            return this.error('未认证', 401);
+        const episode = await this.episodeService.getEpisodeByShortId(shortId);
+        if (!episode)
+            return this.error('剧集不存在', 404);
+        const removed = await this.interactionService.removeReaction(userId, episode.id);
+        if (removed) {
+            return this.success({
+                episodeId: episode.id,
+                shortId,
+                removed: true
+            }, '已取消');
+        }
+        else {
+            return this.success({
+                episodeId: episode.id,
+                shortId,
+                removed: false
+            }, '未找到反应记录');
+        }
     }
     async comment(req, body) {
         const shortId = body?.shortId?.trim();
@@ -132,6 +174,15 @@ __decorate([
     __metadata("design:paramtypes", [EpisodeActivityDto, Object]),
     __metadata("design:returntype", Promise)
 ], InteractionController.prototype, "activity", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Post)('reaction/remove'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], InteractionController.prototype, "removeReaction", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Post)('comment'),

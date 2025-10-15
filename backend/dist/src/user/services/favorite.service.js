@@ -75,6 +75,34 @@ let FavoriteService = class FavoriteService {
         const count = await queryBuilder.getCount();
         return count > 0;
     }
+    async getUserFavoritedSeries(userId) {
+        const favorites = await this.favoriteRepo
+            .createQueryBuilder('f')
+            .select('DISTINCT f.seriesId', 'seriesId')
+            .where('f.userId = :userId', { userId })
+            .andWhere('f.episodeId IS NULL')
+            .getRawMany();
+        return new Set(favorites.map(f => f.seriesId));
+    }
+    async getUserFavoritedEpisodes(userId, episodeIds, seriesIds) {
+        if (seriesIds.length === 0) {
+            return new Set();
+        }
+        const favorites = await this.favoriteRepo
+            .createQueryBuilder('f')
+            .where('f.userId = :userId', { userId })
+            .andWhere('f.seriesId IN (:...seriesIds)', { seriesIds })
+            .andWhere('f.episodeId IS NULL')
+            .getMany();
+        const favoritedSeriesIds = new Set(favorites.map(f => f.seriesId));
+        const favoritedEpisodeIds = new Set();
+        episodeIds.forEach((episodeId, index) => {
+            if (favoritedSeriesIds.has(seriesIds[index])) {
+                favoritedEpisodeIds.add(episodeId);
+            }
+        });
+        return favoritedEpisodeIds;
+    }
     async getUserFavorites(userId, page = 1, size = 20) {
         const skip = (page - 1) * size;
         const query = `
@@ -105,7 +133,7 @@ let FavoriteService = class FavoriteService {
             .where('f.userId = :userId', { userId })
             .select('COUNT(DISTINCT f.seriesId)', 'total')
             .getRawOne();
-        const total = totalCount?.total || 0;
+        const total = parseInt(totalCount?.total || '0', 10);
         const seriesList = await this.favoriteRepo.query(query, [userId, size, skip]);
         const list = seriesList.map(series => ({
             seriesId: series.seriesId,

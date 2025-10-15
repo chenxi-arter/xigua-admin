@@ -24,7 +24,7 @@ export declare class FavoriteController {
                 isCompleted: boolean;
                 favoriteTime: string;
             }[];
-            total: any;
+            total: number;
             page: number;
             size: number;
             hasMore: boolean;
@@ -43,7 +43,6 @@ export declare class FavoriteController {
             removed: boolean;
             shortId: string;
             seriesId: number;
-            episodeId: number;
             favoriteType: string;
         };
     }>;

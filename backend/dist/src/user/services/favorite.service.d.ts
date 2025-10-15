@@ -6,6 +6,8 @@ export declare class FavoriteService {
     addFavorite(userId: number, seriesId: number, episodeId?: number): Promise<Favorite>;
     removeFavorite(userId: number, seriesId: number, episodeId?: number): Promise<boolean>;
     isFavorited(userId: number, seriesId: number, episodeId?: number): Promise<boolean>;
+    getUserFavoritedSeries(userId: number): Promise<Set<number>>;
+    getUserFavoritedEpisodes(userId: number, episodeIds: number[], seriesIds: number[]): Promise<Set<number>>;
     getUserFavorites(userId: number, page?: number, size?: number): Promise<{
         list: {
             seriesId: number;
@@ -22,7 +24,7 @@ export declare class FavoriteService {
             isCompleted: boolean;
             favoriteTime: string;
         }[];
-        total: any;
+        total: number;
         page: number;
         size: number;
         hasMore: boolean;

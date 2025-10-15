@@ -49,6 +49,7 @@ const banner_module_1 = require("./banner.module");
 const series_entity_1 = require("../entity/series.entity");
 const episode_entity_1 = require("../entity/episode.entity");
 const episode_url_entity_1 = require("../entity/episode-url.entity");
+const episode_reaction_entity_1 = require("../entity/episode-reaction.entity");
 const comment_entity_1 = require("../entity/comment.entity");
 const watch_progress_entity_1 = require("../entity/watch-progress.entity");
 const category_entity_1 = require("../entity/category.entity");
@@ -68,7 +69,7 @@ exports.VideoApiModule = VideoApiModule = __decorate([
             episode_module_1.EpisodeModule,
             banner_module_1.BannerModule,
             typeorm_1.TypeOrmModule.forFeature([
-                series_entity_1.Series, episode_entity_1.Episode, episode_url_entity_1.EpisodeUrl, comment_entity_1.Comment, watch_progress_entity_1.WatchProgress, category_entity_1.Category, short_video_entity_1.ShortVideo, banner_entity_1.Banner, filter_type_entity_1.FilterType, filter_option_entity_1.FilterOption,
+                series_entity_1.Series, episode_entity_1.Episode, episode_url_entity_1.EpisodeUrl, episode_reaction_entity_1.EpisodeReaction, comment_entity_1.Comment, watch_progress_entity_1.WatchProgress, category_entity_1.Category, short_video_entity_1.ShortVideo, banner_entity_1.Banner, filter_type_entity_1.FilterType, filter_option_entity_1.FilterOption,
                 series_genre_option_entity_1.SeriesGenreOption
             ]),
             (0, common_1.forwardRef)(() => Promise.resolve().then(() => require('../../user/user.module')).then(m => m.UserModule)),

@@ -15,6 +15,9 @@ export interface RecommendEpisodeItem {
     seriesTitle: string;
     seriesCoverUrl: string;
     seriesDescription: string;
+    seriesScore: string;
+    seriesStarring: string;
+    seriesActor: string;
     playCount: number;
     likeCount: number;
     dislikeCount: number;

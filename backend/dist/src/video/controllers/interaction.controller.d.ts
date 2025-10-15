@@ -22,6 +22,17 @@ export declare class InteractionController extends BaseController {
         shortId: string;
         type: string;
     }>>;
+    removeReaction(body: {
+        shortId: string;
+    }, req: {
+        user?: {
+            userId?: number;
+        };
+    }): Promise<import("../controllers/base.controller").ApiResponse<null> | import("../controllers/base.controller").ApiResponse<{
+        episodeId: number;
+        shortId: string;
+        removed: boolean;
+    }>>;
     comment(req: {
         user?: {
             userId?: number;

@@ -1,11 +1,20 @@
 import { Repository } from 'typeorm';
 import { Episode } from '../entity/episode.entity';
+import { EpisodeReaction } from '../entity/episode-reaction.entity';
 import { CommentService } from './comment.service';
 export type EpisodeReactionType = 'like' | 'dislike' | 'favorite';
 export declare class EpisodeInteractionService {
     private readonly episodeRepo;
+    private readonly reactionRepo;
     private readonly commentService;
-    constructor(episodeRepo: Repository<Episode>, commentService: CommentService);
+    constructor(episodeRepo: Repository<Episode>, reactionRepo: Repository<EpisodeReaction>, commentService: CommentService);
+    recordReaction(userId: number, episodeId: number, type: 'like' | 'dislike'): Promise<{
+        changed: boolean;
+        previousType?: string;
+    }>;
+    removeReaction(userId: number, episodeId: number): Promise<boolean>;
+    getUserReaction(userId: number, episodeId: number): Promise<'like' | 'dislike' | null>;
+    getUserReactions(userId: number, episodeIds: number[]): Promise<Map<number, 'like' | 'dislike'>>;
     increment(episodeId: number, type: EpisodeReactionType): Promise<void>;
     addReply(userId: number, episodeShortId: string, parentId: number, content: string): Promise<{
         id: number;
