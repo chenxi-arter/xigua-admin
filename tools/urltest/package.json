@@ -1,0 +1,17 @@
+{
+  "name": "video-url-tester",
+  "version": "1.0.0",
+  "description": "快速视频链接测试脚本",
+  "main": "test-urls-quick.js",
+  "scripts": {
+    "start": "node test-urls-quick.js",
+    "test": "node test-urls-quick.js 50"
+  },
+  "dependencies": {
+    "mysql2": "^3.6.0",
+    "axios": "^1.6.0"
+  },
+  "keywords": ["video", "url", "test", "mysql"],
+  "author": "",
+  "license": "MIT"
+}
