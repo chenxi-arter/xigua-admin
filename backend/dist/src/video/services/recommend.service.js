@@ -19,18 +19,21 @@ const typeorm_2 = require("typeorm");
 const cache_manager_1 = require("@nestjs/cache-manager");
 const episode_entity_1 = require("../entity/episode.entity");
 const episode_url_entity_1 = require("../entity/episode-url.entity");
+const comment_entity_1 = require("../entity/comment.entity");
 const date_util_1 = require("../../common/utils/date.util");
 const episode_interaction_service_1 = require("./episode-interaction.service");
 const favorite_service_1 = require("../../user/services/favorite.service");
 let RecommendService = class RecommendService {
     episodeRepo;
     episodeUrlRepo;
+    commentRepo;
     cacheManager;
     episodeInteractionService;
     favoriteService;
-    constructor(episodeRepo, episodeUrlRepo, cacheManager, episodeInteractionService, favoriteService) {
+    constructor(episodeRepo, episodeUrlRepo, commentRepo, cacheManager, episodeInteractionService, favoriteService) {
         this.episodeRepo = episodeRepo;
         this.episodeUrlRepo = episodeUrlRepo;
+        this.commentRepo = commentRepo;
         this.cacheManager = cacheManager;
         this.episodeInteractionService = episodeInteractionService;
         this.favoriteService = favoriteService;
@@ -99,6 +102,20 @@ let RecommendService = class RecommendService {
                     };
                 });
             }
+            const commentCountMap = {};
+            if (list.length > 0) {
+                const shortIds = list.map(ep => ep.shortId);
+                const commentCounts = await this.commentRepo
+                    .createQueryBuilder('comment')
+                    .select('comment.episodeShortId', 'episodeShortId')
+                    .addSelect('COUNT(*)', 'count')
+                    .where('comment.episodeShortId IN (:...shortIds)', { shortIds })
+                    .groupBy('comment.episodeShortId')
+                    .getRawMany();
+                commentCounts.forEach(item => {
+                    commentCountMap[item.episodeShortId] = parseInt(item.count, 10);
+                });
+            }
             const enrichedList = await Promise.all(list.map(async (episode) => {
                 const urls = await this.episodeUrlRepo.find({
                     where: { episodeId: episode.id },
@@ -126,7 +143,7 @@ let RecommendService = class RecommendService {
                     likeCount: episode.likeCount || 0,
                     dislikeCount: episode.dislikeCount || 0,
                     favoriteCount: episode.favoriteCount || 0,
-                    commentCount: 0,
+                    commentCount: commentCountMap[episode.shortId] || 0,
                     episodeAccessKey: episode.episodeAccessKey,
                     urls: urls.map(url => ({
                         quality: url.quality,
@@ -165,9 +182,11 @@ exports.RecommendService = RecommendService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),
     __param(1, (0, typeorm_1.InjectRepository)(episode_url_entity_1.EpisodeUrl)),
-    __param(2, (0, common_1.Inject)(cache_manager_1.CACHE_MANAGER)),
-    __param(4, (0, common_1.Inject)((0, common_1.forwardRef)(() => favorite_service_1.FavoriteService))),
+    __param(2, (0, typeorm_1.InjectRepository)(comment_entity_1.Comment)),
+    __param(3, (0, common_1.Inject)(cache_manager_1.CACHE_MANAGER)),
+    __param(5, (0, common_1.Inject)((0, common_1.forwardRef)(() => favorite_service_1.FavoriteService))),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository, Object, episode_interaction_service_1.EpisodeInteractionService,
         favorite_service_1.FavoriteService])
 ], RecommendService);
