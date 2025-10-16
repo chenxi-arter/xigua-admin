@@ -4,7 +4,11 @@ import { BaseController } from './base.controller';
 export declare class RecommendController extends BaseController {
     private readonly recommendService;
     constructor(recommendService: RecommendService);
-    getRecommendList(dto: RecommendQueryDto): Promise<void | import("./base.controller").ApiResponse<{
+    getRecommendList(dto: RecommendQueryDto, req: {
+        user?: {
+            userId?: number;
+        };
+    }): Promise<void | import("./base.controller").ApiResponse<{
         list: import("../dto/recommend.dto").RecommendEpisodeItem[];
         page: number;
         size: number;

@@ -17,16 +17,18 @@ const common_1 = require("@nestjs/common");
 const recommend_service_1 = require("../services/recommend.service");
 const recommend_dto_1 = require("../dto/recommend.dto");
 const base_controller_1 = require("./base.controller");
+const optional_jwt_auth_guard_1 = require("../../auth/guards/optional-jwt-auth.guard");
 let RecommendController = class RecommendController extends base_controller_1.BaseController {
     recommendService;
     constructor(recommendService) {
         super();
         this.recommendService = recommendService;
     }
-    async getRecommendList(dto) {
+    async getRecommendList(dto, req) {
         try {
             const { page, size } = this.normalizePagination(dto.page, dto.size, 20);
-            const result = await this.recommendService.getRecommendList(page, size);
+            const userId = req.user?.userId;
+            const result = await this.recommendService.getRecommendList(page, size, userId);
             return this.success(result, '获取推荐成功', 200);
         }
         catch (error) {
@@ -37,9 +39,11 @@ let RecommendController = class RecommendController extends base_controller_1.Ba
 exports.RecommendController = RecommendController;
 __decorate([
     (0, common_1.Get)('recommend'),
+    (0, common_1.UseGuards)(optional_jwt_auth_guard_1.OptionalJwtAuthGuard),
     __param(0, (0, common_1.Query)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [recommend_dto_1.RecommendQueryDto]),
+    __metadata("design:paramtypes", [recommend_dto_1.RecommendQueryDto, Object]),
     __metadata("design:returntype", Promise)
 ], RecommendController.prototype, "getRecommendList", null);
 exports.RecommendController = RecommendController = __decorate([

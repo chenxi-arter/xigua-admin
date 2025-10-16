@@ -18,6 +18,7 @@ export interface RecommendEpisodeItem {
     seriesScore: string;
     seriesStarring: string;
     seriesActor: string;
+    updateStatus: string;
     playCount: number;
     likeCount: number;
     dislikeCount: number;
@@ -37,6 +38,11 @@ export interface RecommendEpisodeItem {
         createdAt: string;
         likeCount: number;
     }[];
+    userInteraction?: {
+        liked: boolean;
+        disliked: boolean;
+        favorited: boolean;
+    };
     recommendScore?: number;
 }
 export interface RecommendResponse {

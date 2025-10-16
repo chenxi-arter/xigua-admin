@@ -20,22 +20,30 @@ const cache_manager_1 = require("@nestjs/cache-manager");
 const episode_entity_1 = require("../entity/episode.entity");
 const episode_url_entity_1 = require("../entity/episode-url.entity");
 const date_util_1 = require("../../common/utils/date.util");
+const episode_interaction_service_1 = require("./episode-interaction.service");
+const favorite_service_1 = require("../../user/services/favorite.service");
 let RecommendService = class RecommendService {
     episodeRepo;
     episodeUrlRepo;
     cacheManager;
-    constructor(episodeRepo, episodeUrlRepo, cacheManager) {
+    episodeInteractionService;
+    favoriteService;
+    constructor(episodeRepo, episodeUrlRepo, cacheManager, episodeInteractionService, favoriteService) {
         this.episodeRepo = episodeRepo;
         this.episodeUrlRepo = episodeUrlRepo;
         this.cacheManager = cacheManager;
+        this.episodeInteractionService = episodeInteractionService;
+        this.favoriteService = favoriteService;
     }
-    async getRecommendList(page = 1, size = 20) {
+    async getRecommendList(page = 1, size = 20, userId) {
         try {
             const offset = (page - 1) * size;
             const cacheKey = `recommend:list:${page}:${size}`;
-            const cachedData = await this.cacheManager.get(cacheKey);
-            if (cachedData) {
-                return cachedData;
+            if (!userId) {
+                const cachedData = await this.cacheManager.get(cacheKey);
+                if (cachedData) {
+                    return cachedData;
+                }
             }
             const query = `
         SELECT 
@@ -52,6 +60,7 @@ let RecommendService = class RecommendService {
           e.dislike_count as dislikeCount,
           e.favorite_count as favoriteCount,
           e.access_key as episodeAccessKey,
+          e.series_id as seriesId,
           s.short_id as seriesShortId,
           s.title as seriesTitle,
           s.cover_url as seriesCoverUrl,
@@ -59,6 +68,7 @@ let RecommendService = class RecommendService {
           s.score as seriesScore,
           s.starring as seriesStarring,
           s.actor as seriesActor,
+          s.up_status as seriesUpStatus,
           (
             COALESCE(e.like_count, 0) * 3 + 
             COALESCE(e.favorite_count, 0) * 5 +
@@ -74,13 +84,28 @@ let RecommendService = class RecommendService {
             const episodes = await this.episodeRepo.query(query, [size + 1, offset]);
             const hasMore = episodes.length > size;
             const list = hasMore ? episodes.slice(0, size) : episodes;
+            let userInteractions = {};
+            if (userId && list.length > 0) {
+                const episodeIds = list.map(ep => ep.id);
+                const seriesIds = Array.from(new Set(list.map(ep => ep.seriesId)));
+                const episodeReactionsMap = await this.episodeInteractionService.getUserReactions(userId, episodeIds);
+                const favoritedEpisodesSet = await this.favoriteService.getUserFavoritedEpisodes(userId, episodeIds, seriesIds);
+                list.forEach(ep => {
+                    const userReaction = episodeReactionsMap.get(ep.id) || null;
+                    userInteractions[ep.id] = {
+                        liked: userReaction === 'like',
+                        disliked: userReaction === 'dislike',
+                        favorited: favoritedEpisodesSet.has(ep.id),
+                    };
+                });
+            }
             const enrichedList = await Promise.all(list.map(async (episode) => {
                 const urls = await this.episodeUrlRepo.find({
                     where: { episodeId: episode.id },
                     select: ['quality', 'accessKey'],
                 });
                 const createdAt = date_util_1.DateUtil.formatDateTime(episode.createdAt);
-                return {
+                const baseEpisode = {
                     shortId: episode.shortId,
                     episodeNumber: episode.episodeNumber,
                     episodeTitle: String(episode.episodeNumber).padStart(2, '0'),
@@ -96,6 +121,7 @@ let RecommendService = class RecommendService {
                     seriesScore: episode.seriesScore || '0.0',
                     seriesStarring: episode.seriesStarring || '',
                     seriesActor: episode.seriesActor || '',
+                    updateStatus: episode.seriesUpStatus || '',
                     playCount: episode.playCount || 0,
                     likeCount: episode.likeCount || 0,
                     dislikeCount: episode.dislikeCount || 0,
@@ -109,6 +135,13 @@ let RecommendService = class RecommendService {
                     topComments: [],
                     recommendScore: parseFloat(episode.recommendScore),
                 };
+                if (userId && episode.id in userInteractions) {
+                    return {
+                        ...baseEpisode,
+                        userInteraction: userInteractions[episode.id],
+                    };
+                }
+                return baseEpisode;
             }));
             const result = {
                 list: enrichedList,
@@ -116,7 +149,9 @@ let RecommendService = class RecommendService {
                 size,
                 hasMore,
             };
-            await this.cacheManager.set(cacheKey, result, 5 * 60 * 1000);
+            if (!userId) {
+                await this.cacheManager.set(cacheKey, result, 5 * 60 * 1000);
+            }
             return result;
         }
         catch (error) {
@@ -131,7 +166,9 @@ exports.RecommendService = RecommendService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),
     __param(1, (0, typeorm_1.InjectRepository)(episode_url_entity_1.EpisodeUrl)),
     __param(2, (0, common_1.Inject)(cache_manager_1.CACHE_MANAGER)),
+    __param(4, (0, common_1.Inject)((0, common_1.forwardRef)(() => favorite_service_1.FavoriteService))),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        typeorm_2.Repository, Object])
+        typeorm_2.Repository, Object, episode_interaction_service_1.EpisodeInteractionService,
+        favorite_service_1.FavoriteService])
 ], RecommendService);
 //# sourceMappingURL=recommend.service.js.map
