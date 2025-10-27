@@ -25,6 +25,7 @@ const ingest_controller_1 = require("./controllers/ingest.controller");
 const test_ingest_controller_1 = require("./controllers/test-ingest.controller");
 const admin_series_controller_1 = require("./controllers/admin-series.controller");
 const admin_dashboard_controller_1 = require("./controllers/admin-dashboard.controller");
+const series_validation_controller_1 = require("./controllers/series-validation.controller");
 const video_module_1 = require("../video/video.module");
 const core_module_1 = require("../core/core.module");
 let AdminModule = class AdminModule {
@@ -55,6 +56,7 @@ exports.AdminModule = AdminModule = __decorate([
             controllers_1.AdminEpisodesController,
             admin_series_controller_1.AdminSeriesController,
             admin_dashboard_controller_1.AdminDashboardController,
+            series_validation_controller_1.SeriesValidationController,
             ingest_controller_1.IngestController,
             test_ingest_controller_1.TestIngestController,
         ],

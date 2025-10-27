@@ -72,10 +72,11 @@ let RecommendService = class RecommendService {
           s.starring as seriesStarring,
           s.actor as seriesActor,
           s.up_status as seriesUpStatus,
+          @current_time := NOW(),
           (
-            COALESCE(e.like_count, 0) * 3 + 
-            COALESCE(e.favorite_count, 0) * 5 +
-            FLOOR(RAND() * 100)
+            (e.like_count * 3 + e.favorite_count * 5) * (0.5 + RAND()) +
+            FLOOR(RAND() * 500) +
+            GREATEST(0, 300 - DATEDIFF(@current_time, e.created_at) * 10)
           ) as recommendScore
         FROM episodes e
         INNER JOIN series s ON e.series_id = s.id
@@ -167,7 +168,7 @@ let RecommendService = class RecommendService {
                 hasMore,
             };
             if (!userId) {
-                await this.cacheManager.set(cacheKey, result, 5 * 60 * 1000);
+                await this.cacheManager.set(cacheKey, result, 2 * 60 * 1000);
             }
             return result;
         }

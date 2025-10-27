@@ -97,7 +97,11 @@ let AdminEpisodesController = class AdminEpisodesController {
             relations: ['series'],
             where: Object.keys(whereClause).length > 0 ? whereClause : undefined,
         });
-        return { total, items, page: Number(page) || 1, size: take };
+        const mappedItems = items.map(item => ({
+            ...item,
+            seriesTitle: item.series?.title || '',
+        }));
+        return { total, items: mappedItems, page: Number(page) || 1, size: take };
     }
     async get(id) {
         return this.episodeRepo.findOne({ where: { id: Number(id) }, relations: ['series', 'urls'] });

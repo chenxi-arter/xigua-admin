@@ -8,7 +8,28 @@ export declare class AdminEpisodesController {
     private normalize;
     list(page?: number, size?: number, seriesId?: string, minDuration?: string, maxDuration?: string): Promise<{
         total: number;
-        items: Episode[];
+        items: {
+            seriesTitle: string;
+            id: number;
+            shortId: string;
+            accessKey: string;
+            seriesId: number;
+            episodeNumber: number;
+            title: string;
+            duration: number;
+            status: string;
+            isVertical: boolean;
+            series: import("../../video/entity/series.entity").Series;
+            urls: EpisodeUrl[];
+            watchProgresses: import("../../video/entity/watch-progress.entity").WatchProgress[];
+            playCount: number;
+            likeCount: number;
+            dislikeCount: number;
+            favoriteCount: number;
+            createdAt: Date;
+            updatedAt: Date;
+            hasSequel: boolean;
+        }[];
         page: number;
         size: number;
     }>;
