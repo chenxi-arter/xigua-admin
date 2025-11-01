@@ -82,6 +82,8 @@ let RecommendService = class RecommendService {
         INNER JOIN series s ON e.series_id = s.id
         WHERE e.status = 'published'
           AND s.is_active = 1
+          AND e.episode_number = 1
+          AND e.is_vertical = 1
         ORDER BY recommendScore DESC, RAND()
         LIMIT ? OFFSET ?
       `;
