@@ -83,7 +83,7 @@ let RecommendService = class RecommendService {
         WHERE e.status = 'published'
           AND s.is_active = 1
           AND e.episode_number = 1
-          AND e.is_vertical = 1
+          AND s.category_id = 1
         ORDER BY recommendScore DESC, RAND()
         LIMIT ? OFFSET ?
       `;

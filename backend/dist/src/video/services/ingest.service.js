@@ -215,6 +215,9 @@ let IngestService = class IngestService {
         for (const ep of payload.episodes || []) {
             let episode = await this.episodeRepo.findOne({ where: { seriesId: series.id, episodeNumber: ep.episodeNumber } });
             if (!episode) {
+                const initialLikeCount = this.generateInitialLikeCount();
+                const initialFavoriteCount = this.generateInitialFavoriteCount(initialLikeCount);
+                const initialPlayCount = this.generateInitialPlayCount(initialLikeCount);
                 episode = this.episodeRepo.create({
                     seriesId: series.id,
                     episodeNumber: ep.episodeNumber,
@@ -222,6 +225,10 @@ let IngestService = class IngestService {
                     duration: ep.duration ?? 0,
                     status: ep.status ?? 'published',
                     isVertical: ep.isVertical ?? false,
+                    likeCount: initialLikeCount,
+                    favoriteCount: initialFavoriteCount,
+                    playCount: initialPlayCount,
+                    dislikeCount: Math.floor(Math.random() * 20),
                 });
             }
             else {
@@ -342,6 +349,9 @@ let IngestService = class IngestService {
                 seenEpisodeNumbers.add(ep.episodeNumber);
                 let episode = await this.episodeRepo.findOne({ where: { seriesId: series.id, episodeNumber: ep.episodeNumber } });
                 if (!episode) {
+                    const initialLikeCount = this.generateInitialLikeCount();
+                    const initialFavoriteCount = this.generateInitialFavoriteCount(initialLikeCount);
+                    const initialPlayCount = this.generateInitialPlayCount(initialLikeCount);
                     episode = this.episodeRepo.create({
                         seriesId: series.id,
                         episodeNumber: ep.episodeNumber,
@@ -349,6 +359,10 @@ let IngestService = class IngestService {
                         duration: ep.duration ?? 0,
                         status: ep.status ?? 'published',
                         isVertical: ep.isVertical ?? false,
+                        likeCount: initialLikeCount,
+                        favoriteCount: initialFavoriteCount,
+                        playCount: initialPlayCount,
+                        dislikeCount: Math.floor(Math.random() * 20),
                     });
                 }
                 else {
@@ -436,6 +450,27 @@ let IngestService = class IngestService {
             totalEpisodes: refreshed.totalEpisodes,
             isCompleted: !!refreshed.isCompleted,
         };
+    }
+    generateInitialLikeCount() {
+        const rand = Math.random();
+        if (rand > 0.8) {
+            return Math.floor(800 + Math.random() * 700);
+        }
+        else if (rand > 0.5) {
+            return Math.floor(200 + Math.random() * 600);
+        }
+        else {
+            return Math.floor(20 + Math.random() * 180);
+        }
+    }
+    generateInitialFavoriteCount(likeCount) {
+        const percentage = 0.08 + Math.random() * 0.07;
+        const favoriteCount = Math.floor(likeCount * percentage);
+        return Math.min(favoriteCount, 200);
+    }
+    generateInitialPlayCount(likeCount) {
+        const multiplier = 3 + Math.random() * 5;
+        return Math.floor(likeCount * multiplier);
     }
 };
 exports.IngestService = IngestService;

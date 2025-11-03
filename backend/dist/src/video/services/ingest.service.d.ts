@@ -41,4 +41,7 @@ export declare class IngestService {
         totalEpisodes: number;
         isCompleted: boolean;
     }>;
+    private generateInitialLikeCount;
+    private generateInitialFavoriteCount;
+    private generateInitialPlayCount;
 }
