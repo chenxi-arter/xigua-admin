@@ -2,35 +2,32 @@ import { Repository } from 'typeorm';
 import { Cache } from 'cache-manager';
 import { Comment } from '../entity/comment.entity';
 import { Episode } from '../entity/episode.entity';
+import { FakeCommentService } from './fake-comment.service';
 export declare class CommentService {
     private readonly commentRepo;
     private readonly episodeRepo;
     private readonly cacheManager;
-    constructor(commentRepo: Repository<Comment>, episodeRepo: Repository<Episode>, cacheManager: Cache);
+    private readonly fakeCommentService;
+    constructor(commentRepo: Repository<Comment>, episodeRepo: Repository<Episode>, cacheManager: Cache, fakeCommentService: FakeCommentService);
     addComment(userId: number, episodeShortId: string, content: string, appearSecond?: number): Promise<Comment>;
     getCommentsByEpisodeShortId(episodeShortId: string, page?: number, size?: number, replyPreviewCount?: number): Promise<{
-        comments: {
+        comments: (Record<string, any> | {
             id: number;
             content: string;
             appearSecond: number;
             replyCount: number;
             createdAt: Date;
-            username: string | null;
-            nickname: string | null;
-            photoUrl: string | null;
-            recentReplies: {
-                id: number;
-                content: string;
-                floorNumber: number;
-                createdAt: Date;
-                username: string | null;
-                nickname: string | null;
-            }[];
-        }[];
+            username: string;
+            nickname: string;
+            photoUrl: null;
+            recentReplies: never[];
+            isFake: boolean;
+        })[];
         total: number;
         page: number;
         size: number;
         totalPages: number;
+        fakeCount: number;
     }>;
     addReply(userId: number, episodeShortId: string, parentId: number, content: string): Promise<{
         id: number;
@@ -94,4 +91,6 @@ export declare class CommentService {
         ok: boolean;
     }>;
     private clearCommentCache;
+    getCommentCountsByShortIds(episodeShortIds: string[]): Promise<Map<string, number>>;
+    getCommentCountByShortId(episodeShortId: string): Promise<number>;
 }

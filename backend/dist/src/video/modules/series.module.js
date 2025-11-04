@@ -23,6 +23,7 @@ const browse_history_service_1 = require("../services/browse-history.service");
 const watch_progress_service_1 = require("../services/watch-progress.service");
 const banner_service_1 = require("../services/banner.service");
 const comment_service_1 = require("../services/comment.service");
+const fake_comment_service_1 = require("../services/fake-comment.service");
 const catalog_module_1 = require("./catalog.module");
 let SeriesModule = class SeriesModule {
 };
@@ -39,6 +40,7 @@ exports.SeriesModule = SeriesModule = __decorate([
             browse_history_service_1.BrowseHistoryService,
             watch_progress_service_1.WatchProgressService,
             banner_service_1.BannerService,
+            fake_comment_service_1.FakeCommentService,
             comment_service_1.CommentService,
         ],
         exports: [series_service_1.SeriesService, episode_service_1.EpisodeService, comment_service_1.CommentService, typeorm_1.TypeOrmModule],

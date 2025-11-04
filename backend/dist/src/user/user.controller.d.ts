@@ -4,6 +4,7 @@ import { AuthService } from '../auth/auth.service';
 import { BindEmailDto } from './dto/bind-email.dto';
 import { UpdateNicknameDto, UpdateNicknameResponseDto } from './dto/update-nickname.dto';
 import { UpdatePasswordDto, UpdatePasswordResponseDto } from './dto/update-password.dto';
+import { UpdateAvatarDto, UpdateAvatarResponseDto } from './dto/update-avatar.dto';
 interface AuthenticatedRequest extends Request {
     user: {
         userId: number;
@@ -55,5 +56,6 @@ export declare class UserController {
     }>;
     updateNickname(dto: UpdateNicknameDto, req: AuthenticatedRequest): Promise<UpdateNicknameResponseDto>;
     updatePassword(dto: UpdatePasswordDto, req: AuthenticatedRequest): Promise<UpdatePasswordResponseDto>;
+    updateAvatar(dto: UpdateAvatarDto, req: AuthenticatedRequest): Promise<UpdateAvatarResponseDto>;
 }
 export {};

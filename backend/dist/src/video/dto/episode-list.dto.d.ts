@@ -23,6 +23,7 @@ export interface EpisodeBasicInfo {
     likeCount?: number;
     dislikeCount?: number;
     favoriteCount?: number;
+    commentCount?: number;
     watchProgress?: number;
     watchPercentage?: number;
     isWatched?: boolean;

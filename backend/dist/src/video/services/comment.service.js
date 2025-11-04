@@ -19,14 +19,17 @@ const typeorm_2 = require("typeorm");
 const cache_manager_1 = require("@nestjs/cache-manager");
 const comment_entity_1 = require("../entity/comment.entity");
 const episode_entity_1 = require("../entity/episode.entity");
+const fake_comment_service_1 = require("./fake-comment.service");
 let CommentService = class CommentService {
     commentRepo;
     episodeRepo;
     cacheManager;
-    constructor(commentRepo, episodeRepo, cacheManager) {
+    fakeCommentService;
+    constructor(commentRepo, episodeRepo, cacheManager, fakeCommentService) {
         this.commentRepo = commentRepo;
         this.episodeRepo = episodeRepo;
         this.cacheManager = cacheManager;
+        this.fakeCommentService = fakeCommentService;
     }
     async addComment(userId, episodeShortId, content, appearSecond) {
         const comment = this.commentRepo.create({
@@ -42,19 +45,37 @@ let CommentService = class CommentService {
     async getCommentsByEpisodeShortId(episodeShortId, page = 1, size = 20, replyPreviewCount = 2) {
         const skip = (page - 1) * size;
         const [comments, total] = await this.commentRepo.findAndCount({
-            where: { episodeShortId, rootId: null },
+            where: { episodeShortId, rootId: (0, typeorm_2.IsNull)() },
             order: { createdAt: 'DESC' },
             skip,
             take: size,
             relations: ['user'],
         });
-        const formattedComments = await Promise.all(comments.map(async (comment) => {
-            const recentReplies = await this.commentRepo.find({
-                where: { rootId: comment.id },
-                order: { createdAt: 'DESC' },
-                take: replyPreviewCount,
-                relations: ['user'],
-            });
+        if (comments.length === 0) {
+            return this.fakeCommentService.mixComments(episodeShortId, [], 0, page, size);
+        }
+        const commentIds = comments.map(c => c.id);
+        const allReplies = await this.commentRepo
+            .createQueryBuilder('comment')
+            .leftJoinAndSelect('comment.user', 'user')
+            .where('comment.rootId IN (:...rootIds)', { rootIds: commentIds })
+            .orderBy('comment.rootId', 'ASC')
+            .addOrderBy('comment.createdAt', 'DESC')
+            .getMany();
+        const repliesMap = new Map();
+        allReplies.forEach(reply => {
+            if (reply.rootId) {
+                if (!repliesMap.has(reply.rootId)) {
+                    repliesMap.set(reply.rootId, []);
+                }
+                const replies = repliesMap.get(reply.rootId);
+                if (replies.length < replyPreviewCount) {
+                    replies.push(reply);
+                }
+            }
+        });
+        const formattedComments = comments.map(comment => {
+            const recentReplies = repliesMap.get(comment.id) || [];
             return {
                 id: comment.id,
                 content: comment.content,
@@ -73,14 +94,8 @@ let CommentService = class CommentService {
                     nickname: reply.user?.nickname || null,
                 })),
             };
-        }));
-        return {
-            comments: formattedComments,
-            total,
-            page,
-            size,
-            totalPages: Math.ceil(total / size),
-        };
+        });
+        return this.fakeCommentService.mixComments(episodeShortId, formattedComments, total, page, size);
     }
     async addReply(userId, episodeShortId, parentId, content) {
         const parentComment = await this.commentRepo.findOne({
@@ -91,12 +106,12 @@ let CommentService = class CommentService {
             throw new Error('父评论不存在');
         }
         const rootId = parentComment.rootId || parentComment.id;
-        const maxFloor = await this.commentRepo
+        const maxFloorResult = await this.commentRepo
             .createQueryBuilder('comment')
             .select('MAX(comment.floorNumber)', 'max')
             .where('comment.rootId = :rootId OR comment.id = :rootId', { rootId })
             .getRawOne();
-        const floorNumber = (maxFloor?.max || 0) + 1;
+        const floorNumber = (parseInt(maxFloorResult?.max || '0', 10)) + 1;
         const reply = this.commentRepo.create({
             userId,
             episodeShortId,
@@ -177,7 +192,7 @@ let CommentService = class CommentService {
         return this.commentRepo.find({
             where: {
                 episodeShortId,
-                appearSecond: { $gt: 0 },
+                appearSecond: (0, typeorm_2.MoreThan)(0),
             },
             order: { appearSecond: 'ASC' },
             relations: ['user'],
@@ -221,7 +236,7 @@ let CommentService = class CommentService {
         const danmuCount = await this.commentRepo.count({
             where: {
                 episodeShortId,
-                appearSecond: { $gt: 0 },
+                appearSecond: (0, typeorm_2.MoreThan)(0),
             },
         });
         const regularComments = totalComments - danmuCount;
@@ -238,6 +253,7 @@ let CommentService = class CommentService {
         if (!comment) {
             throw new Error('评论不存在');
         }
+        console.log(`Comment ${commentId} reported by user ${reporterId} for: ${reason}`);
         return { ok: true, message: '举报已提交' };
     }
     async likeComment(commentId, userId) {
@@ -247,6 +263,7 @@ let CommentService = class CommentService {
         if (!comment) {
             throw new Error('评论不存在');
         }
+        console.log(`User ${userId} liked comment ${commentId}`);
         await this.clearCommentCache(comment.episodeShortId);
         return { ok: true };
     }
@@ -260,6 +277,34 @@ let CommentService = class CommentService {
             console.error('清除评论缓存失败:', error);
         }
     }
+    async getCommentCountsByShortIds(episodeShortIds) {
+        const countMap = new Map();
+        if (episodeShortIds.length === 0) {
+            return countMap;
+        }
+        const realCommentCounts = await this.commentRepo
+            .createQueryBuilder('comment')
+            .select('comment.episodeShortId', 'episodeShortId')
+            .addSelect('COUNT(*)', 'count')
+            .where('comment.episodeShortId IN (:...shortIds)', { shortIds: episodeShortIds })
+            .andWhere('comment.rootId IS NULL')
+            .groupBy('comment.episodeShortId')
+            .getRawMany();
+        realCommentCounts.forEach((item) => {
+            countMap.set(item.episodeShortId, parseInt(item.count, 10));
+        });
+        const fakeCountMap = this.fakeCommentService.getFakeCommentCounts(episodeShortIds);
+        episodeShortIds.forEach(shortId => {
+            const realCount = countMap.get(shortId) || 0;
+            const fakeCount = fakeCountMap.get(shortId) || 0;
+            countMap.set(shortId, realCount + fakeCount);
+        });
+        return countMap;
+    }
+    async getCommentCountByShortId(episodeShortId) {
+        const countMap = await this.getCommentCountsByShortIds([episodeShortId]);
+        return countMap.get(episodeShortId) || 0;
+    }
 };
 exports.CommentService = CommentService;
 exports.CommentService = CommentService = __decorate([
@@ -268,6 +313,6 @@ exports.CommentService = CommentService = __decorate([
     __param(1, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),
     __param(2, (0, common_1.Inject)(cache_manager_1.CACHE_MANAGER)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        typeorm_2.Repository, Object])
+        typeorm_2.Repository, Object, fake_comment_service_1.FakeCommentService])
 ], CommentService);
 //# sourceMappingURL=comment.service.js.map

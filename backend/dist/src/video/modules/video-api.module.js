@@ -25,6 +25,7 @@ const compat_browse_history_controller_1 = require("../controllers/compat-browse
 const recommend_controller_1 = require("../controllers/recommend.controller");
 const video_service_1 = require("../video.service");
 const comment_service_1 = require("../services/comment.service");
+const fake_comment_service_1 = require("../services/fake-comment.service");
 const playback_service_1 = require("../services/playback.service");
 const content_service_1 = require("../services/content.service");
 const home_service_1 = require("../services/home.service");
@@ -106,6 +107,7 @@ exports.VideoApiModule = VideoApiModule = __decorate([
             banner_service_1.BannerService,
             category_service_1.CategoryService,
             ingest_service_1.IngestService,
+            fake_comment_service_1.FakeCommentService,
             comment_service_1.CommentService,
             recommend_service_1.RecommendService,
             app_logger_service_1.AppLoggerService,

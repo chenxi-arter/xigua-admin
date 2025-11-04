@@ -25,6 +25,7 @@ const category_entity_1 = require("../entity/category.entity");
 const watch_progress_service_1 = require("./watch-progress.service");
 const episode_interaction_service_1 = require("./episode-interaction.service");
 const favorite_service_1 = require("../../user/services/favorite.service");
+const comment_service_1 = require("./comment.service");
 const cache_keys_util_1 = require("../utils/cache-keys.util");
 let ContentService = class ContentService {
     seriesRepo;
@@ -34,8 +35,9 @@ let ContentService = class ContentService {
     watchProgressService;
     episodeInteractionService;
     favoriteService;
+    commentService;
     cacheManager;
-    constructor(seriesRepo, episodeRepo, episodeUrlRepo, categoryRepo, watchProgressService, episodeInteractionService, favoriteService, cacheManager) {
+    constructor(seriesRepo, episodeRepo, episodeUrlRepo, categoryRepo, watchProgressService, episodeInteractionService, favoriteService, commentService, cacheManager) {
         this.seriesRepo = seriesRepo;
         this.episodeRepo = episodeRepo;
         this.episodeUrlRepo = episodeUrlRepo;
@@ -43,6 +45,7 @@ let ContentService = class ContentService {
         this.watchProgressService = watchProgressService;
         this.episodeInteractionService = episodeInteractionService;
         this.favoriteService = favoriteService;
+        this.commentService = commentService;
         this.cacheManager = cacheManager;
     }
     async getEpisodeList(seriesIdentifier, isShortId = false, page = 1, size = 20, userId) {
@@ -156,7 +159,7 @@ let ContentService = class ContentService {
                     }
                 });
             }
-            let userInteractions = {};
+            const userInteractions = {};
             if (userId && episodes.length > 0) {
                 const episodeReactionsMap = await this.episodeInteractionService.getUserReactions(userId, episodes.map(ep => ep.id));
                 const favoritedEpisodesSet = await this.favoriteService.getUserFavoritedEpisodes(userId, episodes.map(ep => ep.id), episodes.map(ep => ep.seriesId));
@@ -169,6 +172,8 @@ let ContentService = class ContentService {
                     };
                 });
             }
+            const episodeShortIds = episodes.map(ep => ep.shortId);
+            const commentCountMap = await this.commentService.getCommentCountsByShortIds(episodeShortIds);
             const episodeList = episodes.map((ep) => {
                 const progress = episodeProgressMap[ep.id] || {
                     watchProgress: 0,
@@ -194,6 +199,7 @@ let ContentService = class ContentService {
                     likeCount: ep.likeCount || 0,
                     dislikeCount: ep.dislikeCount || 0,
                     favoriteCount: ep.favoriteCount || 0,
+                    commentCount: commentCountMap.get(ep.shortId) || 0,
                     watchProgress: progress.watchProgress,
                     watchPercentage: progress.watchPercentage,
                     isWatched: progress.isWatched,
@@ -441,13 +447,14 @@ exports.ContentService = ContentService = __decorate([
     __param(2, (0, typeorm_1.InjectRepository)(episode_url_entity_1.EpisodeUrl)),
     __param(3, (0, typeorm_1.InjectRepository)(category_entity_1.Category)),
     __param(6, (0, common_1.Inject)((0, common_1.forwardRef)(() => favorite_service_1.FavoriteService))),
-    __param(7, (0, common_1.Inject)(cache_manager_1.CACHE_MANAGER)),
+    __param(8, (0, common_1.Inject)(cache_manager_1.CACHE_MANAGER)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         watch_progress_service_1.WatchProgressService,
         episode_interaction_service_1.EpisodeInteractionService,
-        favorite_service_1.FavoriteService, Object])
+        favorite_service_1.FavoriteService,
+        comment_service_1.CommentService, Object])
 ], ContentService);
 //# sourceMappingURL=content.service.js.map

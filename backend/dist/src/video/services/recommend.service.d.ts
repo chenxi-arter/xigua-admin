@@ -6,6 +6,7 @@ import { Comment } from '../entity/comment.entity';
 import { RecommendEpisodeItem } from '../dto/recommend.dto';
 import { EpisodeInteractionService } from './episode-interaction.service';
 import { FavoriteService } from '../../user/services/favorite.service';
+import { CommentService } from './comment.service';
 export declare class RecommendService {
     private readonly episodeRepo;
     private readonly episodeUrlRepo;
@@ -13,7 +14,8 @@ export declare class RecommendService {
     private readonly cacheManager;
     private readonly episodeInteractionService;
     private readonly favoriteService;
-    constructor(episodeRepo: Repository<Episode>, episodeUrlRepo: Repository<EpisodeUrl>, commentRepo: Repository<Comment>, cacheManager: Cache, episodeInteractionService: EpisodeInteractionService, favoriteService: FavoriteService);
+    private readonly commentService;
+    constructor(episodeRepo: Repository<Episode>, episodeUrlRepo: Repository<EpisodeUrl>, commentRepo: Repository<Comment>, cacheManager: Cache, episodeInteractionService: EpisodeInteractionService, favoriteService: FavoriteService, commentService: CommentService);
     getRecommendList(page?: number, size?: number, userId?: number): Promise<{
         list: RecommendEpisodeItem[];
         page: number;

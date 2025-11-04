@@ -6,27 +6,22 @@ export declare class CommentsController extends BaseController {
     private readonly commentService;
     constructor(videoService: VideoService, commentService: CommentService);
     listByEpisodeShortId(episodeShortId?: string, page?: string, size?: string): Promise<void | import("./base.controller").ApiResponse<null> | import("./base.controller").ApiResponse<{
-        comments: {
+        comments: (Record<string, any> | {
             id: number;
             content: string;
             appearSecond: number;
             replyCount: number;
             createdAt: Date;
-            username: string | null;
-            nickname: string | null;
-            photoUrl: string | null;
-            recentReplies: {
-                id: number;
-                content: string;
-                floorNumber: number;
-                createdAt: Date;
-                username: string | null;
-                nickname: string | null;
-            }[];
-        }[];
+            username: string;
+            nickname: string;
+            photoUrl: null;
+            recentReplies: never[];
+            isFake: boolean;
+        })[];
         total: number;
         page: number;
         size: number;
         totalPages: number;
+        fakeCount: number;
     }>>;
 }

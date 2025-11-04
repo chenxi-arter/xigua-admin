@@ -28,6 +28,7 @@ const cache_monitor_controller_1 = require("./cache-monitor.controller");
 const video_api_module_1 = require("./modules/video-api.module");
 const watch_progress_service_1 = require("./services/watch-progress.service");
 const comment_service_1 = require("./services/comment.service");
+const fake_comment_service_1 = require("./services/fake-comment.service");
 const episode_service_1 = require("./services/episode.service");
 const category_service_1 = require("./services/category.service");
 const filter_service_1 = require("./services/filter.service");
@@ -89,6 +90,7 @@ exports.VideoModule = VideoModule = __decorate([
             url_service_1.UrlService,
             play_count_service_1.PlayCountService,
             watch_progress_service_1.WatchProgressService,
+            fake_comment_service_1.FakeCommentService,
             comment_service_1.CommentService,
             episode_service_1.EpisodeService,
             episode_interaction_service_1.EpisodeInteractionService,

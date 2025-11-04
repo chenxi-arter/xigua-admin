@@ -22,6 +22,7 @@ const auth_service_1 = require("../auth/auth.service");
 const bind_email_dto_1 = require("./dto/bind-email.dto");
 const update_nickname_dto_1 = require("./dto/update-nickname.dto");
 const update_password_dto_1 = require("./dto/update-password.dto");
+const update_avatar_dto_1 = require("./dto/update-avatar.dto");
 let UserController = class UserController {
     userService;
     authService;
@@ -70,6 +71,9 @@ let UserController = class UserController {
     }
     async updatePassword(dto, req) {
         return await this.userService.updatePassword(req.user.userId, dto);
+    }
+    async updateAvatar(dto, req) {
+        return await this.userService.updateAvatar(req.user.userId, dto);
     }
 };
 exports.UserController = UserController;
@@ -135,6 +139,19 @@ __decorate([
     __metadata("design:paramtypes", [update_password_dto_1.UpdatePasswordDto, Object]),
     __metadata("design:returntype", Promise)
 ], UserController.prototype, "updatePassword", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Post)('update-avatar'),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, swagger_1.ApiOperation)({ summary: '更新头像' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '头像更新成功', type: update_avatar_dto_1.UpdateAvatarResponseDto }),
+    (0, swagger_1.ApiResponse)({ status: 400, description: '请求参数错误' }),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [update_avatar_dto_1.UpdateAvatarDto, Object]),
+    __metadata("design:returntype", Promise)
+], UserController.prototype, "updateAvatar", null);
 exports.UserController = UserController = __decorate([
     (0, swagger_1.ApiTags)('用户'),
     (0, common_1.Controller)('user'),

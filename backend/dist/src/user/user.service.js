@@ -332,6 +332,18 @@ let UserService = class UserService {
             message: '密码修改成功'
         };
     }
+    async updateAvatar(userId, dto) {
+        const user = await this.userRepo.findOneBy({ id: userId });
+        if (!user) {
+            throw new common_1.BadRequestException('用户不存在');
+        }
+        await this.userRepo.update(userId, { photo_url: dto.photo_url });
+        return {
+            success: true,
+            message: '头像更新成功',
+            photo_url: dto.photo_url
+        };
+    }
 };
 exports.UserService = UserService;
 exports.UserService = UserService = __decorate([

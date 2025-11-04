@@ -7,6 +7,7 @@ import { BindTelegramDto, BindTelegramResponseDto } from './dto/bind-telegram.dt
 import { BindEmailDto } from './dto/bind-email.dto';
 import { UpdateNicknameDto, UpdateNicknameResponseDto } from './dto/update-nickname.dto';
 import { UpdatePasswordDto, UpdatePasswordResponseDto } from './dto/update-password.dto';
+import { UpdateAvatarDto, UpdateAvatarResponseDto } from './dto/update-avatar.dto';
 import { AuthService } from '../auth/auth.service';
 import { TelegramAuthService } from '../auth/telegram-auth.service';
 interface TokenResult {
@@ -51,5 +52,6 @@ export declare class UserService {
     findUserByTelegramId(telegramId: number): Promise<User | null>;
     updateNickname(userId: number, dto: UpdateNicknameDto): Promise<UpdateNicknameResponseDto>;
     updatePassword(userId: number, dto: UpdatePasswordDto): Promise<UpdatePasswordResponseDto>;
+    updateAvatar(userId: number, dto: UpdateAvatarDto): Promise<UpdateAvatarResponseDto>;
 }
 export {};
