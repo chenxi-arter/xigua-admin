@@ -14,7 +14,7 @@ export declare class CommentsController extends BaseController {
             createdAt: Date;
             username: string;
             nickname: string;
-            photoUrl: null;
+            photoUrl: string;
             recentReplies: never[];
             isFake: boolean;
         })[];

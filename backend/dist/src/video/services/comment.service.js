@@ -92,6 +92,7 @@ let CommentService = class CommentService {
                     createdAt: reply.createdAt,
                     username: reply.user?.username || null,
                     nickname: reply.user?.nickname || null,
+                    photoUrl: reply.user?.photo_url || null,
                 })),
             };
         });

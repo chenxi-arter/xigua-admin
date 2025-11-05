@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FakeCommentService = void 0;
 const common_1 = require("@nestjs/common");
+const default_avatar_util_1 = require("../../shared/utils/default-avatar.util");
 let FakeCommentService = class FakeCommentService {
     enabled = process.env.ENABLE_FAKE_COMMENTS !== 'false';
     minFakeComments = parseInt(process.env.MIN_FAKE_COMMENTS || '30', 10);
@@ -497,6 +498,7 @@ let FakeCommentService = class FakeCommentService {
             createdAt.setHours(createdAt.getHours() - hoursAgo);
             createdAt.setMinutes(createdAt.getMinutes() - minutesAgo);
             const fakeUserId = -(seed + i + 1);
+            const avatarUrl = default_avatar_util_1.DefaultAvatarUtil.getAvatarBySeed(fakeUserId);
             fakeComments.push({
                 id: -(seed + i + 1000000),
                 content: this.commentTemplates[commentIndex],
@@ -505,7 +507,7 @@ let FakeCommentService = class FakeCommentService {
                 createdAt,
                 username: `user_${Math.abs(fakeUserId)}`,
                 nickname: this.nicknameTemplates[nicknameIndex],
-                photoUrl: null,
+                photoUrl: avatarUrl,
                 recentReplies: [],
                 isFake: true,
             });

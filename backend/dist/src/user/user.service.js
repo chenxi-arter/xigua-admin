@@ -149,12 +149,18 @@ let UserService = class UserService {
         console.log('=== createNewUser 调试信息 ===');
         console.log('userData:', userData);
         console.log('photo_url:', userData.photo_url);
+        let photoUrl = userData.photo_url;
+        if (!photoUrl) {
+            const { DefaultAvatarUtil } = await Promise.resolve().then(() => require('../shared/utils/default-avatar.util'));
+            photoUrl = DefaultAvatarUtil.getRandomAvatar();
+            console.log('分配默认头像:', photoUrl);
+        }
         const user = this.userRepo.create({
             telegram_id: userData.id,
             first_name: userData.first_name,
             last_name: userData.last_name || '',
             username: userData.username || telegramUsername,
-            photo_url: userData.photo_url || null,
+            photo_url: photoUrl,
             is_active: true,
         });
         console.log('创建的user对象:', user);
@@ -203,6 +209,8 @@ let UserService = class UserService {
         const randomSuffix = Math.floor(Math.random() * 1000000);
         const emailUsername = `e${randomSuffix}`;
         const passwordHash = await password_util_1.PasswordUtil.hashPassword(dto.password);
+        const { DefaultAvatarUtil } = await Promise.resolve().then(() => require('../shared/utils/default-avatar.util'));
+        const defaultAvatar = DefaultAvatarUtil.getRandomAvatar();
         const user = this.userRepo.create({
             id: userId,
             email: dto.email,
@@ -210,6 +218,7 @@ let UserService = class UserService {
             username: dto.username || emailUsername,
             first_name: dto.firstName || '',
             last_name: dto.lastName || '',
+            photo_url: defaultAvatar,
             is_active: true,
         });
         const savedUser = await this.userRepo.save(user);

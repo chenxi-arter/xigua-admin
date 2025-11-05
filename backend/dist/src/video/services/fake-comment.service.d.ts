@@ -14,7 +14,7 @@ export declare class FakeCommentService {
         createdAt: Date;
         username: string;
         nickname: string;
-        photoUrl: null;
+        photoUrl: string;
         recentReplies: never[];
         isFake: boolean;
     }[];
@@ -27,7 +27,7 @@ export declare class FakeCommentService {
             createdAt: Date;
             username: string;
             nickname: string;
-            photoUrl: null;
+            photoUrl: string;
             recentReplies: never[];
             isFake: boolean;
         })[];
