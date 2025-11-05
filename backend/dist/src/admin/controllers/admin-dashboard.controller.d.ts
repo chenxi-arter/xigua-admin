@@ -7,6 +7,7 @@ import { Banner } from '../../video/entity/banner.entity';
 import { Comment } from '../../video/entity/comment.entity';
 import { WatchProgress } from '../../video/entity/watch-progress.entity';
 import { BrowseHistory } from '../../video/entity/browse-history.entity';
+import { AnalyticsService } from '../services/analytics.service';
 export declare class AdminDashboardController {
     private readonly userRepo;
     private readonly rtRepo;
@@ -16,7 +17,8 @@ export declare class AdminDashboardController {
     private readonly commentRepo;
     private readonly wpRepo;
     private readonly bhRepo;
-    constructor(userRepo: Repository<User>, rtRepo: Repository<RefreshToken>, seriesRepo: Repository<Series>, episodeRepo: Repository<Episode>, bannerRepo: Repository<Banner>, commentRepo: Repository<Comment>, wpRepo: Repository<WatchProgress>, bhRepo: Repository<BrowseHistory>);
+    private readonly analyticsService;
+    constructor(userRepo: Repository<User>, rtRepo: Repository<RefreshToken>, seriesRepo: Repository<Series>, episodeRepo: Repository<Episode>, bannerRepo: Repository<Banner>, commentRepo: Repository<Comment>, wpRepo: Repository<WatchProgress>, bhRepo: Repository<BrowseHistory>, analyticsService: AnalyticsService);
     overview(from?: string, to?: string): Promise<{
         users: {
             total: number;
@@ -41,9 +43,15 @@ export declare class AdminDashboardController {
             totalPlayCount: number;
             last24hVisits: number;
         };
-        range: any;
+        range: {
+            usersInRange: number;
+            visitsInRange: number;
+            playActiveInRange: number;
+        } | undefined;
     }>;
-    timeseries(from?: string, to?: string, granularity?: 'day' | 'week'): Promise<any>;
+    timeseries(from?: string, to?: string): Promise<{
+        series: Record<string, any>[];
+    }>;
     private mergeSeries;
     top(metric?: 'series_play' | 'series_visit', limit?: number, from?: string, to?: string): Promise<{
         items: {
@@ -63,5 +71,140 @@ export declare class AdminDashboardController {
         series: Series[];
         episodes: Episode[];
         comments: Comment[];
+    }>;
+    getStats(): Promise<{
+        code: number;
+        data: {
+            activeUsers: {
+                dau: number;
+                wau: number;
+                mau: number;
+                dau7DayAvg: number;
+                sticky: number;
+            };
+            retention: {
+                day1: {
+                    totalUsers: number;
+                    retainedUsers: number;
+                    retentionRate: number;
+                };
+                day7: {
+                    totalUsers: number;
+                    retainedUsers: number;
+                    retentionRate: number;
+                };
+            };
+            content: {
+                totalPlayCount: number;
+                uniqueWatchedEpisodes: number;
+                averagePlayCountPerEpisode: number;
+            };
+            watching: {
+                averageWatchProgress: number;
+                averageWatchPercentage: number;
+                totalWatchTime: number;
+                completionRate: number;
+            };
+            registration: {
+                today: number;
+                yesterday: number;
+                last7Days: number;
+                last30Days: number;
+            };
+        };
+        message: string;
+        timestamp: string;
+    } | {
+        code: number;
+        data: null;
+        message: string;
+        timestamp: string;
+    }>;
+    getActiveUsers(): Promise<{
+        code: number;
+        data: {
+            dau: number;
+            wau: number;
+            mau: number;
+            dau7DayAvg: number;
+            sticky: number;
+        };
+        message: string;
+        timestamp: string;
+    } | {
+        code: number;
+        data: null;
+        message: string;
+        timestamp: string;
+    }>;
+    getRetention(retentionDays?: string, cohortDate?: string): Promise<{
+        code: number;
+        data: {
+            totalUsers: number;
+            retainedUsers: number;
+            retentionRate: number;
+        };
+        message: string;
+        timestamp: string;
+    } | {
+        code: number;
+        data: null;
+        message: string;
+        timestamp: string;
+    }>;
+    getRetentionTrend(days?: string, retentionDays?: string): Promise<{
+        code: number;
+        data: {
+            date: string;
+            totalUsers: number;
+            retainedUsers: number;
+            retentionRate: number;
+        }[];
+        message: string;
+        timestamp: string;
+    } | {
+        code: number;
+        data: null;
+        message: string;
+        timestamp: string;
+    }>;
+    getContentStats(): Promise<{
+        code: number;
+        data: {
+            totalPlayCount: number;
+            uniqueWatchedEpisodes: number;
+            averagePlayCountPerEpisode: number;
+            top10Episodes: Array<{
+                episodeId: number;
+                shortId: string;
+                title: string;
+                playCount: number;
+            }>;
+        };
+        message: string;
+        timestamp: string;
+    } | {
+        code: number;
+        data: null;
+        message: string;
+        timestamp: string;
+    }>;
+    getWatchStats(): Promise<{
+        code: number;
+        data: {
+            totalWatchRecords: number;
+            completedRecords: number;
+            completionRate: number;
+            averageWatchProgress: number;
+            averageWatchPercentage: number;
+            totalWatchTime: number;
+        };
+        message: string;
+        timestamp: string;
+    } | {
+        code: number;
+        data: null;
+        message: string;
+        timestamp: string;
     }>;
 }

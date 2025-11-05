@@ -28,6 +28,7 @@ const admin_dashboard_controller_1 = require("./controllers/admin-dashboard.cont
 const series_validation_controller_1 = require("./controllers/series-validation.controller");
 const video_module_1 = require("../video/video.module");
 const core_module_1 = require("../core/core.module");
+const analytics_service_1 = require("./services/analytics.service");
 let AdminModule = class AdminModule {
 };
 exports.AdminModule = AdminModule;
@@ -59,6 +60,9 @@ exports.AdminModule = AdminModule = __decorate([
             series_validation_controller_1.SeriesValidationController,
             ingest_controller_1.IngestController,
             test_ingest_controller_1.TestIngestController,
+        ],
+        providers: [
+            analytics_service_1.AnalyticsService,
         ],
     })
 ], AdminModule);

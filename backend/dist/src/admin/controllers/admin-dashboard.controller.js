@@ -24,6 +24,7 @@ const banner_entity_1 = require("../../video/entity/banner.entity");
 const comment_entity_1 = require("../../video/entity/comment.entity");
 const watch_progress_entity_1 = require("../../video/entity/watch-progress.entity");
 const browse_history_entity_1 = require("../../video/entity/browse-history.entity");
+const analytics_service_1 = require("../services/analytics.service");
 function toDateStart(d) {
     if (!d)
         return undefined;
@@ -51,7 +52,8 @@ let AdminDashboardController = class AdminDashboardController {
     commentRepo;
     wpRepo;
     bhRepo;
-    constructor(userRepo, rtRepo, seriesRepo, episodeRepo, bannerRepo, commentRepo, wpRepo, bhRepo) {
+    analyticsService;
+    constructor(userRepo, rtRepo, seriesRepo, episodeRepo, bannerRepo, commentRepo, wpRepo, bhRepo, analyticsService) {
         this.userRepo = userRepo;
         this.rtRepo = rtRepo;
         this.seriesRepo = seriesRepo;
@@ -60,6 +62,7 @@ let AdminDashboardController = class AdminDashboardController {
         this.commentRepo = commentRepo;
         this.wpRepo = wpRepo;
         this.bhRepo = bhRepo;
+        this.analyticsService = analyticsService;
     }
     async overview(from, to) {
         const start = toDateStart(from);
@@ -99,7 +102,7 @@ let AdminDashboardController = class AdminDashboardController {
             .select('COALESCE(SUM(ep.play_count), 0)', 'sum')
             .getRawOne();
         const totalPlayCount = Number(playSumRaw?.sum ?? 0);
-        let range = undefined;
+        let range;
         if (start && end) {
             const [usersInRange, visitsInRange, playActiveInRange] = await Promise.all([
                 this.userRepo
@@ -132,7 +135,7 @@ let AdminDashboardController = class AdminDashboardController {
             range,
         };
     }
-    async timeseries(from, to, granularity = 'day') {
+    async timeseries(from, to) {
         const start = toDateStart(from) ?? new Date(Date.now() - 14 * 24 * 3600 * 1000);
         const end = toDateEnd(to) ?? new Date();
         const newUsers = await this.userRepo
@@ -171,7 +174,8 @@ let AdminDashboardController = class AdminDashboardController {
                 const d = row.date;
                 if (!map.has(d))
                     map.set(d, { date: d });
-                map.get(d)[name] = Number(row.value);
+                const item = map.get(d);
+                item[name] = Number(row.value);
             }
         });
         return Array.from(map.values()).sort((a, b) => (a.date < b.date ? -1 : 1));
@@ -219,6 +223,130 @@ let AdminDashboardController = class AdminDashboardController {
         ]);
         return { users, series, episodes, comments };
     }
+    async getStats() {
+        try {
+            const stats = await this.analyticsService.getComprehensiveStats();
+            return {
+                code: 200,
+                data: stats,
+                message: '数据统计获取成功',
+                timestamp: new Date().toISOString(),
+            };
+        }
+        catch (error) {
+            return {
+                code: 500,
+                data: null,
+                message: `获取统计数据失败: ${error instanceof Error ? error.message : String(error)}`,
+                timestamp: new Date().toISOString(),
+            };
+        }
+    }
+    async getActiveUsers() {
+        try {
+            const stats = await this.analyticsService.getActiveUsersStats();
+            return {
+                code: 200,
+                data: stats,
+                message: '活跃用户统计获取成功',
+                timestamp: new Date().toISOString(),
+            };
+        }
+        catch (error) {
+            return {
+                code: 500,
+                data: null,
+                message: `获取活跃用户统计失败: ${error instanceof Error ? error.message : String(error)}`,
+                timestamp: new Date().toISOString(),
+            };
+        }
+    }
+    async getRetention(retentionDays, cohortDate) {
+        try {
+            const days = parseInt(retentionDays || '1', 10);
+            const date = cohortDate ? new Date(cohortDate) : undefined;
+            const stats = await this.analyticsService.getRetentionRate(days, date);
+            return {
+                code: 200,
+                data: stats,
+                message: '留存率统计获取成功',
+                timestamp: new Date().toISOString(),
+            };
+        }
+        catch (error) {
+            return {
+                code: 500,
+                data: null,
+                message: `获取留存率失败: ${error instanceof Error ? error.message : String(error)}`,
+                timestamp: new Date().toISOString(),
+            };
+        }
+    }
+    async getRetentionTrend(days, retentionDays) {
+        try {
+            const daysNum = parseInt(days || '7', 10);
+            const retentionDaysNum = parseInt(retentionDays || '1', 10);
+            const stats = await this.analyticsService.getRetentionTrend(daysNum, retentionDaysNum);
+            return {
+                code: 200,
+                data: stats,
+                message: '留存率趋势获取成功',
+                timestamp: new Date().toISOString(),
+            };
+        }
+        catch (error) {
+            return {
+                code: 500,
+                data: null,
+                message: `获取留存率趋势失败: ${error instanceof Error ? error.message : String(error)}`,
+                timestamp: new Date().toISOString(),
+            };
+        }
+    }
+    async getContentStats() {
+        try {
+            const stats = await this.analyticsService.getContentPlayStats();
+            return {
+                code: 200,
+                data: stats,
+                message: '内容播放统计获取成功',
+                timestamp: new Date().toISOString(),
+            };
+        }
+        catch (error) {
+            return {
+                code: 500,
+                data: null,
+                message: `获取内容播放统计失败: ${error instanceof Error ? error.message : String(error)}`,
+                timestamp: new Date().toISOString(),
+            };
+        }
+    }
+    async getWatchStats() {
+        try {
+            const [duration, completion] = await Promise.all([
+                this.analyticsService.getAverageWatchDuration(),
+                this.analyticsService.getCompletionRate(),
+            ]);
+            return {
+                code: 200,
+                data: {
+                    ...duration,
+                    ...completion,
+                },
+                message: '观看统计获取成功',
+                timestamp: new Date().toISOString(),
+            };
+        }
+        catch (error) {
+            return {
+                code: 500,
+                data: null,
+                message: `获取观看统计失败: ${error instanceof Error ? error.message : String(error)}`,
+                timestamp: new Date().toISOString(),
+            };
+        }
+    }
 };
 exports.AdminDashboardController = AdminDashboardController;
 __decorate([
@@ -233,9 +361,8 @@ __decorate([
     (0, common_1.Get)('timeseries'),
     __param(0, (0, common_1.Query)('from')),
     __param(1, (0, common_1.Query)('to')),
-    __param(2, (0, common_1.Query)('granularity')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], AdminDashboardController.prototype, "timeseries", null);
 __decorate([
@@ -255,6 +382,46 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AdminDashboardController.prototype, "recent", null);
+__decorate([
+    (0, common_1.Get)('stats'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AdminDashboardController.prototype, "getStats", null);
+__decorate([
+    (0, common_1.Get)('active-users'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AdminDashboardController.prototype, "getActiveUsers", null);
+__decorate([
+    (0, common_1.Get)('retention'),
+    __param(0, (0, common_1.Query)('retentionDays')),
+    __param(1, (0, common_1.Query)('cohortDate')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], AdminDashboardController.prototype, "getRetention", null);
+__decorate([
+    (0, common_1.Get)('retention-trend'),
+    __param(0, (0, common_1.Query)('days')),
+    __param(1, (0, common_1.Query)('retentionDays')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], AdminDashboardController.prototype, "getRetentionTrend", null);
+__decorate([
+    (0, common_1.Get)('content-stats'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AdminDashboardController.prototype, "getContentStats", null);
+__decorate([
+    (0, common_1.Get)('watch-stats'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AdminDashboardController.prototype, "getWatchStats", null);
 exports.AdminDashboardController = AdminDashboardController = __decorate([
     (0, common_1.Controller)('admin/dashboard'),
     __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
@@ -272,6 +439,7 @@ exports.AdminDashboardController = AdminDashboardController = __decorate([
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        analytics_service_1.AnalyticsService])
 ], AdminDashboardController);
 //# sourceMappingURL=admin-dashboard.controller.js.map
