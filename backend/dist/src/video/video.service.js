@@ -118,8 +118,8 @@ let VideoService = class VideoService {
     async getFiltersData(channelId, ids, page) {
         return this.filterService.getFiltersData(channelId, ids, page);
     }
-    async fuzzySearch(keyword, channelId, page = 1, size = 20) {
-        return this.filterService.fuzzySearch(keyword, channelId, page, size);
+    async fuzzySearch(keyword, categoryId, page = 1, size = 20) {
+        return this.filterService.fuzzySearch(keyword, categoryId, page, size);
     }
     async getConditionFilterData(dto) {
         return this.filterService.getFiltersData(dto.titleid || 'drama', dto.ids || '0,0,0,0,0', (dto.page?.toString()) || '1');

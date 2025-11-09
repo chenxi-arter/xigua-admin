@@ -19,6 +19,8 @@ const typeorm_2 = require("typeorm");
 const banner_entity_1 = require("../../video/entity/banner.entity");
 const r2_storage_service_1 = require("../../core/storage/r2-storage.service");
 const platform_express_1 = require("@nestjs/platform-express");
+const presigned_upload_dto_1 = require("../dto/presigned-upload.dto");
+const crypto_1 = require("crypto");
 const axios_1 = require("axios");
 const https = require("https");
 let AdminBannersController = class AdminBannersController {
@@ -123,6 +125,52 @@ let AdminBannersController = class AdminBannersController {
         await this.bannerRepo.update({ id: Number(id) }, { imageUrl });
         return this.bannerRepo.findOne({ where: { id: Number(id) } });
     }
+    async getPresignedUploadUrl(id, query) {
+        const banner = await this.bannerRepo.findOne({ where: { id: Number(id) } });
+        if (!banner) {
+            throw new common_1.NotFoundException('Banner not found');
+        }
+        const { filename, contentType } = query;
+        const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+        if (!allowedImageTypes.includes(contentType)) {
+            throw new common_1.BadRequestException('Invalid image type. Allowed: JPEG, PNG, WebP, GIF');
+        }
+        if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+            throw new common_1.BadRequestException('Invalid filename');
+        }
+        const extension = filename.split('.').pop()?.toLowerCase();
+        const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+        if (!extension || !allowedExtensions.includes(extension)) {
+            throw new common_1.BadRequestException('Invalid file extension');
+        }
+        const fileKey = `banners/${id}/image_${(0, crypto_1.randomUUID)()}.${extension}`;
+        const uploadUrl = await this.storage.generatePresignedUploadUrl(fileKey, contentType, 3600);
+        const publicUrl = this.storage.getPublicUrl(fileKey);
+        return {
+            uploadUrl,
+            fileKey,
+            publicUrl,
+        };
+    }
+    async uploadComplete(id, body) {
+        const { fileKey, publicUrl } = body;
+        if (!fileKey || !publicUrl) {
+            throw new common_1.BadRequestException('fileKey and publicUrl are required');
+        }
+        const banner = await this.bannerRepo.findOne({ where: { id: Number(id) } });
+        if (!banner) {
+            throw new common_1.NotFoundException('Banner not found');
+        }
+        await this.bannerRepo.update({ id: Number(id) }, {
+            imageUrl: publicUrl,
+            updatedAt: new Date(),
+        });
+        return {
+            success: true,
+            message: 'Image upload completed',
+            imageUrl: publicUrl,
+        };
+    }
 };
 exports.AdminBannersController = AdminBannersController;
 __decorate([
@@ -179,6 +227,22 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], AdminBannersController.prototype, "uploadImageFromUrl", null);
+__decorate([
+    (0, common_1.Get)(':id/presigned-upload-url'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, presigned_upload_dto_1.GetPresignedUrlDto]),
+    __metadata("design:returntype", Promise)
+], AdminBannersController.prototype, "getPresignedUploadUrl", null);
+__decorate([
+    (0, common_1.Post)(':id/upload-complete'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, presigned_upload_dto_1.UploadCompleteDto]),
+    __metadata("design:returntype", Promise)
+], AdminBannersController.prototype, "uploadComplete", null);
 exports.AdminBannersController = AdminBannersController = __decorate([
     (0, common_1.Controller)('admin/banners'),
     __param(0, (0, typeorm_1.InjectRepository)(banner_entity_1.Banner)),

@@ -19,18 +19,41 @@ const favorite_service_1 = require("../services/favorite.service");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const episode_entity_1 = require("../../video/entity/episode.entity");
+const category_validator_1 = require("../../common/validators/category-validator");
 let FavoriteController = class FavoriteController {
     favoriteService;
     episodeRepo;
-    constructor(favoriteService, episodeRepo) {
+    categoryValidator;
+    constructor(favoriteService, episodeRepo, categoryValidator) {
         this.favoriteService = favoriteService;
         this.episodeRepo = episodeRepo;
+        this.categoryValidator = categoryValidator;
     }
-    async getFavorites(req, page, size) {
+    async getFavorites(req, page, size, categoryId) {
         const userId = req.user?.userId;
         const pageNum = Math.max(parseInt(page ?? '1', 10) || 1, 1);
         const sizeNum = Math.max(parseInt(size ?? '20', 10) || 20, 1);
-        const result = await this.favoriteService.getUserFavorites(userId, pageNum, sizeNum);
+        let categoryIdNum;
+        if (categoryId) {
+            categoryIdNum = parseInt(categoryId, 10);
+            if (isNaN(categoryIdNum) || categoryIdNum <= 0) {
+                return {
+                    code: 400,
+                    message: '无效的分类ID格式',
+                    data: null,
+                };
+            }
+            const validation = await this.categoryValidator.validateCategoryId(categoryIdNum);
+            if (!validation.valid) {
+                const availableMsg = await this.categoryValidator.formatAvailableCategoriesMessage();
+                return {
+                    code: 400,
+                    message: `${validation.message}。${availableMsg}`,
+                    data: null,
+                };
+            }
+        }
+        const result = await this.favoriteService.getUserFavorites(userId, pageNum, sizeNum, categoryIdNum);
         return {
             code: 200,
             message: '获取收藏列表成功',
@@ -84,8 +107,9 @@ __decorate([
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Query)('page')),
     __param(2, (0, common_1.Query)('size')),
+    __param(3, (0, common_1.Query)('categoryId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String, String]),
+    __metadata("design:paramtypes", [Object, String, String, String]),
     __metadata("design:returntype", Promise)
 ], FavoriteController.prototype, "getFavorites", null);
 __decorate([
@@ -108,6 +132,7 @@ exports.FavoriteController = FavoriteController = __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __param(1, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),
     __metadata("design:paramtypes", [favorite_service_1.FavoriteService,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        category_validator_1.CategoryValidator])
 ], FavoriteController);
 //# sourceMappingURL=favorite.controller.js.map

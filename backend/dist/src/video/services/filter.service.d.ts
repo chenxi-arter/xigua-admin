@@ -31,6 +31,6 @@ export declare class FilterService {
     resolveYearNameFromDate(date?: Date | string): Promise<string>;
     clearFilterCache(channelId?: string): Promise<void>;
     clearAllFilterTagsCache(): Promise<void>;
-    fuzzySearch(keyword: string, channeid?: string, page?: number, size?: number): Promise<FuzzySearchResponse>;
+    fuzzySearch(keyword: string, categoryId?: string, page?: number, size?: number): Promise<FuzzySearchResponse>;
     private formatDateTime;
 }

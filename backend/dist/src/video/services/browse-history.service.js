@@ -80,15 +80,21 @@ let BrowseHistoryService = class BrowseHistoryService {
             console.error('记录浏览历史失败:', error?.message || error);
         }
     }
-    async getUserBrowseHistory(userId, page = 1, size = 10) {
+    async getUserBrowseHistory(userId, page = 1, size = 10, categoryId) {
         try {
             const offset = (page - 1) * size;
-            const latestRecordIds = await this.browseHistoryRepo
+            let latestRecordQuery = this.browseHistoryRepo
                 .createQueryBuilder('bh')
                 .select('MAX(bh.id)', 'maxId')
                 .addSelect('bh.seriesId')
                 .where('bh.userId = :userId', { userId })
-                .andWhere('bh.browseType = :browseType', { browseType: 'episode_watch' })
+                .andWhere('bh.browseType = :browseType', { browseType: 'episode_watch' });
+            if (categoryId) {
+                latestRecordQuery = latestRecordQuery
+                    .innerJoin('bh.series', 's')
+                    .andWhere('s.categoryId = :categoryId', { categoryId });
+            }
+            const latestRecordIds = await latestRecordQuery
                 .groupBy('bh.seriesId')
                 .getRawMany();
             const latestIds = latestRecordIds.map((row) => Number(row.maxId));
@@ -118,6 +124,7 @@ let BrowseHistoryService = class BrowseHistoryService {
                     seriesShortId: bh.series?.shortId || '',
                     seriesCoverUrl: bh.series?.coverUrl || '',
                     categoryName: bh.series?.category?.name || '',
+                    categoryId: bh.series?.category?.id,
                     browseType: bh.browseType,
                     browseTypeDesc: this.getBrowseTypeDescription(bh.browseType),
                     lastEpisodeNumber: bh.lastEpisodeNumber,

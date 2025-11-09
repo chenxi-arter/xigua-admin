@@ -51,6 +51,9 @@ const channel_exists_validator_1 = require("./validators/channel-exists.validato
 const ingest_service_1 = require("./services/ingest.service");
 const play_count_service_1 = require("./services/play-count.service");
 const episode_interaction_service_1 = require("./services/episode-interaction.service");
+const category_validator_1 = require("../common/validators/category-validator");
+const search_suggestions_service_1 = require("./services/search-suggestions.service");
+const search_controller_1 = require("./controllers/search.controller");
 let VideoModule = class VideoModule {
 };
 exports.VideoModule = VideoModule;
@@ -100,12 +103,15 @@ exports.VideoModule = VideoModule = __decorate([
             series_service_1.SeriesService,
             browse_history_service_1.BrowseHistoryService,
             browse_history_cleanup_service_1.BrowseHistoryCleanupService,
+            search_suggestions_service_1.SearchSuggestionsService,
             app_logger_service_1.AppLoggerService,
             app_config_service_1.AppConfigService,
             channel_exists_validator_1.IsValidChannelExistsConstraint,
+            category_validator_1.CategoryValidator,
         ],
         controllers: [
-            cache_monitor_controller_1.CacheMonitorController
+            cache_monitor_controller_1.CacheMonitorController,
+            search_controller_1.SearchController
         ],
         exports: [
             video_service_1.VideoService,
@@ -119,6 +125,8 @@ exports.VideoModule = VideoModule = __decorate([
             series_service_1.SeriesService,
             category_service_1.CategoryService,
             ingest_service_1.IngestService,
+            category_validator_1.CategoryValidator,
+            search_suggestions_service_1.SearchSuggestionsService,
         ],
     })
 ], VideoModule);

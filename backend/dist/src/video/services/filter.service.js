@@ -371,8 +371,8 @@ let FilterService = class FilterService {
             console.error('清除筛选器标签缓存失败:', error);
         }
     }
-    async fuzzySearch(keyword, channeid, page = 1, size = 20) {
-        console.log('模糊搜索开始:', { keyword, channeid, page, size });
+    async fuzzySearch(keyword, categoryId, page = 1, size = 20) {
+        console.log('模糊搜索开始:', { keyword, categoryId, page, size });
         if (!keyword || keyword.trim() === '') {
             console.log('搜索关键词为空');
             return {
@@ -400,8 +400,8 @@ let FilterService = class FilterService {
                 .leftJoinAndSelect('series.yearOption', 'yearOption')
                 .where('series.title LIKE :keyword', { keyword: `%${trimmedKeyword}%` })
                 .andWhere('series.isActive = :isActive', { isActive: 1 });
-            if (channeid && channeid.trim() !== '') {
-                queryBuilder.andWhere('series.category_id = :channeid', { channeid: parseInt(channeid) });
+            if (categoryId && categoryId.trim() !== '') {
+                queryBuilder.andWhere('series.category_id = :categoryId', { categoryId: parseInt(categoryId) });
             }
             queryBuilder
                 .addSelect(`

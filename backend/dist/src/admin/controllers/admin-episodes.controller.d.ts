@@ -1,10 +1,13 @@
 import { Repository } from 'typeorm';
 import { Episode } from '../../video/entity/episode.entity';
 import { EpisodeUrl } from '../../video/entity/episode-url.entity';
+import { R2StorageService } from '../../core/storage/r2-storage.service';
+import { GetVideoPresignedUrlDto, VideoUploadCompleteDto } from '../dto/presigned-upload.dto';
 export declare class AdminEpisodesController {
     private readonly episodeRepo;
     private readonly episodeUrlRepo;
-    constructor(episodeRepo: Repository<Episode>, episodeUrlRepo: Repository<EpisodeUrl>);
+    private readonly storage;
+    constructor(episodeRepo: Repository<Episode>, episodeUrlRepo: Repository<EpisodeUrl>, storage: R2StorageService);
     private normalize;
     list(page?: number, size?: number, seriesId?: string, minDuration?: string, maxDuration?: string): Promise<{
         total: number;
@@ -69,5 +72,18 @@ export declare class AdminEpisodesController {
             accessKey: string;
         }[];
         message?: undefined;
+    }>;
+    getPresignedUploadUrl(id: string, query: GetVideoPresignedUrlDto): Promise<{
+        uploadUrl: string;
+        fileKey: string;
+        publicUrl: string;
+        quality: string;
+    }>;
+    uploadComplete(id: string, body: VideoUploadCompleteDto): Promise<{
+        success: boolean;
+        message: string;
+        publicUrl: string;
+        quality: string | undefined;
+        fileSize: number | undefined;
     }>;
 }

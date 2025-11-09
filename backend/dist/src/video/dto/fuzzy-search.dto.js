@@ -14,7 +14,7 @@ const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
 class FuzzySearchDto {
     keyword;
-    channeid;
+    categoryId;
     page;
     size;
 }
@@ -27,7 +27,7 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
-], FuzzySearchDto.prototype, "channeid", void 0);
+], FuzzySearchDto.prototype, "categoryId", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Type)(() => Number),

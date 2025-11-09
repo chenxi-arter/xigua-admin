@@ -103,8 +103,9 @@ let FavoriteService = class FavoriteService {
         });
         return favoritedEpisodeIds;
     }
-    async getUserFavorites(userId, page = 1, size = 20) {
+    async getUserFavorites(userId, page = 1, size = 20, categoryId) {
         const skip = (page - 1) * size;
+        const categoryFilter = categoryId ? `AND s.category_id = ${categoryId}` : '';
         const query = `
       SELECT 
         f.series_id as seriesId,
@@ -123,16 +124,20 @@ let FavoriteService = class FavoriteService {
       FROM favorites f
       INNER JOIN series s ON f.series_id = s.id
       LEFT JOIN categories c ON s.category_id = c.id
-      WHERE f.user_id = ?
+      WHERE f.user_id = ? ${categoryFilter}
       GROUP BY f.series_id
       ORDER BY latestFavoriteTime DESC
       LIMIT ? OFFSET ?
     `;
-        const totalCount = await this.favoriteRepo
+        let totalQuery = this.favoriteRepo
             .createQueryBuilder('f')
+            .innerJoin('f.series', 's')
             .where('f.userId = :userId', { userId })
-            .select('COUNT(DISTINCT f.seriesId)', 'total')
-            .getRawOne();
+            .select('COUNT(DISTINCT f.seriesId)', 'total');
+        if (categoryId) {
+            totalQuery = totalQuery.andWhere('s.categoryId = :categoryId', { categoryId });
+        }
+        const totalCount = await totalQuery.getRawOne();
         const total = parseInt(totalCount?.total || '0', 10);
         const seriesList = await this.favoriteRepo.query(query, [userId, size, skip]);
         const list = seriesList.map(series => ({

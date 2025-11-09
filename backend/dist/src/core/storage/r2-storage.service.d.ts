@@ -14,4 +14,6 @@ export declare class R2StorageService {
         key: string;
         url?: string;
     }>;
+    generatePresignedUploadUrl(fileKey: string, contentType: string, expiresIn?: number): Promise<string>;
+    getPublicUrl(fileKey: string): string;
 }

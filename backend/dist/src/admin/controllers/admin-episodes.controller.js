@@ -18,12 +18,17 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const episode_entity_1 = require("../../video/entity/episode.entity");
 const episode_url_entity_1 = require("../../video/entity/episode-url.entity");
+const r2_storage_service_1 = require("../../core/storage/r2-storage.service");
+const presigned_upload_dto_1 = require("../dto/presigned-upload.dto");
+const crypto_1 = require("crypto");
 let AdminEpisodesController = class AdminEpisodesController {
     episodeRepo;
     episodeUrlRepo;
-    constructor(episodeRepo, episodeUrlRepo) {
+    storage;
+    constructor(episodeRepo, episodeUrlRepo, storage) {
         this.episodeRepo = episodeRepo;
         this.episodeUrlRepo = episodeUrlRepo;
+        this.storage = storage;
     }
     normalize(raw) {
         const toInt = (v) => (typeof v === 'string' || typeof v === 'number') ? Number(v) : undefined;
@@ -148,6 +153,80 @@ let AdminEpisodesController = class AdminEpisodesController {
             downloadUrls
         };
     }
+    async getPresignedUploadUrl(id, query) {
+        const episode = await this.episodeRepo.findOne({ where: { id: Number(id) } });
+        if (!episode) {
+            throw new common_1.NotFoundException('Episode not found');
+        }
+        const { filename, contentType, quality = '720p' } = query;
+        const allowedVideoTypes = ['video/mp4', 'video/mpeg', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
+        if (!allowedVideoTypes.includes(contentType)) {
+            throw new common_1.BadRequestException('Invalid video type. Allowed: MP4, MPEG, MOV, AVI, WebM');
+        }
+        if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+            throw new common_1.BadRequestException('Invalid filename');
+        }
+        const extension = filename.split('.').pop()?.toLowerCase();
+        const allowedExtensions = ['mp4', 'mpeg', 'mpg', 'mov', 'avi', 'webm'];
+        if (!extension || !allowedExtensions.includes(extension)) {
+            throw new common_1.BadRequestException('Invalid file extension');
+        }
+        const allowedQualities = ['360p', '480p', '720p', '1080p', '1440p', '2160p'];
+        if (quality && !allowedQualities.includes(quality)) {
+            throw new common_1.BadRequestException('Invalid quality parameter');
+        }
+        const fileKey = `episodes/${id}/video_${quality}_${(0, crypto_1.randomUUID)()}.${extension}`;
+        const uploadUrl = await this.storage.generatePresignedUploadUrl(fileKey, contentType, 7200);
+        const publicUrl = this.storage.getPublicUrl(fileKey);
+        return {
+            uploadUrl,
+            fileKey,
+            publicUrl,
+            quality,
+        };
+    }
+    async uploadComplete(id, body) {
+        const { fileKey, publicUrl, quality, fileSize } = body;
+        if (!fileKey || !publicUrl) {
+            throw new common_1.BadRequestException('fileKey and publicUrl are required');
+        }
+        const episode = await this.episodeRepo.findOne({ where: { id: Number(id) } });
+        if (!episode) {
+            throw new common_1.NotFoundException('Episode not found');
+        }
+        const whereCondition = {
+            episodeId: Number(id),
+            quality: quality || null,
+        };
+        const existingUrl = await this.episodeUrlRepo.findOne({
+            where: whereCondition,
+        });
+        if (existingUrl) {
+            await this.episodeUrlRepo.update({ id: existingUrl.id }, {
+                cdnUrl: publicUrl,
+                ossUrl: publicUrl,
+                originUrl: publicUrl,
+                updatedAt: new Date(),
+            });
+        }
+        else {
+            const episodeUrl = this.episodeUrlRepo.create({
+                episodeId: Number(id),
+                quality: quality || undefined,
+                cdnUrl: publicUrl,
+                ossUrl: publicUrl,
+                originUrl: publicUrl,
+            });
+            await this.episodeUrlRepo.save(episodeUrl);
+        }
+        return {
+            success: true,
+            message: 'Video upload completed',
+            publicUrl,
+            quality,
+            fileSize,
+        };
+    }
 };
 exports.AdminEpisodesController = AdminEpisodesController;
 __decorate([
@@ -197,11 +276,28 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AdminEpisodesController.prototype, "getDownloadUrls", null);
+__decorate([
+    (0, common_1.Get)(':id/presigned-upload-url'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, presigned_upload_dto_1.GetVideoPresignedUrlDto]),
+    __metadata("design:returntype", Promise)
+], AdminEpisodesController.prototype, "getPresignedUploadUrl", null);
+__decorate([
+    (0, common_1.Post)(':id/upload-complete'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, presigned_upload_dto_1.VideoUploadCompleteDto]),
+    __metadata("design:returntype", Promise)
+], AdminEpisodesController.prototype, "uploadComplete", null);
 exports.AdminEpisodesController = AdminEpisodesController = __decorate([
     (0, common_1.Controller)('admin/episodes'),
     __param(0, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),
     __param(1, (0, typeorm_1.InjectRepository)(episode_url_entity_1.EpisodeUrl)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        r2_storage_service_1.R2StorageService])
 ], AdminEpisodesController);
 //# sourceMappingURL=admin-episodes.controller.js.map

@@ -97,4 +97,29 @@ export declare class AnalyticsService {
             last30Days: number;
         };
     }>;
+    getOperationalMetrics(startDate: Date, endDate: Date): Promise<Array<{
+        date: string;
+        newUsers: number;
+        nextDayRetention: number;
+        dau: number;
+        averageWatchTime: number;
+        newUserSource: string;
+    }>>;
+    getContentMetrics(startDate: Date, endDate: Date, limit?: number): Promise<Array<{
+        date: string;
+        videoId: string;
+        videoTitle: string;
+        playCount: number;
+        completionRate: number;
+        averageWatchTime: number;
+        likeCount: number;
+        shareCount: number;
+        favoriteCount: number;
+    }>>;
+    getUserSourceStats(startDate: Date, endDate: Date): Promise<Array<{
+        promoCode: string;
+        totalUsers: number;
+        activeUsers: number;
+        conversionRate: number;
+    }>>;
 }

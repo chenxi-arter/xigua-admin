@@ -1,6 +1,7 @@
 import { Repository } from 'typeorm';
 import { Banner } from '../../video/entity/banner.entity';
 import { R2StorageService } from '../../core/storage/r2-storage.service';
+import { GetPresignedUrlDto, UploadCompleteDto } from '../dto/presigned-upload.dto';
 export declare class AdminBannersController {
     private readonly bannerRepo;
     private readonly storage;
@@ -24,4 +25,14 @@ export declare class AdminBannersController {
         mimetype?: string;
     }): Promise<Banner | null>;
     uploadImageFromUrl(id: string, src?: string): Promise<Banner | null>;
+    getPresignedUploadUrl(id: string, query: GetPresignedUrlDto): Promise<{
+        uploadUrl: string;
+        fileKey: string;
+        publicUrl: string;
+    }>;
+    uploadComplete(id: string, body: UploadCompleteDto): Promise<{
+        success: boolean;
+        message: string;
+        imageUrl: string;
+    }>;
 }

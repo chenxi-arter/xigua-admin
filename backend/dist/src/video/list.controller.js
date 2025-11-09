@@ -20,10 +20,13 @@ const filter_tags_dto_1 = require("./dto/filter-tags.dto");
 const filter_data_dto_1 = require("./dto/filter-data.dto");
 const condition_filter_dto_1 = require("./dto/condition-filter.dto");
 const fuzzy_search_dto_1 = require("./dto/fuzzy-search.dto");
+const category_validator_1 = require("../common/validators/category-validator");
 let ListController = class ListController {
     videoService;
-    constructor(videoService) {
+    categoryValidator;
+    constructor(videoService, categoryValidator) {
         this.videoService = videoService;
+        this.categoryValidator = categoryValidator;
     }
     async getFiltersTags(dto) {
         return this.videoService.getFiltersTags(dto.channeid || '1');
@@ -39,7 +42,20 @@ let ListController = class ListController {
             const resp = admin_response_util_1.AdminResponseUtil.error('搜索关键词不能为空', 400);
             return { code: resp.code, msg: '搜索关键词不能为空', data: null, success: resp.success, timestamp: resp.timestamp };
         }
-        return this.videoService.fuzzySearch(dto.keyword, dto.channeid, dto.page || 1, dto.size || 20);
+        if (dto.categoryId) {
+            const categoryIdNum = parseInt(dto.categoryId, 10);
+            if (isNaN(categoryIdNum) || categoryIdNum <= 0) {
+                const resp = admin_response_util_1.AdminResponseUtil.error('无效的分类ID格式', 400);
+                return { code: resp.code, msg: '无效的分类ID格式', data: null, success: resp.success, timestamp: resp.timestamp };
+            }
+            const validation = await this.categoryValidator.validateCategoryId(categoryIdNum);
+            if (!validation.valid) {
+                const availableMsg = await this.categoryValidator.formatAvailableCategoriesMessage();
+                const resp = admin_response_util_1.AdminResponseUtil.error(`${validation.message}。${availableMsg}`, 400);
+                return { code: resp.code, msg: `${validation.message}。${availableMsg}`, data: null, success: resp.success, timestamp: resp.timestamp };
+            }
+        }
+        return this.videoService.fuzzySearch(dto.keyword, dto.categoryId, dto.page || 1, dto.size || 20);
     }
     async clearFilterCache(channeid) {
         await this.videoService.clearFilterCache(channeid);
@@ -86,6 +102,7 @@ __decorate([
 ], ListController.prototype, "clearFilterCache", null);
 exports.ListController = ListController = __decorate([
     (0, common_1.Controller)('list'),
-    __metadata("design:paramtypes", [video_service_1.VideoService])
+    __metadata("design:paramtypes", [video_service_1.VideoService,
+        category_validator_1.CategoryValidator])
 ], ListController);
 //# sourceMappingURL=list.controller.js.map

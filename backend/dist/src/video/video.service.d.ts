@@ -160,7 +160,7 @@ export declare class VideoService {
     }>;
     getFiltersTags(channeid: string): Promise<import("./dto/filter-tags.dto").FilterTagsResponse>;
     getFiltersData(channelId: string, ids: string, page: string): Promise<import("./dto/filter-data.dto").FilterDataResponse>;
-    fuzzySearch(keyword: string, channelId?: string, page?: number, size?: number): Promise<import("./dto/fuzzy-search.dto").FuzzySearchResponse>;
+    fuzzySearch(keyword: string, categoryId?: string, page?: number, size?: number): Promise<import("./dto/fuzzy-search.dto").FuzzySearchResponse>;
     getConditionFilterData(dto: any): Promise<import("./dto/filter-data.dto").FilterDataResponse>;
     clearFilterCache(channeid?: string): Promise<void>;
     addComment(userId: number, episodeShortId: string, content: string, appearSecond?: number): Promise<Comment>;

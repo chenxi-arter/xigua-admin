@@ -13,26 +13,31 @@ const passport_1 = require("@nestjs/passport");
 const user_entity_1 = require("./entity/user.entity");
 const favorite_entity_1 = require("./entity/favorite.entity");
 const episode_entity_1 = require("../video/entity/episode.entity");
+const episode_reaction_entity_1 = require("../video/entity/episode-reaction.entity");
 const user_service_1 = require("./user.service");
 const favorite_service_1 = require("./services/favorite.service");
+const liked_episodes_service_1 = require("./services/liked-episodes.service");
 const user_controller_1 = require("./user.controller");
 const favorite_controller_1 = require("./controllers/favorite.controller");
+const liked_episodes_controller_1 = require("./controllers/liked-episodes.controller");
 const jwt_strategy_1 = require("../auth/strategies/jwt.strategy");
 const telegram_auth_service_1 = require("../auth/telegram-auth.service");
 const auth_module_1 = require("../auth/auth.module");
+const video_module_1 = require("../video/video.module");
 let UserModule = class UserModule {
 };
 exports.UserModule = UserModule;
 exports.UserModule = UserModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([user_entity_1.User, favorite_entity_1.Favorite, episode_entity_1.Episode]),
+            typeorm_1.TypeOrmModule.forFeature([user_entity_1.User, favorite_entity_1.Favorite, episode_entity_1.Episode, episode_reaction_entity_1.EpisodeReaction]),
             passport_1.PassportModule,
             (0, common_1.forwardRef)(() => auth_module_1.AuthModule),
+            (0, common_1.forwardRef)(() => video_module_1.VideoModule),
         ],
-        controllers: [user_controller_1.UserController, favorite_controller_1.FavoriteController],
-        providers: [user_service_1.UserService, favorite_service_1.FavoriteService, jwt_strategy_1.JwtStrategy, telegram_auth_service_1.TelegramAuthService],
-        exports: [user_service_1.UserService, favorite_service_1.FavoriteService],
+        controllers: [user_controller_1.UserController, favorite_controller_1.FavoriteController, liked_episodes_controller_1.LikedEpisodesController],
+        providers: [user_service_1.UserService, favorite_service_1.FavoriteService, liked_episodes_service_1.LikedEpisodesService, jwt_strategy_1.JwtStrategy, telegram_auth_service_1.TelegramAuthService],
+        exports: [user_service_1.UserService, favorite_service_1.FavoriteService, liked_episodes_service_1.LikedEpisodesService],
     })
 ], UserModule);
 //# sourceMappingURL=user.module.js.map

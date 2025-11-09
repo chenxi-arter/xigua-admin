@@ -43,6 +43,7 @@ const app_logger_service_1 = require("../../common/logger/app-logger.service");
 const app_config_service_1 = require("../../common/config/app-config.service");
 const play_count_service_1 = require("../services/play-count.service");
 const episode_interaction_service_1 = require("../services/episode-interaction.service");
+const category_validator_1 = require("../../common/validators/category-validator");
 const catalog_module_1 = require("./catalog.module");
 const series_module_1 = require("./series.module");
 const episode_module_1 = require("./episode.module");
@@ -106,6 +107,7 @@ exports.VideoApiModule = VideoApiModule = __decorate([
             watch_progress_service_1.WatchProgressService,
             banner_service_1.BannerService,
             category_service_1.CategoryService,
+            category_validator_1.CategoryValidator,
             ingest_service_1.IngestService,
             fake_comment_service_1.FakeCommentService,
             comment_service_1.CommentService,

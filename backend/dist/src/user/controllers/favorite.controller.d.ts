@@ -1,11 +1,17 @@
 import { FavoriteService } from '../services/favorite.service';
 import { Repository } from 'typeorm';
 import { Episode } from '../../video/entity/episode.entity';
+import { CategoryValidator } from '../../common/validators/category-validator';
 export declare class FavoriteController {
     private readonly favoriteService;
     private readonly episodeRepo;
-    constructor(favoriteService: FavoriteService, episodeRepo: Repository<Episode>);
-    getFavorites(req: any, page?: string, size?: string): Promise<{
+    private readonly categoryValidator;
+    constructor(favoriteService: FavoriteService, episodeRepo: Repository<Episode>, categoryValidator: CategoryValidator);
+    getFavorites(req: any, page?: string, size?: string, categoryId?: string): Promise<{
+        code: number;
+        message: string;
+        data: null;
+    } | {
         code: number;
         message: string;
         data: {

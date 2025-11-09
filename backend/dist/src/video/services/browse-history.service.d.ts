@@ -11,7 +11,7 @@ export declare class BrowseHistoryService {
     private readonly cacheManager;
     constructor(browseHistoryRepo: Repository<BrowseHistory>, seriesRepo: Repository<Series>, userRepo: Repository<User>, cacheManager: Cache);
     recordBrowseHistory(userId: number, seriesId: number, browseType?: string, lastEpisodeNumber?: number | null, req?: Request): Promise<void>;
-    getUserBrowseHistory(userId: number, page?: number, size?: number): Promise<{
+    getUserBrowseHistory(userId: number, page?: number, size?: number, categoryId?: number): Promise<{
         list: any[];
         total: number;
         page: number;

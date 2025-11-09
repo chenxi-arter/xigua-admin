@@ -8,7 +8,7 @@ export declare class FavoriteService {
     isFavorited(userId: number, seriesId: number, episodeId?: number): Promise<boolean>;
     getUserFavoritedSeries(userId: number): Promise<Set<number>>;
     getUserFavoritedEpisodes(userId: number, episodeIds: number[], seriesIds: number[]): Promise<Set<number>>;
-    getUserFavorites(userId: number, page?: number, size?: number): Promise<{
+    getUserFavorites(userId: number, page?: number, size?: number, categoryId?: number): Promise<{
         list: {
             seriesId: number;
             seriesShortId: string;

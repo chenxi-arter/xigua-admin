@@ -312,6 +312,173 @@ let AnalyticsService = class AnalyticsService {
             },
         };
     }
+    async getOperationalMetrics(startDate, endDate) {
+        const results = [];
+        const currentDate = new Date(startDate);
+        while (currentDate <= endDate) {
+            const dayStart = new Date(currentDate);
+            dayStart.setHours(0, 0, 0, 0);
+            const dayEnd = new Date(currentDate);
+            dayEnd.setHours(23, 59, 59, 999);
+            const newUsers = await this.userRepo
+                .createQueryBuilder('u')
+                .where('u.created_at BETWEEN :start AND :end', {
+                start: dayStart,
+                end: dayEnd,
+            })
+                .getCount();
+            const dau = await this.getDAU(currentDate);
+            const watchTimeResult = await this.wpRepo
+                .createQueryBuilder('wp')
+                .innerJoin('wp.episode', 'ep')
+                .select('AVG(wp.stop_at_second)', 'avgTime')
+                .where('wp.updated_at BETWEEN :start AND :end', {
+                start: dayStart,
+                end: dayEnd,
+            })
+                .getRawOne();
+            const averageWatchTime = Math.round(parseFloat(watchTimeResult?.avgTime || '0'));
+            const nextDay = new Date(currentDate);
+            nextDay.setDate(nextDay.getDate() + 1);
+            const retentionData = await this.getRetentionRate(1, currentDate);
+            const nextDayRetention = parseFloat(retentionData.retentionRate.toFixed(2));
+            const sourceDistribution = await this.userRepo
+                .createQueryBuilder('u')
+                .select('u.promo_code', 'promoCode')
+                .addSelect('COUNT(*)', 'count')
+                .where('u.created_at BETWEEN :start AND :end', {
+                start: dayStart,
+                end: dayEnd,
+            })
+                .groupBy('u.promo_code')
+                .orderBy('count', 'DESC')
+                .getRawMany();
+            let newUserSource = '自然流量';
+            if (sourceDistribution.length > 0) {
+                const topSources = sourceDistribution
+                    .filter(s => s.promoCode)
+                    .slice(0, 3)
+                    .map(s => `${s.promoCode}(${s.count})`)
+                    .join(', ');
+                newUserSource = topSources || '自然流量';
+            }
+            results.push({
+                date: currentDate.toISOString().split('T')[0],
+                newUsers,
+                nextDayRetention,
+                dau,
+                averageWatchTime,
+                newUserSource,
+            });
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        return results;
+    }
+    async getContentMetrics(startDate, endDate, limit = 100) {
+        const results = [];
+        const currentDate = new Date(startDate);
+        while (currentDate <= endDate) {
+            const dayStart = new Date(currentDate);
+            dayStart.setHours(0, 0, 0, 0);
+            const dayEnd = new Date(currentDate);
+            dayEnd.setHours(23, 59, 59, 999);
+            const episodeStats = await this.wpRepo
+                .createQueryBuilder('wp')
+                .innerJoin('wp.episode', 'ep')
+                .select('ep.id', 'episodeId')
+                .addSelect('ep.short_id', 'shortId')
+                .addSelect('ep.title', 'title')
+                .addSelect('COUNT(DISTINCT wp.user_id)', 'playCount')
+                .addSelect('AVG(wp.stop_at_second)', 'avgWatchTime')
+                .addSelect('ep.duration', 'duration')
+                .addSelect('ep.like_count', 'likeCount')
+                .addSelect('ep.favorite_count', 'favoriteCount')
+                .where('wp.updated_at BETWEEN :start AND :end', {
+                start: dayStart,
+                end: dayEnd,
+            })
+                .groupBy('ep.id')
+                .addGroupBy('ep.short_id')
+                .addGroupBy('ep.title')
+                .addGroupBy('ep.duration')
+                .addGroupBy('ep.like_count')
+                .addGroupBy('ep.favorite_count')
+                .orderBy('playCount', 'DESC')
+                .limit(limit)
+                .getRawMany();
+            for (const stat of episodeStats) {
+                const playCount = parseInt(stat.playCount, 10);
+                const avgWatchTime = Math.round(parseFloat(stat.avgWatchTime || '0'));
+                const completionCount = await this.wpRepo
+                    .createQueryBuilder('wp')
+                    .where('wp.episode_id = :episodeId', { episodeId: stat.episodeId })
+                    .andWhere('wp.updated_at BETWEEN :start AND :end', {
+                    start: dayStart,
+                    end: dayEnd,
+                })
+                    .andWhere('wp.stop_at_second >= :threshold', {
+                    threshold: stat.duration * 0.9,
+                })
+                    .getCount();
+                const completionRate = playCount > 0
+                    ? parseFloat(((completionCount / playCount) * 100).toFixed(2))
+                    : 0;
+                results.push({
+                    date: currentDate.toISOString().split('T')[0],
+                    videoId: stat.shortId || stat.episodeId.toString(),
+                    videoTitle: stat.title,
+                    playCount,
+                    completionRate,
+                    averageWatchTime: avgWatchTime,
+                    likeCount: stat.likeCount || 0,
+                    shareCount: 0,
+                    favoriteCount: stat.favoriteCount || 0,
+                });
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        return results;
+    }
+    async getUserSourceStats(startDate, endDate) {
+        const dayStart = new Date(startDate);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(endDate);
+        dayEnd.setHours(23, 59, 59, 999);
+        const promoStats = await this.userRepo
+            .createQueryBuilder('u')
+            .select('COALESCE(u.promo_code, "organic")', 'promoCode')
+            .addSelect('COUNT(*)', 'totalUsers')
+            .where('u.created_at BETWEEN :start AND :end', {
+            start: dayStart,
+            end: dayEnd,
+        })
+            .groupBy('promoCode')
+            .orderBy('totalUsers', 'DESC')
+            .getRawMany();
+        const results = [];
+        for (const stat of promoStats) {
+            const totalUsers = parseInt(stat.totalUsers, 10);
+            const activeUsersResult = await this.wpRepo
+                .createQueryBuilder('wp')
+                .innerJoin('wp.user', 'u')
+                .select('COUNT(DISTINCT wp.user_id)', 'count')
+                .where('u.created_at BETWEEN :start AND :end', {
+                start: dayStart,
+                end: dayEnd,
+            })
+                .andWhere('COALESCE(u.promo_code, "organic") = :promoCode', { promoCode: stat.promoCode })
+                .getRawOne();
+            const activeUsers = parseInt(activeUsersResult?.count || '0', 10);
+            const conversionRate = totalUsers > 0 ? parseFloat(((activeUsers / totalUsers) * 100).toFixed(2)) : 0;
+            results.push({
+                promoCode: stat.promoCode,
+                totalUsers,
+                activeUsers,
+                conversionRate,
+            });
+        }
+        return results;
+    }
 };
 exports.AnalyticsService = AnalyticsService;
 exports.AnalyticsService = AnalyticsService = __decorate([

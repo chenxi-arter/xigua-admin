@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Favorite = void 0;
 const typeorm_1 = require("typeorm");
 const user_entity_1 = require("./user.entity");
+const series_entity_1 = require("../../video/entity/series.entity");
 let Favorite = class Favorite {
     id;
     userId;
@@ -21,6 +22,7 @@ let Favorite = class Favorite {
     createdAt;
     updatedAt;
     user;
+    series;
 };
 exports.Favorite = Favorite;
 __decorate([
@@ -56,6 +58,11 @@ __decorate([
     (0, typeorm_1.JoinColumn)({ name: 'user_id' }),
     __metadata("design:type", user_entity_1.User)
 ], Favorite.prototype, "user", void 0);
+__decorate([
+    (0, typeorm_1.ManyToOne)(() => series_entity_1.Series),
+    (0, typeorm_1.JoinColumn)({ name: 'series_id' }),
+    __metadata("design:type", series_entity_1.Series)
+], Favorite.prototype, "series", void 0);
 exports.Favorite = Favorite = __decorate([
     (0, typeorm_1.Entity)('favorites')
 ], Favorite);

@@ -1,6 +1,6 @@
 export declare class FuzzySearchDto {
     keyword: string;
-    channeid?: string;
+    categoryId?: string;
     page?: number;
     size?: number;
 }

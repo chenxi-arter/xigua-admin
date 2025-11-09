@@ -1,4 +1,5 @@
 import { User } from './user.entity';
+import { Series } from '../../video/entity/series.entity';
 export declare class Favorite {
     id: number;
     userId: number;
@@ -8,4 +9,5 @@ export declare class Favorite {
     createdAt: Date;
     updatedAt: Date;
     user: User;
+    series: Series;
 }

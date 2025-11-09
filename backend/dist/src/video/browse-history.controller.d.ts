@@ -1,11 +1,13 @@
 import { BrowseHistoryService } from './services/browse-history.service';
 import { BrowseHistoryCleanupService } from './services/browse-history-cleanup.service';
 import { BaseController } from './controllers/base.controller';
+import { CategoryValidator } from '../common/validators/category-validator';
 export declare class BrowseHistoryController extends BaseController {
     private readonly browseHistoryService;
     private readonly browseHistoryCleanupService;
-    constructor(browseHistoryService: BrowseHistoryService, browseHistoryCleanupService: BrowseHistoryCleanupService);
-    getUserBrowseHistory(req: any, page?: string, size?: string): Promise<void | import("./controllers/base.controller").ApiResponse<{
+    private readonly categoryValidator;
+    constructor(browseHistoryService: BrowseHistoryService, browseHistoryCleanupService: BrowseHistoryCleanupService, categoryValidator: CategoryValidator);
+    getUserBrowseHistory(req: any, page?: string, size?: string, categoryId?: string): Promise<void | import("./controllers/base.controller").ApiResponse<null> | import("./controllers/base.controller").ApiResponse<{
         list: any[];
         total: number;
         page: number;

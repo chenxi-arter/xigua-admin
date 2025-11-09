@@ -19,18 +19,33 @@ const rate_limit_guard_1 = require("../common/guards/rate-limit.guard");
 const browse_history_service_1 = require("./services/browse-history.service");
 const browse_history_cleanup_service_1 = require("./services/browse-history-cleanup.service");
 const base_controller_1 = require("./controllers/base.controller");
+const category_validator_1 = require("../common/validators/category-validator");
 let BrowseHistoryController = class BrowseHistoryController extends base_controller_1.BaseController {
     browseHistoryService;
     browseHistoryCleanupService;
-    constructor(browseHistoryService, browseHistoryCleanupService) {
+    categoryValidator;
+    constructor(browseHistoryService, browseHistoryCleanupService, categoryValidator) {
         super();
         this.browseHistoryService = browseHistoryService;
         this.browseHistoryCleanupService = browseHistoryCleanupService;
+        this.categoryValidator = categoryValidator;
     }
-    async getUserBrowseHistory(req, page = '1', size = '10') {
+    async getUserBrowseHistory(req, page = '1', size = '10', categoryId) {
         try {
             const { page: pageNum, size: sizeNum } = this.normalizePagination(page, size, 200);
-            const result = await this.browseHistoryService.getUserBrowseHistory(Number(req.user?.userId), pageNum, sizeNum);
+            let categoryIdNum;
+            if (categoryId) {
+                categoryIdNum = parseInt(categoryId, 10);
+                if (isNaN(categoryIdNum) || categoryIdNum <= 0) {
+                    return this.error('无效的分类ID格式', 400);
+                }
+                const validation = await this.categoryValidator.validateCategoryId(categoryIdNum);
+                if (!validation.valid) {
+                    const availableMsg = await this.categoryValidator.formatAvailableCategoriesMessage();
+                    return this.error(`${validation.message}。${availableMsg}`, 400);
+                }
+            }
+            const result = await this.browseHistoryService.getUserBrowseHistory(Number(req.user?.userId), pageNum, sizeNum, categoryIdNum);
             return this.success(result, '获取浏览记录成功');
         }
         catch (error) {
@@ -151,8 +166,9 @@ __decorate([
     __param(0, (0, common_1.Req)()),
     __param(1, (0, common_1.Query)('page')),
     __param(2, (0, common_1.Query)('size')),
+    __param(3, (0, common_1.Query)('categoryId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String, String]),
+    __metadata("design:paramtypes", [Object, String, String, String]),
     __metadata("design:returntype", Promise)
 ], BrowseHistoryController.prototype, "getUserBrowseHistory", null);
 __decorate([
@@ -224,6 +240,7 @@ exports.BrowseHistoryController = BrowseHistoryController = __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, rate_limit_guard_1.RateLimitGuard),
     (0, common_1.Controller)('video/browse-history'),
     __metadata("design:paramtypes", [browse_history_service_1.BrowseHistoryService,
-        browse_history_cleanup_service_1.BrowseHistoryCleanupService])
+        browse_history_cleanup_service_1.BrowseHistoryCleanupService,
+        category_validator_1.CategoryValidator])
 ], BrowseHistoryController);
 //# sourceMappingURL=browse-history.controller.js.map

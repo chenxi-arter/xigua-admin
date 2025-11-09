@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.R2StorageService = void 0;
 const common_1 = require("@nestjs/common");
 const client_s3_1 = require("@aws-sdk/client-s3");
+const s3_request_presigner_1 = require("@aws-sdk/s3-request-presigner");
 const crypto_1 = require("crypto");
 let R2StorageService = class R2StorageService {
     s3;
@@ -62,6 +63,19 @@ let R2StorageService = class R2StorageService {
         const base = (this.publicBaseUrl ?? this.endpointBucketBase).replace(/\/$/, '');
         const url = `${base}/${key}`;
         return { key, url };
+    }
+    async generatePresignedUploadUrl(fileKey, contentType, expiresIn = 3600) {
+        this.ensureInitialized();
+        const command = new client_s3_1.PutObjectCommand({
+            Bucket: this.bucketName,
+            Key: fileKey,
+            ContentType: contentType,
+        });
+        return await (0, s3_request_presigner_1.getSignedUrl)(this.s3, command, { expiresIn });
+    }
+    getPublicUrl(fileKey) {
+        const base = (this.publicBaseUrl ?? this.endpointBucketBase).replace(/\/$/, '');
+        return `${base}/${fileKey}`;
     }
 };
 exports.R2StorageService = R2StorageService;
