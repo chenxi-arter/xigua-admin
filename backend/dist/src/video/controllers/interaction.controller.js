@@ -163,6 +163,21 @@ let InteractionController = class InteractionController extends base_controller_
             return this.error(errMsg, 400);
         }
     }
+    async getMyReplies(req, page, size) {
+        const userId = req.user?.userId ? Number(req.user.userId) : 0;
+        if (!userId)
+            return this.error('未认证', 401);
+        try {
+            const pageNum = Math.max(parseInt(page ?? '1', 10) || 1, 1);
+            const sizeNum = Math.max(parseInt(size ?? '20', 10) || 20, 1);
+            const result = await this.interactionService.getUserReceivedReplies(userId, pageNum, sizeNum);
+            return this.success(result, '获取成功', 200);
+        }
+        catch (error) {
+            const errMsg = error instanceof Error ? error.message : '获取失败';
+            return this.error(errMsg, 400);
+        }
+    }
 };
 exports.InteractionController = InteractionController;
 __decorate([
@@ -210,6 +225,16 @@ __decorate([
     __metadata("design:paramtypes", [String, String, String]),
     __metadata("design:returntype", Promise)
 ], InteractionController.prototype, "getCommentReplies", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Get)('my-replies'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)('page')),
+    __param(2, (0, common_1.Query)('size')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, String]),
+    __metadata("design:returntype", Promise)
+], InteractionController.prototype, "getMyReplies", null);
 exports.InteractionController = InteractionController = __decorate([
     (0, common_1.Controller)('video/episode'),
     __metadata("design:paramtypes", [episode_interaction_service_1.EpisodeInteractionService,

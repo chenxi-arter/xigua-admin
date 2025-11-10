@@ -48,10 +48,36 @@ export declare class EpisodeInteractionService {
             username: string | null;
             nickname: string | null;
             photoUrl: string | null;
+            replyToUserId: number | null;
+            replyToUsername: any;
+            replyToNickname: any;
+            replyToPhotoUrl: any;
         }[];
         total: number;
         page: number;
         size: number;
+        totalPages: number;
+    }>;
+    getUserReceivedReplies(userId: number, page: number, size: number): Promise<{
+        list: {
+            id: number;
+            content: string;
+            createdAt: Date;
+            episodeNumber: any;
+            episodeTitle: any;
+            seriesShortId: any;
+            seriesTitle: any;
+            seriesCoverUrl: any;
+            fromUsername: string | null;
+            fromNickname: string | null;
+            fromPhotoUrl: string | null;
+            myComment: any;
+            floorNumber: number;
+        }[];
+        total: number;
+        page: number;
+        size: number;
+        hasMore: boolean;
         totalPages: number;
     }>;
 }

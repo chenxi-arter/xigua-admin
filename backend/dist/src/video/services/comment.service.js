@@ -74,6 +74,22 @@ let CommentService = class CommentService {
                 }
             }
         });
+        const replyToUserIds = [...new Set(allReplies.map(r => r.replyToUserId).filter(Boolean))];
+        const replyToUsersMap = new Map();
+        if (replyToUserIds.length > 0) {
+            const replyToUsers = await this.commentRepo.manager
+                .getRepository('User')
+                .createQueryBuilder('user')
+                .where('user.id IN (:...ids)', { ids: replyToUserIds })
+                .getMany();
+            replyToUsers.forEach((user) => {
+                replyToUsersMap.set(user.id, {
+                    username: user.username,
+                    nickname: user.nickname,
+                    photoUrl: user.photo_url,
+                });
+            });
+        }
         const formattedComments = comments.map(comment => {
             const recentReplies = repliesMap.get(comment.id) || [];
             return {
@@ -85,15 +101,22 @@ let CommentService = class CommentService {
                 username: comment.user?.username || null,
                 nickname: comment.user?.nickname || null,
                 photoUrl: comment.user?.photo_url || null,
-                recentReplies: recentReplies.map(reply => ({
-                    id: reply.id,
-                    content: reply.content,
-                    floorNumber: reply.floorNumber,
-                    createdAt: reply.createdAt,
-                    username: reply.user?.username || null,
-                    nickname: reply.user?.nickname || null,
-                    photoUrl: reply.user?.photo_url || null,
-                })),
+                recentReplies: recentReplies.map(reply => {
+                    const replyToUser = reply.replyToUserId ? replyToUsersMap.get(reply.replyToUserId) : null;
+                    return {
+                        id: reply.id,
+                        content: reply.content,
+                        floorNumber: reply.floorNumber,
+                        createdAt: reply.createdAt,
+                        username: reply.user?.username || null,
+                        nickname: reply.user?.nickname || null,
+                        photoUrl: reply.user?.photo_url || null,
+                        replyToUserId: reply.replyToUserId || null,
+                        replyToUsername: replyToUser?.username || null,
+                        replyToNickname: replyToUser?.nickname || null,
+                        replyToPhotoUrl: replyToUser?.photoUrl || null,
+                    };
+                }),
             };
         });
         return this.fakeCommentService.mixComments(episodeShortId, formattedComments, total, page, size);
@@ -163,6 +186,22 @@ let CommentService = class CommentService {
             take: size,
             relations: ['user'],
         });
+        const replyToUserIds = [...new Set(replies.map(r => r.replyToUserId).filter(Boolean))];
+        const replyToUsersMap = new Map();
+        if (replyToUserIds.length > 0) {
+            const replyToUsers = await this.commentRepo.manager
+                .getRepository('User')
+                .createQueryBuilder('user')
+                .where('user.id IN (:...ids)', { ids: replyToUserIds })
+                .getMany();
+            replyToUsers.forEach((user) => {
+                replyToUsersMap.set(user.id, {
+                    username: user.username,
+                    nickname: user.nickname,
+                    photoUrl: user.photo_url,
+                });
+            });
+        }
         return {
             rootComment: {
                 id: rootComment.id,
@@ -173,16 +212,23 @@ let CommentService = class CommentService {
                 replyCount: rootComment.replyCount,
                 createdAt: rootComment.createdAt,
             },
-            replies: replies.map(reply => ({
-                id: reply.id,
-                parentId: reply.parentId,
-                floorNumber: reply.floorNumber,
-                content: reply.content,
-                createdAt: reply.createdAt,
-                username: reply.user?.username || null,
-                nickname: reply.user?.nickname || null,
-                photoUrl: reply.user?.photo_url || null,
-            })),
+            replies: replies.map(reply => {
+                const replyToUser = reply.replyToUserId ? replyToUsersMap.get(reply.replyToUserId) : null;
+                return {
+                    id: reply.id,
+                    parentId: reply.parentId,
+                    floorNumber: reply.floorNumber,
+                    content: reply.content,
+                    createdAt: reply.createdAt,
+                    username: reply.user?.username || null,
+                    nickname: reply.user?.nickname || null,
+                    photoUrl: reply.user?.photo_url || null,
+                    replyToUserId: reply.replyToUserId || null,
+                    replyToUsername: replyToUser?.username || null,
+                    replyToNickname: replyToUser?.nickname || null,
+                    replyToPhotoUrl: replyToUser?.photoUrl || null,
+                };
+            }),
             total,
             page,
             size,
@@ -227,6 +273,80 @@ let CommentService = class CommentService {
             total,
             page,
             size,
+            totalPages: Math.ceil(total / size),
+        };
+    }
+    async getUserReceivedReplies(userId, page = 1, size = 20) {
+        const skip = (page - 1) * size;
+        const [replies, total] = await this.commentRepo.findAndCount({
+            where: { replyToUserId: userId },
+            order: { createdAt: 'DESC' },
+            skip,
+            take: size,
+            relations: ['user'],
+        });
+        const parentIds = [...new Set(replies.map(r => r.parentId).filter(Boolean))];
+        const parentCommentsMap = new Map();
+        if (parentIds.length > 0) {
+            const parentComments = await this.commentRepo
+                .createQueryBuilder('comment')
+                .where('comment.id IN (:...ids)', { ids: parentIds })
+                .getMany();
+            parentComments.forEach(comment => {
+                parentCommentsMap.set(comment.id, {
+                    id: comment.id,
+                    content: comment.content,
+                    episodeShortId: comment.episodeShortId,
+                });
+            });
+        }
+        const episodeShortIds = [...new Set(replies.map(r => r.episodeShortId).filter(Boolean))];
+        const episodeInfoMap = new Map();
+        if (episodeShortIds.length > 0) {
+            const episodes = await this.commentRepo.manager
+                .getRepository('Episode')
+                .createQueryBuilder('episode')
+                .leftJoinAndSelect('episode.series', 'series')
+                .where('episode.shortId IN (:...shortIds)', { shortIds: episodeShortIds })
+                .getMany();
+            episodes.forEach((episode) => {
+                episodeInfoMap.set(episode.shortId, {
+                    episodeId: episode.id,
+                    episodeShortId: episode.shortId,
+                    episodeNumber: episode.episodeNumber,
+                    episodeTitle: episode.title,
+                    seriesId: episode.series?.id,
+                    seriesShortId: episode.series?.shortId,
+                    seriesTitle: episode.series?.title,
+                    seriesCoverUrl: episode.series?.coverUrl,
+                });
+            });
+        }
+        const formattedReplies = replies.map(reply => {
+            const parentComment = reply.parentId ? parentCommentsMap.get(reply.parentId) : null;
+            const episodeInfo = episodeInfoMap.get(reply.episodeShortId) || null;
+            return {
+                id: reply.id,
+                content: reply.content,
+                createdAt: reply.createdAt,
+                episodeNumber: episodeInfo?.episodeNumber || null,
+                episodeTitle: episodeInfo?.episodeTitle || null,
+                seriesShortId: episodeInfo?.seriesShortId || null,
+                seriesTitle: episodeInfo?.seriesTitle || null,
+                seriesCoverUrl: episodeInfo?.seriesCoverUrl || null,
+                fromUsername: reply.user?.username || null,
+                fromNickname: reply.user?.nickname || null,
+                fromPhotoUrl: reply.user?.photo_url || null,
+                myComment: parentComment?.content || null,
+                floorNumber: reply.floorNumber,
+            };
+        });
+        return {
+            list: formattedReplies,
+            total,
+            page,
+            size,
+            hasMore: total > page * size,
             totalPages: Math.ceil(total / size),
         };
     }

@@ -81,10 +81,40 @@ export declare class InteractionController extends BaseController {
             username: string | null;
             nickname: string | null;
             photoUrl: string | null;
+            replyToUserId: number | null;
+            replyToUsername: any;
+            replyToNickname: any;
+            replyToPhotoUrl: any;
         }[];
         total: number;
         page: number;
         size: number;
+        totalPages: number;
+    }>>;
+    getMyReplies(req: {
+        user?: {
+            userId?: number;
+        };
+    }, page?: string, size?: string): Promise<import("../controllers/base.controller").ApiResponse<null> | import("../controllers/base.controller").ApiResponse<{
+        list: {
+            id: number;
+            content: string;
+            createdAt: Date;
+            episodeNumber: any;
+            episodeTitle: any;
+            seriesShortId: any;
+            seriesTitle: any;
+            seriesCoverUrl: any;
+            fromUsername: string | null;
+            fromNickname: string | null;
+            fromPhotoUrl: string | null;
+            myComment: any;
+            floorNumber: number;
+        }[];
+        total: number;
+        page: number;
+        size: number;
+        hasMore: boolean;
         totalPages: number;
     }>>;
 }

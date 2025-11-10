@@ -107,7 +107,7 @@ let BrowseHistoryService = class BrowseHistoryService {
                     hasMore: false
                 };
             }
-            const [browseHistories] = await this.browseHistoryRepo
+            const [browseHistories, queryTotal] = await this.browseHistoryRepo
                 .createQueryBuilder('bh')
                 .leftJoinAndSelect('bh.series', 'series')
                 .leftJoinAndSelect('series.category', 'category')

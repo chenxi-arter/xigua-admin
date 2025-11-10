@@ -122,6 +122,9 @@ let EpisodeInteractionService = class EpisodeInteractionService {
     async getCommentReplies(commentId, page, size) {
         return this.commentService.getCommentReplies(commentId, page, size);
     }
+    async getUserReceivedReplies(userId, page, size) {
+        return this.commentService.getUserReceivedReplies(userId, page, size);
+    }
 };
 exports.EpisodeInteractionService = EpisodeInteractionService;
 exports.EpisodeInteractionService = EpisodeInteractionService = __decorate([
