@@ -12,6 +12,8 @@ const typeorm_1 = require("@nestjs/typeorm");
 const browse_history_entity_1 = require("../entity/browse-history.entity");
 const user_entity_1 = require("../../user/entity/user.entity");
 const series_entity_1 = require("../entity/series.entity");
+const watch_progress_entity_1 = require("../entity/watch-progress.entity");
+const episode_entity_1 = require("../entity/episode.entity");
 const browse_history_service_1 = require("../services/browse-history.service");
 const browse_history_cleanup_service_1 = require("../services/browse-history-cleanup.service");
 const browse_history_controller_1 = require("../browse-history.controller");
@@ -26,7 +28,7 @@ exports.HistoryModule = HistoryModule;
 exports.HistoryModule = HistoryModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([browse_history_entity_1.BrowseHistory, user_entity_1.User, series_entity_1.Series, category_entity_1.Category]),
+            typeorm_1.TypeOrmModule.forFeature([browse_history_entity_1.BrowseHistory, user_entity_1.User, series_entity_1.Series, category_entity_1.Category, watch_progress_entity_1.WatchProgress, episode_entity_1.Episode]),
         ],
         controllers: [browse_history_controller_1.BrowseHistoryController],
         providers: [

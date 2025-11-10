@@ -21,15 +21,21 @@ const browse_history_entity_1 = require("../entity/browse-history.entity");
 const date_util_1 = require("../../common/utils/date.util");
 const series_entity_1 = require("../entity/series.entity");
 const user_entity_1 = require("../../user/entity/user.entity");
+const watch_progress_entity_1 = require("../entity/watch-progress.entity");
+const episode_entity_1 = require("../entity/episode.entity");
 let BrowseHistoryService = class BrowseHistoryService {
     browseHistoryRepo;
     seriesRepo;
     userRepo;
+    watchProgressRepo;
+    episodeRepo;
     cacheManager;
-    constructor(browseHistoryRepo, seriesRepo, userRepo, cacheManager) {
+    constructor(browseHistoryRepo, seriesRepo, userRepo, watchProgressRepo, episodeRepo, cacheManager) {
         this.browseHistoryRepo = browseHistoryRepo;
         this.seriesRepo = seriesRepo;
         this.userRepo = userRepo;
+        this.watchProgressRepo = watchProgressRepo;
+        this.episodeRepo = episodeRepo;
         this.cacheManager = cacheManager;
     }
     async recordBrowseHistory(userId, seriesId, browseType = 'episode_watch', lastEpisodeNumber = null, req) {
@@ -83,22 +89,24 @@ let BrowseHistoryService = class BrowseHistoryService {
     async getUserBrowseHistory(userId, page = 1, size = 10, categoryId) {
         try {
             const offset = (page - 1) * size;
-            let latestRecordQuery = this.browseHistoryRepo
-                .createQueryBuilder('bh')
-                .select('MAX(bh.id)', 'maxId')
-                .addSelect('bh.seriesId')
-                .where('bh.userId = :userId', { userId })
-                .andWhere('bh.browseType = :browseType', { browseType: 'episode_watch' });
+            let query = this.watchProgressRepo
+                .createQueryBuilder('wp')
+                .innerJoin('wp.episode', 'episode')
+                .innerJoin('episode.series', 'series')
+                .leftJoin('series.category', 'category')
+                .select('series.id', 'seriesId')
+                .addSelect('MAX(wp.updated_at)', 'lastVisitTime')
+                .addSelect('MAX(episode.episode_number)', 'lastEpisodeNumber')
+                .addSelect('COUNT(DISTINCT episode.id)', 'visitCount')
+                .where('wp.user_id = :userId', { userId });
             if (categoryId) {
-                latestRecordQuery = latestRecordQuery
-                    .innerJoin('bh.series', 's')
-                    .andWhere('s.categoryId = :categoryId', { categoryId });
+                query = query.andWhere('series.category_id = :categoryId', { categoryId });
             }
-            const latestRecordIds = await latestRecordQuery
-                .groupBy('bh.seriesId')
+            const aggregatedData = await query
+                .groupBy('series.id')
+                .orderBy('lastVisitTime', 'DESC')
                 .getRawMany();
-            const latestIds = latestRecordIds.map((row) => Number(row.maxId));
-            if (latestIds.length === 0) {
+            if (aggregatedData.length === 0) {
                 return {
                     list: [],
                     total: 0,
@@ -107,38 +115,46 @@ let BrowseHistoryService = class BrowseHistoryService {
                     hasMore: false
                 };
             }
-            const [browseHistories, queryTotal] = await this.browseHistoryRepo
-                .createQueryBuilder('bh')
-                .leftJoinAndSelect('bh.series', 'series')
-                .leftJoinAndSelect('series.category', 'category')
-                .where('bh.id IN (:...ids)', { ids: latestIds })
-                .orderBy('bh.updatedAt', 'DESC')
-                .skip(offset)
-                .take(size)
-                .getManyAndCount();
-            const result = {
-                list: browseHistories.map(bh => ({
-                    id: bh.id,
-                    seriesId: bh.seriesId,
-                    seriesTitle: bh.series?.title || `系列${bh.seriesId}`,
-                    seriesShortId: bh.series?.shortId || '',
-                    seriesCoverUrl: bh.series?.coverUrl || '',
-                    categoryName: bh.series?.category?.name || '',
-                    categoryId: bh.series?.category?.id,
-                    browseType: bh.browseType,
-                    browseTypeDesc: this.getBrowseTypeDescription(bh.browseType),
-                    lastEpisodeNumber: bh.lastEpisodeNumber,
-                    lastEpisodeTitle: bh.lastEpisodeNumber ? `第${bh.lastEpisodeNumber}集` : null,
-                    visitCount: bh.visitCount,
-                    lastVisitTime: date_util_1.DateUtil.formatDateTime(bh.updatedAt),
-                    watchStatus: this.getWatchStatus(bh.browseType, bh.lastEpisodeNumber)
-                })),
-                total: latestIds.length,
+            const total = aggregatedData.length;
+            const paginatedData = aggregatedData.slice(offset, offset + size);
+            const seriesIds = paginatedData.map(item => item.seriesId);
+            const seriesMap = new Map();
+            if (seriesIds.length > 0) {
+                const seriesList = await this.seriesRepo
+                    .createQueryBuilder('series')
+                    .leftJoinAndSelect('series.category', 'category')
+                    .where('series.id IN (:...ids)', { ids: seriesIds })
+                    .getMany();
+                seriesList.forEach(series => {
+                    seriesMap.set(series.id, series);
+                });
+            }
+            const list = paginatedData.map(item => {
+                const series = seriesMap.get(item.seriesId);
+                return {
+                    id: item.seriesId,
+                    seriesId: item.seriesId,
+                    seriesTitle: series?.title || `系列${item.seriesId}`,
+                    seriesShortId: series?.shortId || '',
+                    seriesCoverUrl: series?.coverUrl || '',
+                    categoryName: series?.category?.name || '',
+                    categoryId: series?.category?.id,
+                    browseType: 'episode_watch',
+                    browseTypeDesc: '观看剧集',
+                    lastEpisodeNumber: item.lastEpisodeNumber,
+                    lastEpisodeTitle: item.lastEpisodeNumber ? `第${item.lastEpisodeNumber}集` : null,
+                    visitCount: item.visitCount,
+                    lastVisitTime: date_util_1.DateUtil.formatDateTime(new Date(item.lastVisitTime)),
+                    watchStatus: `观看至第${item.lastEpisodeNumber}集`
+                };
+            });
+            return {
+                list,
+                total,
                 page,
                 size,
-                hasMore: latestIds.length > page * size
+                hasMore: total > page * size
             };
-            return result;
         }
         catch (error) {
             console.error('获取浏览历史失败:', error?.message || error);
@@ -393,8 +409,12 @@ exports.BrowseHistoryService = BrowseHistoryService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(browse_history_entity_1.BrowseHistory)),
     __param(1, (0, typeorm_1.InjectRepository)(series_entity_1.Series)),
     __param(2, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
-    __param(3, (0, common_1.Inject)(cache_manager_1.CACHE_MANAGER)),
+    __param(3, (0, typeorm_1.InjectRepository)(watch_progress_entity_1.WatchProgress)),
+    __param(4, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),
+    __param(5, (0, common_1.Inject)(cache_manager_1.CACHE_MANAGER)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository, Object])
 ], BrowseHistoryService);
