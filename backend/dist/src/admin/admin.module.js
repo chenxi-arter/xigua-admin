@@ -19,6 +19,9 @@ const refresh_token_entity_1 = require("../auth/entity/refresh-token.entity");
 const comment_entity_1 = require("../video/entity/comment.entity");
 const watch_progress_entity_1 = require("../video/entity/watch-progress.entity");
 const browse_history_entity_1 = require("../video/entity/browse-history.entity");
+const episode_reaction_entity_1 = require("../video/entity/episode-reaction.entity");
+const favorite_entity_1 = require("../user/entity/favorite.entity");
+const filter_option_entity_1 = require("../video/entity/filter-option.entity");
 const controllers_1 = require("./controllers");
 const admin_categories_controller_1 = require("./controllers/admin-categories.controller");
 const ingest_controller_1 = require("./controllers/ingest.controller");
@@ -26,6 +29,7 @@ const test_ingest_controller_1 = require("./controllers/test-ingest.controller")
 const admin_series_controller_1 = require("./controllers/admin-series.controller");
 const admin_dashboard_controller_1 = require("./controllers/admin-dashboard.controller");
 const series_validation_controller_1 = require("./controllers/series-validation.controller");
+const admin_export_controller_1 = require("./controllers/admin-export.controller");
 const video_module_1 = require("../video/video.module");
 const core_module_1 = require("../core/core.module");
 const analytics_service_1 = require("./services/analytics.service");
@@ -48,6 +52,9 @@ exports.AdminModule = AdminModule = __decorate([
                 watch_progress_entity_1.WatchProgress,
                 browse_history_entity_1.BrowseHistory,
                 category_entity_1.Category,
+                episode_reaction_entity_1.EpisodeReaction,
+                favorite_entity_1.Favorite,
+                filter_option_entity_1.FilterOption,
             ])
         ],
         controllers: [
@@ -58,6 +65,7 @@ exports.AdminModule = AdminModule = __decorate([
             admin_series_controller_1.AdminSeriesController,
             admin_dashboard_controller_1.AdminDashboardController,
             series_validation_controller_1.SeriesValidationController,
+            admin_export_controller_1.AdminExportController,
             ingest_controller_1.IngestController,
             test_ingest_controller_1.TestIngestController,
         ],

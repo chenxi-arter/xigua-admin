@@ -1,10 +1,17 @@
 import { Repository } from 'typeorm';
 import { Series } from '../../video/entity/series.entity';
+import { FilterOption } from '../../video/entity/filter-option.entity';
 import { VideoService } from '../../video/video.service';
+import { R2StorageService } from '../../core/storage/r2-storage.service';
+import { GetPresignedUrlDto, UploadCompleteDto } from '../dto/presigned-upload.dto';
 export declare class AdminSeriesController {
     private readonly seriesRepo;
+    private readonly filterOptionRepo;
     private readonly videoService;
-    constructor(seriesRepo: Repository<Series>, videoService: VideoService);
+    private readonly storage;
+    constructor(seriesRepo: Repository<Series>, filterOptionRepo: Repository<FilterOption>, videoService: VideoService, storage: R2StorageService);
+    private findFilterOptionIdByName;
+    private resolveChineseFilters;
     private normalize;
     list(page?: number, size?: number, includeDeleted?: string): Promise<{
         total: number;
@@ -19,8 +26,8 @@ export declare class AdminSeriesController {
         size: number;
     }>;
     get(id: string): Promise<Series | null>;
-    create(body: Partial<Series>): Promise<Series>;
-    update(id: string, body: Partial<Series>): Promise<Series | null>;
+    create(body: any): Promise<Series>;
+    update(id: string, body: any): Promise<Series | null>;
     remove(id: string): Promise<{
         success: boolean;
         message: string;
@@ -28,5 +35,21 @@ export declare class AdminSeriesController {
     restore(id: string): Promise<{
         success: boolean;
         message: string;
+    }>;
+    uploadCover(id: string, file?: {
+        buffer?: Buffer;
+        originalname?: string;
+        mimetype?: string;
+    }): Promise<Series | null>;
+    uploadCoverFromUrl(id: string, src?: string): Promise<Series | null>;
+    getPresignedUploadUrl(id: string, query: GetPresignedUrlDto): Promise<{
+        uploadUrl: string;
+        fileKey: string;
+        publicUrl: string;
+    }>;
+    uploadComplete(id: string, body: UploadCompleteDto): Promise<{
+        success: boolean;
+        message: string;
+        coverUrl: string;
     }>;
 }

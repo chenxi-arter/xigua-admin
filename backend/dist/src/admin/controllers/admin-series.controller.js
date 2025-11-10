@@ -17,18 +17,75 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const series_entity_1 = require("../../video/entity/series.entity");
+const filter_option_entity_1 = require("../../video/entity/filter-option.entity");
 const video_service_1 = require("../../video/video.service");
+const r2_storage_service_1 = require("../../core/storage/r2-storage.service");
+const platform_express_1 = require("@nestjs/platform-express");
+const presigned_upload_dto_1 = require("../dto/presigned-upload.dto");
+const crypto_1 = require("crypto");
+const axios_1 = require("axios");
+const https = require("https");
 let AdminSeriesController = class AdminSeriesController {
     seriesRepo;
+    filterOptionRepo;
     videoService;
-    constructor(seriesRepo, videoService) {
+    storage;
+    constructor(seriesRepo, filterOptionRepo, videoService, storage) {
         this.seriesRepo = seriesRepo;
+        this.filterOptionRepo = filterOptionRepo;
         this.videoService = videoService;
+        this.storage = storage;
+    }
+    async findFilterOptionIdByName(name, typeCode) {
+        if (!name)
+            return undefined;
+        const option = await this.filterOptionRepo
+            .createQueryBuilder('option')
+            .innerJoin('option.filterType', 'filterType')
+            .where('option.name = :name', { name })
+            .andWhere('filterType.code = :typeCode', { typeCode })
+            .getOne();
+        return option?.id;
+    }
+    async resolveChineseFilters(raw) {
+        const result = {};
+        if (typeof raw.region === 'string') {
+            const id = await this.findFilterOptionIdByName(raw.region, 'region');
+            if (id)
+                result.regionOptionId = id;
+        }
+        if (typeof raw.language === 'string') {
+            const id = await this.findFilterOptionIdByName(raw.language, 'language');
+            if (id)
+                result.languageOptionId = id;
+        }
+        if (typeof raw.status === 'string') {
+            const id = await this.findFilterOptionIdByName(raw.status, 'status');
+            if (id)
+                result.statusOptionId = id;
+        }
+        if (typeof raw.year === 'string') {
+            const id = await this.findFilterOptionIdByName(raw.year, 'year');
+            if (id)
+                result.yearOptionId = id;
+        }
+        return result;
     }
     normalize(raw) {
         const toInt = (v) => (typeof v === 'string' || typeof v === 'number') ? Number(v) : undefined;
         const toFloat = (v) => (typeof v === 'string' || typeof v === 'number') ? Number(v) : undefined;
         const toBoolNum = (v) => v === undefined ? undefined : ((v === true || v === 'true' || v === 1 || v === '1') ? 1 : 0);
+        const toBool = (v) => {
+            if (v === undefined || v === null)
+                return undefined;
+            if (typeof v === 'boolean')
+                return v;
+            if (v === 'true' || v === '1' || v === 1)
+                return true;
+            if (v === 'false' || v === '0' || v === 0)
+                return false;
+            return undefined;
+        };
         const toDate = (v) => (typeof v === 'string' || v instanceof Date) ? new Date(v) : undefined;
         const payload = {};
         if (typeof raw.title === 'string')
@@ -37,8 +94,6 @@ let AdminSeriesController = class AdminSeriesController {
             payload.description = raw.description;
         if (typeof raw.coverUrl === 'string')
             payload.coverUrl = raw.coverUrl;
-        if (typeof raw.externalId === 'string')
-            payload.externalId = raw.externalId;
         if (typeof raw.starring === 'string')
             payload.starring = raw.starring;
         if (typeof raw.actor === 'string')
@@ -53,9 +108,6 @@ let AdminSeriesController = class AdminSeriesController {
         const score = toFloat(raw.score);
         if (score !== undefined)
             payload.score = score;
-        const playCount = toInt(raw.playCount);
-        if (playCount !== undefined)
-            payload.playCount = playCount;
         const upCount = toInt(raw.upCount);
         if (upCount !== undefined)
             payload.upCount = upCount;
@@ -71,11 +123,8 @@ let AdminSeriesController = class AdminSeriesController {
         const yearOptionId = toInt(raw.yearOptionId);
         if (yearOptionId !== undefined)
             payload.yearOptionId = yearOptionId;
-        const deletedBy = toInt(raw.deletedBy);
-        if (deletedBy !== undefined)
-            payload.deletedBy = deletedBy;
-        const isCompleted = (raw.isCompleted === true || raw.isCompleted === 'true' || raw.isCompleted === 1 || raw.isCompleted === '1');
-        if (raw.isCompleted !== undefined)
+        const isCompleted = toBool(raw.isCompleted);
+        if (isCompleted !== undefined)
             payload.isCompleted = isCompleted;
         const isActive = toBoolNum(raw.isActive);
         if (isActive !== undefined)
@@ -112,13 +161,21 @@ let AdminSeriesController = class AdminSeriesController {
         return this.seriesRepo.findOne({ where: { id: Number(id) } });
     }
     async create(body) {
-        const entity = this.seriesRepo.create(this.normalize(body));
+        const chineseFilters = await this.resolveChineseFilters(body);
+        const normalized = this.normalize(body);
+        const payload = { ...normalized, ...chineseFilters };
+        const entity = this.seriesRepo.create(payload);
         return this.seriesRepo.save(entity);
     }
     async update(id, body) {
-        const payload = this.normalize(body);
+        const chineseFilters = await this.resolveChineseFilters(body);
+        const normalized = this.normalize(body);
+        const payload = { ...normalized, ...chineseFilters };
         await this.seriesRepo.update({ id: Number(id) }, payload);
-        return this.seriesRepo.findOne({ where: { id: Number(id) } });
+        return this.seriesRepo.findOne({
+            where: { id: Number(id) },
+            relations: ['category', 'regionOption', 'languageOption', 'statusOption', 'yearOption']
+        });
     }
     async remove(id) {
         const result = await this.videoService.softDeleteSeries(Number(id));
@@ -127,6 +184,83 @@ let AdminSeriesController = class AdminSeriesController {
     async restore(id) {
         const result = await this.videoService.restoreSeries(Number(id));
         return result;
+    }
+    async uploadCover(id, file) {
+        if (!file || !file.buffer)
+            throw new common_1.BadRequestException('file is required');
+        const { url, key } = await this.storage.uploadBuffer(file.buffer, file.originalname, {
+            keyPrefix: 'series/',
+            contentType: file.mimetype,
+        });
+        const coverUrl = url ?? key;
+        await this.seriesRepo.update({ id: Number(id) }, { coverUrl });
+        return this.seriesRepo.findOne({ where: { id: Number(id) } });
+    }
+    async uploadCoverFromUrl(id, src) {
+        if (!src)
+            throw new common_1.BadRequestException('url is required');
+        const allowInsecure = process.env.ALLOW_INSECURE_EXTERNAL_FETCH === 'true';
+        const httpsAgent = new https.Agent({ rejectUnauthorized: !allowInsecure });
+        const resp = await axios_1.default.get(src, {
+            responseType: 'arraybuffer',
+            httpsAgent,
+            timeout: 15000,
+        });
+        const buffer = Buffer.from(resp.data);
+        const contentType = resp.headers['content-type'];
+        const { url, key } = await this.storage.uploadBuffer(buffer, undefined, {
+            keyPrefix: 'series/',
+            contentType,
+        });
+        const coverUrl = url ?? key;
+        await this.seriesRepo.update({ id: Number(id) }, { coverUrl });
+        return this.seriesRepo.findOne({ where: { id: Number(id) } });
+    }
+    async getPresignedUploadUrl(id, query) {
+        const series = await this.seriesRepo.findOne({ where: { id: Number(id) } });
+        if (!series) {
+            throw new common_1.NotFoundException('Series not found');
+        }
+        const { filename, contentType } = query;
+        const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+        if (!allowedImageTypes.includes(contentType)) {
+            throw new common_1.BadRequestException('Invalid image type. Allowed: JPEG, PNG, WebP, GIF');
+        }
+        if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+            throw new common_1.BadRequestException('Invalid filename');
+        }
+        const extension = filename.split('.').pop()?.toLowerCase();
+        const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+        if (!extension || !allowedExtensions.includes(extension)) {
+            throw new common_1.BadRequestException('Invalid file extension');
+        }
+        const fileKey = `series/${id}/cover_${(0, crypto_1.randomUUID)()}.${extension}`;
+        const uploadUrl = await this.storage.generatePresignedUploadUrl(fileKey, contentType, 3600);
+        const publicUrl = this.storage.getPublicUrl(fileKey);
+        return {
+            uploadUrl,
+            fileKey,
+            publicUrl,
+        };
+    }
+    async uploadComplete(id, body) {
+        const { fileKey, publicUrl } = body;
+        if (!fileKey || !publicUrl) {
+            throw new common_1.BadRequestException('fileKey and publicUrl are required');
+        }
+        const series = await this.seriesRepo.findOne({ where: { id: Number(id) } });
+        if (!series) {
+            throw new common_1.NotFoundException('Series not found');
+        }
+        await this.seriesRepo.update({ id: Number(id) }, {
+            coverUrl: publicUrl,
+            updatedAt: new Date(),
+        });
+        return {
+            success: true,
+            message: 'Cover upload completed',
+            coverUrl: publicUrl,
+        };
     }
 };
 exports.AdminSeriesController = AdminSeriesController;
@@ -183,10 +317,46 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], AdminSeriesController.prototype, "restore", null);
+__decorate([
+    (0, common_1.Post)(':id/cover'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.UploadedFile)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], AdminSeriesController.prototype, "uploadCover", null);
+__decorate([
+    (0, common_1.Post)(':id/cover-from-url'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)('url')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], AdminSeriesController.prototype, "uploadCoverFromUrl", null);
+__decorate([
+    (0, common_1.Get)(':id/presigned-upload-url'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, presigned_upload_dto_1.GetPresignedUrlDto]),
+    __metadata("design:returntype", Promise)
+], AdminSeriesController.prototype, "getPresignedUploadUrl", null);
+__decorate([
+    (0, common_1.Post)(':id/upload-complete'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, presigned_upload_dto_1.UploadCompleteDto]),
+    __metadata("design:returntype", Promise)
+], AdminSeriesController.prototype, "uploadComplete", null);
 exports.AdminSeriesController = AdminSeriesController = __decorate([
     (0, common_1.Controller)('admin/series'),
     __param(0, (0, typeorm_1.InjectRepository)(series_entity_1.Series)),
+    __param(1, (0, typeorm_1.InjectRepository)(filter_option_entity_1.FilterOption)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        video_service_1.VideoService])
+        typeorm_2.Repository,
+        video_service_1.VideoService,
+        r2_storage_service_1.R2StorageService])
 ], AdminSeriesController);
 //# sourceMappingURL=admin-series.controller.js.map

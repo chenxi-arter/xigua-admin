@@ -45,6 +45,12 @@ let AdminEpisodesController = class AdminEpisodesController {
             return undefined;
         };
         const payload = {};
+        const title = toStr(raw.title);
+        if (title !== undefined)
+            payload.title = title;
+        const status = toStr(raw.status);
+        if (status !== undefined)
+            payload.status = status;
         const seriesId = toInt(raw.seriesId);
         if (seriesId !== undefined)
             payload.seriesId = seriesId;
@@ -54,27 +60,12 @@ let AdminEpisodesController = class AdminEpisodesController {
         const duration = toInt(raw.duration);
         if (duration !== undefined)
             payload.duration = duration;
-        const status = toStr(raw.status);
-        if (status !== undefined)
-            payload.status = status;
-        const title = toStr(raw.title);
-        if (title !== undefined)
-            payload.title = title;
         const isVertical = toBool(raw.isVertical);
         if (isVertical !== undefined)
             payload.isVertical = isVertical;
-        const playCount = toInt(raw.playCount);
-        if (playCount !== undefined)
-            payload.playCount = playCount;
-        const likeCount = toInt(raw.likeCount);
-        if (likeCount !== undefined)
-            payload.likeCount = likeCount;
-        const dislikeCount = toInt(raw.dislikeCount);
-        if (dislikeCount !== undefined)
-            payload.dislikeCount = dislikeCount;
-        const favoriteCount = toInt(raw.favoriteCount);
-        if (favoriteCount !== undefined)
-            payload.favoriteCount = favoriteCount;
+        const hasSequel = toBool(raw.hasSequel);
+        if (hasSequel !== undefined)
+            payload.hasSequel = hasSequel;
         return payload;
     }
     async list(page = 1, size = 20, seriesId, minDuration, maxDuration) {
