@@ -13,7 +13,7 @@ export declare class AdminSeriesController {
     private findFilterOptionIdByName;
     private resolveChineseFilters;
     private normalize;
-    list(page?: number, size?: number, includeDeleted?: string): Promise<{
+    list(page?: number, size?: number, includeDeleted?: string, categoryId?: string): Promise<{
         total: number;
         items: Series[];
         page: number;
@@ -24,6 +24,16 @@ export declare class AdminSeriesController {
         items: Series[];
         page: number;
         size: number;
+    }>;
+    getPresignedUploadUrl(id: string, query: GetPresignedUrlDto): Promise<{
+        uploadUrl: string;
+        fileKey: string;
+        publicUrl: string;
+    }>;
+    uploadComplete(id: string, body: UploadCompleteDto): Promise<{
+        success: boolean;
+        message: string;
+        coverUrl: string;
     }>;
     get(id: string): Promise<Series | null>;
     create(body: any): Promise<Series>;
@@ -42,14 +52,4 @@ export declare class AdminSeriesController {
         mimetype?: string;
     }): Promise<Series | null>;
     uploadCoverFromUrl(id: string, src?: string): Promise<Series | null>;
-    getPresignedUploadUrl(id: string, query: GetPresignedUrlDto): Promise<{
-        uploadUrl: string;
-        fileKey: string;
-        publicUrl: string;
-    }>;
-    uploadComplete(id: string, body: UploadCompleteDto): Promise<{
-        success: boolean;
-        message: string;
-        coverUrl: string;
-    }>;
 }

@@ -13,6 +13,11 @@ export declare class AdminBannersController {
         page: number;
         size: number;
     }>;
+    getPresignedUploadUrl(id: string, query: GetPresignedUrlDto): Promise<{
+        uploadUrl: string;
+        fileKey: string;
+        publicUrl: string;
+    }>;
     get(id: string): Promise<Banner | null>;
     create(body: Partial<Banner>): Promise<Banner>;
     update(id: string, body: Partial<Banner>): Promise<Banner | null>;
@@ -25,11 +30,6 @@ export declare class AdminBannersController {
         mimetype?: string;
     }): Promise<Banner | null>;
     uploadImageFromUrl(id: string, src?: string): Promise<Banner | null>;
-    getPresignedUploadUrl(id: string, query: GetPresignedUrlDto): Promise<{
-        uploadUrl: string;
-        fileKey: string;
-        publicUrl: string;
-    }>;
     uploadComplete(id: string, body: UploadCompleteDto): Promise<{
         success: boolean;
         message: string;

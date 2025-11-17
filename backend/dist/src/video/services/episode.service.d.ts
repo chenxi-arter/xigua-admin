@@ -79,6 +79,10 @@ export declare class EpisodeService {
     deleteEpisodeUrl(urlId: number): Promise<{
         ok: boolean;
     }>;
+    deleteEpisode(episodeId: number): Promise<{
+        ok: boolean;
+        message: string;
+    }>;
     private clearEpisodeCache;
     private clearAllCache;
 }

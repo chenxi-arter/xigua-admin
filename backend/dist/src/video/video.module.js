@@ -122,6 +122,7 @@ exports.VideoModule = VideoModule = __decorate([
             url_service_1.UrlService,
             filter_service_1.FilterService,
             comment_service_1.CommentService,
+            episode_service_1.EpisodeService,
             series_service_1.SeriesService,
             category_service_1.CategoryService,
             ingest_service_1.IngestService,

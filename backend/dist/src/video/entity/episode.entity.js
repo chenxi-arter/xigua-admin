@@ -88,11 +88,11 @@ __decorate([
     __metadata("design:type", series_entity_1.Series)
 ], Episode.prototype, "series", void 0);
 __decorate([
-    (0, typeorm_1.OneToMany)(() => episode_url_entity_1.EpisodeUrl, url => url.episode),
+    (0, typeorm_1.OneToMany)(() => episode_url_entity_1.EpisodeUrl, url => url.episode, { cascade: true, onDelete: 'CASCADE' }),
     __metadata("design:type", Array)
 ], Episode.prototype, "urls", void 0);
 __decorate([
-    (0, typeorm_1.OneToMany)(() => watch_progress_entity_1.WatchProgress, wp => wp.episode),
+    (0, typeorm_1.OneToMany)(() => watch_progress_entity_1.WatchProgress, wp => wp.episode, { cascade: true, onDelete: 'CASCADE' }),
     __metadata("design:type", Array)
 ], Episode.prototype, "watchProgresses", void 0);
 __decorate([

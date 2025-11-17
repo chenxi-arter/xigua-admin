@@ -190,6 +190,28 @@ let EpisodeService = class EpisodeService {
         await this.clearEpisodeCache(episodeUrl.episodeId.toString());
         return { ok: true };
     }
+    async deleteEpisode(episodeId) {
+        const episode = await this.episodeRepo.findOne({
+            where: { id: episodeId },
+            relations: ['urls', 'watchProgresses']
+        });
+        if (!episode) {
+            throw new Error('剧集不存在');
+        }
+        await this.episodeRepo.manager.transaction(async (manager) => {
+            if (episode.urls && episode.urls.length > 0) {
+                await manager.delete('episode_urls', { episodeId: episodeId });
+            }
+            if (episode.watchProgresses && episode.watchProgresses.length > 0) {
+                await manager.delete('watch_progress', { episodeId: episodeId });
+            }
+            await manager.delete('episode_reactions', { episodeId: episodeId });
+            await manager.delete('episodes', { id: episodeId });
+        });
+        await this.clearEpisodeCache(episodeId.toString());
+        await this.clearAllCache();
+        return { ok: true, message: '剧集及相关数据删除成功' };
+    }
     async clearEpisodeCache(episodeId) {
         try {
             await this.cacheManager.del(`video_details_${episodeId}`);

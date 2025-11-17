@@ -2,12 +2,14 @@ import { Repository } from 'typeorm';
 import { Episode } from '../../video/entity/episode.entity';
 import { EpisodeUrl } from '../../video/entity/episode-url.entity';
 import { R2StorageService } from '../../core/storage/r2-storage.service';
+import { EpisodeService } from '../../video/services/episode.service';
 import { GetVideoPresignedUrlDto, VideoUploadCompleteDto } from '../dto/presigned-upload.dto';
 export declare class AdminEpisodesController {
     private readonly episodeRepo;
     private readonly episodeUrlRepo;
     private readonly storage;
-    constructor(episodeRepo: Repository<Episode>, episodeUrlRepo: Repository<EpisodeUrl>, storage: R2StorageService);
+    private readonly episodeService;
+    constructor(episodeRepo: Repository<Episode>, episodeUrlRepo: Repository<EpisodeUrl>, storage: R2StorageService, episodeService: EpisodeService);
     private normalize;
     list(page?: number, size?: number, seriesId?: string, minDuration?: string, maxDuration?: string): Promise<{
         total: number;
@@ -36,12 +38,7 @@ export declare class AdminEpisodesController {
         page: number;
         size: number;
     }>;
-    get(id: string): Promise<Episode | null>;
     create(body: Partial<Episode>): Promise<Episode>;
-    update(id: string, body: Partial<Episode>): Promise<Episode | null>;
-    remove(id: string): Promise<{
-        success: boolean;
-    }>;
     getDownloadUrls(id: string): Promise<{
         success: boolean;
         message: string;
@@ -86,4 +83,10 @@ export declare class AdminEpisodesController {
         quality: string | undefined;
         fileSize: number | undefined;
     }>;
+    update(id: string, body: Partial<Episode>): Promise<Episode | null>;
+    remove(id: string): Promise<{
+        ok: boolean;
+        message: string;
+    }>;
+    get(id: string): Promise<Episode>;
 }

@@ -32,6 +32,7 @@ const series_validation_controller_1 = require("./controllers/series-validation.
 const admin_export_controller_1 = require("./controllers/admin-export.controller");
 const video_module_1 = require("../video/video.module");
 const core_module_1 = require("../core/core.module");
+const advertising_module_1 = require("../advertising/advertising.module");
 const analytics_service_1 = require("./services/analytics.service");
 let AdminModule = class AdminModule {
 };
@@ -41,6 +42,7 @@ exports.AdminModule = AdminModule = __decorate([
         imports: [
             video_module_1.VideoModule,
             core_module_1.CoreModule,
+            advertising_module_1.AdvertisingModule,
             typeorm_1.TypeOrmModule.forFeature([
                 user_entity_1.User,
                 banner_entity_1.Banner,

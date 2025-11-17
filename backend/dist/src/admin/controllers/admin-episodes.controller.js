@@ -19,16 +19,19 @@ const typeorm_2 = require("typeorm");
 const episode_entity_1 = require("../../video/entity/episode.entity");
 const episode_url_entity_1 = require("../../video/entity/episode-url.entity");
 const r2_storage_service_1 = require("../../core/storage/r2-storage.service");
+const episode_service_1 = require("../../video/services/episode.service");
 const presigned_upload_dto_1 = require("../dto/presigned-upload.dto");
 const crypto_1 = require("crypto");
 let AdminEpisodesController = class AdminEpisodesController {
     episodeRepo;
     episodeUrlRepo;
     storage;
-    constructor(episodeRepo, episodeUrlRepo, storage) {
+    episodeService;
+    constructor(episodeRepo, episodeUrlRepo, storage, episodeService) {
         this.episodeRepo = episodeRepo;
         this.episodeUrlRepo = episodeUrlRepo;
         this.storage = storage;
+        this.episodeService = episodeService;
     }
     normalize(raw) {
         const toInt = (v) => (typeof v === 'string' || typeof v === 'number') ? Number(v) : undefined;
@@ -99,21 +102,10 @@ let AdminEpisodesController = class AdminEpisodesController {
         }));
         return { total, items: mappedItems, page: Number(page) || 1, size: take };
     }
-    async get(id) {
-        return this.episodeRepo.findOne({ where: { id: Number(id) }, relations: ['series', 'urls'] });
-    }
     async create(body) {
-        const entity = this.episodeRepo.create(this.normalize(body));
-        return this.episodeRepo.save(entity);
-    }
-    async update(id, body) {
         const payload = this.normalize(body);
-        await this.episodeRepo.update({ id: Number(id) }, payload);
-        return this.episodeRepo.findOne({ where: { id: Number(id) }, relations: ['series', 'urls'] });
-    }
-    async remove(id) {
-        await this.episodeRepo.delete({ id: Number(id) });
-        return { success: true };
+        const entity = this.episodeRepo.create(payload);
+        return this.episodeRepo.save(entity);
     }
     async getDownloadUrls(id) {
         const episode = await this.episodeRepo.findOne({
@@ -218,6 +210,32 @@ let AdminEpisodesController = class AdminEpisodesController {
             fileSize,
         };
     }
+    async update(id, body) {
+        const episode = await this.episodeRepo.findOne({ where: { id: Number(id) } });
+        if (!episode) {
+            throw new common_1.NotFoundException('Episode not found');
+        }
+        const payload = this.normalize(body);
+        await this.episodeRepo.update({ id: Number(id) }, payload);
+        return this.episodeRepo.findOne({
+            where: { id: Number(id) },
+            relations: ['series', 'urls']
+        });
+    }
+    async remove(id) {
+        const result = await this.episodeService.deleteEpisode(Number(id));
+        return result;
+    }
+    async get(id) {
+        const episode = await this.episodeRepo.findOne({
+            where: { id: Number(id) },
+            relations: ['series', 'urls']
+        });
+        if (!episode) {
+            throw new common_1.NotFoundException('Episode not found');
+        }
+        return episode;
+    }
 };
 exports.AdminEpisodesController = AdminEpisodesController;
 __decorate([
@@ -232,34 +250,12 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AdminEpisodesController.prototype, "list", null);
 __decorate([
-    (0, common_1.Get)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", Promise)
-], AdminEpisodesController.prototype, "get", null);
-__decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AdminEpisodesController.prototype, "create", null);
-__decorate([
-    (0, common_1.Put)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
-    __metadata("design:returntype", Promise)
-], AdminEpisodesController.prototype, "update", null);
-__decorate([
-    (0, common_1.Delete)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", Promise)
-], AdminEpisodesController.prototype, "remove", null);
 __decorate([
     (0, common_1.Get)(':id/download-urls'),
     __param(0, (0, common_1.Param)('id')),
@@ -283,12 +279,35 @@ __decorate([
     __metadata("design:paramtypes", [String, presigned_upload_dto_1.VideoUploadCompleteDto]),
     __metadata("design:returntype", Promise)
 ], AdminEpisodesController.prototype, "uploadComplete", null);
+__decorate([
+    (0, common_1.Put)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], AdminEpisodesController.prototype, "update", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AdminEpisodesController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AdminEpisodesController.prototype, "get", null);
 exports.AdminEpisodesController = AdminEpisodesController = __decorate([
     (0, common_1.Controller)('admin/episodes'),
     __param(0, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),
     __param(1, (0, typeorm_1.InjectRepository)(episode_url_entity_1.EpisodeUrl)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
-        r2_storage_service_1.R2StorageService])
+        r2_storage_service_1.R2StorageService,
+        episode_service_1.EpisodeService])
 ], AdminEpisodesController);
 //# sourceMappingURL=admin-episodes.controller.js.map

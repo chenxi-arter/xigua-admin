@@ -78,6 +78,33 @@ let AdminBannersController = class AdminBannersController {
         const [items, total] = await this.bannerRepo.findAndCount({ skip, take, order: { id: 'DESC' } });
         return { total, items, page: Number(page) || 1, size: take };
     }
+    async getPresignedUploadUrl(id, query) {
+        const banner = await this.bannerRepo.findOne({ where: { id: Number(id) } });
+        if (!banner) {
+            throw new common_1.NotFoundException('Banner not found');
+        }
+        const { filename, contentType } = query;
+        const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+        if (!allowedImageTypes.includes(contentType)) {
+            throw new common_1.BadRequestException('Invalid image type. Allowed: JPEG, PNG, WebP, GIF');
+        }
+        if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+            throw new common_1.BadRequestException('Invalid filename');
+        }
+        const extension = filename.split('.').pop()?.toLowerCase();
+        const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+        if (!extension || !allowedExtensions.includes(extension)) {
+            throw new common_1.BadRequestException('Invalid file extension');
+        }
+        const fileKey = `banners/${id}/image_${(0, crypto_1.randomUUID)()}.${extension}`;
+        const uploadUrl = await this.storage.generatePresignedUploadUrl(fileKey, contentType, 3600);
+        const publicUrl = this.storage.getPublicUrl(fileKey);
+        return {
+            uploadUrl,
+            fileKey,
+            publicUrl,
+        };
+    }
     async get(id) {
         return this.bannerRepo.findOne({ where: { id: Number(id) } });
     }
@@ -125,33 +152,6 @@ let AdminBannersController = class AdminBannersController {
         await this.bannerRepo.update({ id: Number(id) }, { imageUrl });
         return this.bannerRepo.findOne({ where: { id: Number(id) } });
     }
-    async getPresignedUploadUrl(id, query) {
-        const banner = await this.bannerRepo.findOne({ where: { id: Number(id) } });
-        if (!banner) {
-            throw new common_1.NotFoundException('Banner not found');
-        }
-        const { filename, contentType } = query;
-        const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
-        if (!allowedImageTypes.includes(contentType)) {
-            throw new common_1.BadRequestException('Invalid image type. Allowed: JPEG, PNG, WebP, GIF');
-        }
-        if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
-            throw new common_1.BadRequestException('Invalid filename');
-        }
-        const extension = filename.split('.').pop()?.toLowerCase();
-        const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-        if (!extension || !allowedExtensions.includes(extension)) {
-            throw new common_1.BadRequestException('Invalid file extension');
-        }
-        const fileKey = `banners/${id}/image_${(0, crypto_1.randomUUID)()}.${extension}`;
-        const uploadUrl = await this.storage.generatePresignedUploadUrl(fileKey, contentType, 3600);
-        const publicUrl = this.storage.getPublicUrl(fileKey);
-        return {
-            uploadUrl,
-            fileKey,
-            publicUrl,
-        };
-    }
     async uploadComplete(id, body) {
         const { fileKey, publicUrl } = body;
         if (!fileKey || !publicUrl) {
@@ -181,6 +181,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], AdminBannersController.prototype, "list", null);
+__decorate([
+    (0, common_1.Get)(':id/presigned-upload-url'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, presigned_upload_dto_1.GetPresignedUrlDto]),
+    __metadata("design:returntype", Promise)
+], AdminBannersController.prototype, "getPresignedUploadUrl", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
@@ -227,14 +235,6 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], AdminBannersController.prototype, "uploadImageFromUrl", null);
-__decorate([
-    (0, common_1.Get)(':id/presigned-upload-url'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Query)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, presigned_upload_dto_1.GetPresignedUrlDto]),
-    __metadata("design:returntype", Promise)
-], AdminBannersController.prototype, "getPresignedUploadUrl", null);
 __decorate([
     (0, common_1.Post)(':id/upload-complete'),
     __param(0, (0, common_1.Param)('id')),

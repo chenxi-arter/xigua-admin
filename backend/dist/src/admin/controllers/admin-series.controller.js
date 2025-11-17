@@ -134,15 +134,19 @@ let AdminSeriesController = class AdminSeriesController {
             payload.releaseDate = releaseDate;
         return payload;
     }
-    async list(page = 1, size = 20, includeDeleted) {
+    async list(page = 1, size = 20, includeDeleted, categoryId) {
         const take = Math.max(Number(size) || 20, 1);
         const skip = (Math.max(Number(page) || 1, 1) - 1) * take;
         const where = includeDeleted === 'true' ? {} : { isActive: 1 };
+        if (categoryId && !isNaN(Number(categoryId))) {
+            where.categoryId = Number(categoryId);
+        }
         const [items, total] = await this.seriesRepo.findAndCount({
             skip,
             take,
             order: { id: 'DESC' },
-            where
+            where,
+            relations: ['category']
         });
         return { total, items, page: Number(page) || 1, size: take };
     }
@@ -156,6 +160,52 @@ let AdminSeriesController = class AdminSeriesController {
             where: { isActive: 0 }
         });
         return { total, items, page: Number(page) || 1, size: take };
+    }
+    async getPresignedUploadUrl(id, query) {
+        const series = await this.seriesRepo.findOne({ where: { id: Number(id) } });
+        if (!series) {
+            throw new common_1.NotFoundException('Series not found');
+        }
+        const { filename, contentType } = query;
+        const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+        if (!allowedImageTypes.includes(contentType)) {
+            throw new common_1.BadRequestException('Invalid image type. Allowed: JPEG, PNG, WebP, GIF');
+        }
+        if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+            throw new common_1.BadRequestException('Invalid filename');
+        }
+        const extension = filename.split('.').pop()?.toLowerCase();
+        const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+        if (!extension || !allowedExtensions.includes(extension)) {
+            throw new common_1.BadRequestException('Invalid file extension');
+        }
+        const fileKey = `series/${id}/cover_${(0, crypto_1.randomUUID)()}.${extension}`;
+        const uploadUrl = await this.storage.generatePresignedUploadUrl(fileKey, contentType, 3600);
+        const publicUrl = this.storage.getPublicUrl(fileKey);
+        return {
+            uploadUrl,
+            fileKey,
+            publicUrl,
+        };
+    }
+    async uploadComplete(id, body) {
+        const { fileKey, publicUrl } = body;
+        if (!fileKey || !publicUrl) {
+            throw new common_1.BadRequestException('fileKey and publicUrl are required');
+        }
+        const series = await this.seriesRepo.findOne({ where: { id: Number(id) } });
+        if (!series) {
+            throw new common_1.NotFoundException('Series not found');
+        }
+        await this.seriesRepo.update({ id: Number(id) }, {
+            coverUrl: publicUrl,
+            updatedAt: new Date(),
+        });
+        return {
+            success: true,
+            message: 'Cover upload completed',
+            coverUrl: publicUrl,
+        };
     }
     async get(id) {
         return this.seriesRepo.findOne({ where: { id: Number(id) } });
@@ -216,52 +266,6 @@ let AdminSeriesController = class AdminSeriesController {
         await this.seriesRepo.update({ id: Number(id) }, { coverUrl });
         return this.seriesRepo.findOne({ where: { id: Number(id) } });
     }
-    async getPresignedUploadUrl(id, query) {
-        const series = await this.seriesRepo.findOne({ where: { id: Number(id) } });
-        if (!series) {
-            throw new common_1.NotFoundException('Series not found');
-        }
-        const { filename, contentType } = query;
-        const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
-        if (!allowedImageTypes.includes(contentType)) {
-            throw new common_1.BadRequestException('Invalid image type. Allowed: JPEG, PNG, WebP, GIF');
-        }
-        if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
-            throw new common_1.BadRequestException('Invalid filename');
-        }
-        const extension = filename.split('.').pop()?.toLowerCase();
-        const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
-        if (!extension || !allowedExtensions.includes(extension)) {
-            throw new common_1.BadRequestException('Invalid file extension');
-        }
-        const fileKey = `series/${id}/cover_${(0, crypto_1.randomUUID)()}.${extension}`;
-        const uploadUrl = await this.storage.generatePresignedUploadUrl(fileKey, contentType, 3600);
-        const publicUrl = this.storage.getPublicUrl(fileKey);
-        return {
-            uploadUrl,
-            fileKey,
-            publicUrl,
-        };
-    }
-    async uploadComplete(id, body) {
-        const { fileKey, publicUrl } = body;
-        if (!fileKey || !publicUrl) {
-            throw new common_1.BadRequestException('fileKey and publicUrl are required');
-        }
-        const series = await this.seriesRepo.findOne({ where: { id: Number(id) } });
-        if (!series) {
-            throw new common_1.NotFoundException('Series not found');
-        }
-        await this.seriesRepo.update({ id: Number(id) }, {
-            coverUrl: publicUrl,
-            updatedAt: new Date(),
-        });
-        return {
-            success: true,
-            message: 'Cover upload completed',
-            coverUrl: publicUrl,
-        };
-    }
 };
 exports.AdminSeriesController = AdminSeriesController;
 __decorate([
@@ -269,8 +273,9 @@ __decorate([
     __param(0, (0, common_1.Query)('page')),
     __param(1, (0, common_1.Query)('size')),
     __param(2, (0, common_1.Query)('includeDeleted')),
+    __param(3, (0, common_1.Query)('categoryId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object, String]),
+    __metadata("design:paramtypes", [Object, Object, String, String]),
     __metadata("design:returntype", Promise)
 ], AdminSeriesController.prototype, "list", null);
 __decorate([
@@ -281,6 +286,22 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], AdminSeriesController.prototype, "getDeleted", null);
+__decorate([
+    (0, common_1.Get)(':id/presigned-upload-url'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, presigned_upload_dto_1.GetPresignedUrlDto]),
+    __metadata("design:returntype", Promise)
+], AdminSeriesController.prototype, "getPresignedUploadUrl", null);
+__decorate([
+    (0, common_1.Post)(':id/upload-complete'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, presigned_upload_dto_1.UploadCompleteDto]),
+    __metadata("design:returntype", Promise)
+], AdminSeriesController.prototype, "uploadComplete", null);
 __decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
@@ -334,22 +355,6 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], AdminSeriesController.prototype, "uploadCoverFromUrl", null);
-__decorate([
-    (0, common_1.Get)(':id/presigned-upload-url'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Query)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, presigned_upload_dto_1.GetPresignedUrlDto]),
-    __metadata("design:returntype", Promise)
-], AdminSeriesController.prototype, "getPresignedUploadUrl", null);
-__decorate([
-    (0, common_1.Post)(':id/upload-complete'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, presigned_upload_dto_1.UploadCompleteDto]),
-    __metadata("design:returntype", Promise)
-], AdminSeriesController.prototype, "uploadComplete", null);
 exports.AdminSeriesController = AdminSeriesController = __decorate([
     (0, common_1.Controller)('admin/series'),
     __param(0, (0, typeorm_1.InjectRepository)(series_entity_1.Series)),
