@@ -155,11 +155,26 @@ let UserService = class UserService {
             photoUrl = DefaultAvatarUtil.getRandomAvatar();
             console.log('分配默认头像:', photoUrl);
         }
+        const generateDefaultNickname = () => {
+            const firstName = userData.first_name?.trim() || '';
+            const lastName = userData.last_name?.trim() || '';
+            const fullName = [firstName, lastName].filter(Boolean).join(' ');
+            if (fullName) {
+                return fullName;
+            }
+            const tgUsername = userData.username?.trim();
+            if (tgUsername) {
+                return tgUsername.startsWith('@') ? tgUsername.slice(1) : tgUsername;
+            }
+            const shortId = String(userData.id).slice(-4);
+            return `用户${shortId}`;
+        };
         const user = this.userRepo.create({
             telegram_id: userData.id,
             first_name: userData.first_name,
             last_name: userData.last_name || '',
             username: userData.username || telegramUsername,
+            nickname: generateDefaultNickname(),
             photo_url: photoUrl,
             is_active: true,
         });

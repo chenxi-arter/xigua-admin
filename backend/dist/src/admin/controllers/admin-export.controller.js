@@ -21,18 +21,25 @@ const user_entity_1 = require("../../user/entity/user.entity");
 const episode_reaction_entity_1 = require("../../video/entity/episode-reaction.entity");
 const favorite_entity_1 = require("../../user/entity/favorite.entity");
 const episode_entity_1 = require("../../video/entity/episode.entity");
+const series_entity_1 = require("../../video/entity/series.entity");
+const comment_entity_1 = require("../../video/entity/comment.entity");
+const export_series_details_dto_1 = require("../dto/export-series-details.dto");
 let AdminExportController = class AdminExportController {
     wpRepo;
     userRepo;
     reactionRepo;
     favoriteRepo;
     episodeRepo;
-    constructor(wpRepo, userRepo, reactionRepo, favoriteRepo, episodeRepo) {
+    seriesRepo;
+    commentRepo;
+    constructor(wpRepo, userRepo, reactionRepo, favoriteRepo, episodeRepo, seriesRepo, commentRepo) {
         this.wpRepo = wpRepo;
         this.userRepo = userRepo;
         this.reactionRepo = reactionRepo;
         this.favoriteRepo = favoriteRepo;
         this.episodeRepo = episodeRepo;
+        this.seriesRepo = seriesRepo;
+        this.commentRepo = commentRepo;
     }
     async getPlayStats(startDate, endDate) {
         try {
@@ -218,6 +225,165 @@ let AdminExportController = class AdminExportController {
             };
         }
     }
+    async getSeriesDetails(query) {
+        try {
+            const { startDate, endDate, categoryId } = query;
+            const start = new Date(startDate);
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            const seriesQuery = this.seriesRepo
+                .createQueryBuilder('series')
+                .leftJoinAndSelect('series.category', 'category')
+                .leftJoinAndSelect('series.episodes', 'episodes')
+                .where('series.id IS NOT NULL');
+            if (categoryId) {
+                seriesQuery.andWhere('series.category_id = :categoryId', { categoryId });
+            }
+            const seriesList = await seriesQuery.getMany();
+            if (seriesList.length === 0) {
+                return {
+                    code: 200,
+                    message: 'success',
+                    timestamp: new Date().toISOString(),
+                    data: [],
+                };
+            }
+            const seriesIds = seriesList.map(s => s.id);
+            const episodeIds = seriesList.flatMap(s => s.episodes.map(e => e.id));
+            if (episodeIds.length === 0) {
+                return {
+                    code: 200,
+                    message: 'success',
+                    timestamp: new Date().toISOString(),
+                    data: [],
+                };
+            }
+            const watchStats = await this.wpRepo
+                .createQueryBuilder('wp')
+                .innerJoin('wp.episode', 'episode')
+                .select("DATE_FORMAT(wp.updated_at, '%Y-%m-%d')", 'date')
+                .addSelect('episode.series_id', 'seriesId')
+                .addSelect('COUNT(*)', 'playCount')
+                .addSelect('AVG(wp.stop_at_second)', 'avgDuration')
+                .addSelect('AVG(CASE WHEN wp.stop_at_second >= episode.duration * 0.9 THEN 1 ELSE 0 END)', 'completionRate')
+                .where('wp.updated_at BETWEEN :start AND :end', { start, end })
+                .andWhere('episode.series_id IN (:...seriesIds)', { seriesIds })
+                .groupBy('date, episode.series_id')
+                .getRawMany();
+            const reactionStats = await this.reactionRepo
+                .createQueryBuilder('r')
+                .innerJoin('r.episode', 'episode')
+                .select("DATE_FORMAT(r.created_at, '%Y-%m-%d')", 'date')
+                .addSelect('episode.series_id', 'seriesId')
+                .addSelect('SUM(CASE WHEN r.reaction_type = "like" THEN 1 ELSE 0 END)', 'likeCount')
+                .addSelect('SUM(CASE WHEN r.reaction_type = "dislike" THEN 1 ELSE 0 END)', 'dislikeCount')
+                .where('r.created_at BETWEEN :start AND :end', { start, end })
+                .andWhere('episode.series_id IN (:...seriesIds)', { seriesIds })
+                .groupBy('date, episode.series_id')
+                .getRawMany();
+            const favoriteStats = await this.favoriteRepo
+                .createQueryBuilder('f')
+                .select("DATE_FORMAT(f.created_at, '%Y-%m-%d')", 'date')
+                .addSelect('f.series_id', 'seriesId')
+                .addSelect('COUNT(*)', 'favoriteCount')
+                .where('f.created_at BETWEEN :start AND :end', { start, end })
+                .andWhere('f.series_id IN (:...seriesIds)', { seriesIds })
+                .groupBy('date, f.series_id')
+                .getRawMany();
+            const episodeShortIds = seriesList.flatMap(s => s.episodes.map(e => e.shortId).filter(Boolean));
+            let commentStats = [];
+            if (episodeShortIds.length > 0) {
+                commentStats = await this.commentRepo
+                    .createQueryBuilder('c')
+                    .select("DATE_FORMAT(c.created_at, '%Y-%m-%d')", 'date')
+                    .addSelect('c.episode_short_id', 'episodeShortId')
+                    .addSelect('COUNT(*)', 'commentCount')
+                    .where('c.created_at BETWEEN :start AND :end', { start, end })
+                    .andWhere('c.episode_short_id IN (:...episodeShortIds)', { episodeShortIds })
+                    .groupBy('date, c.episode_short_id')
+                    .getRawMany();
+            }
+            const shortIdToSeriesMap = new Map();
+            seriesList.forEach(series => {
+                series.episodes.forEach(episode => {
+                    if (episode.shortId) {
+                        shortIdToSeriesMap.set(episode.shortId, series.id);
+                    }
+                });
+            });
+            const commentStatsBySeriesMap = new Map();
+            commentStats.forEach(stat => {
+                const seriesId = shortIdToSeriesMap.get(stat.episodeShortId);
+                if (seriesId) {
+                    const key = `${stat.date}-${seriesId}`;
+                    commentStatsBySeriesMap.set(key, (commentStatsBySeriesMap.get(key) || 0) + parseInt(stat.commentCount));
+                }
+            });
+            const resultMap = new Map();
+            watchStats.forEach(stat => {
+                const key = `${stat.date}-${stat.seriesId}`;
+                const series = seriesList.find(s => s.id === stat.seriesId);
+                if (!series)
+                    return;
+                resultMap.set(key, {
+                    date: stat.date,
+                    seriesId: stat.seriesId,
+                    seriesTitle: series.title,
+                    categoryName: series.category?.name || '未分类',
+                    episodeCount: series.episodes.length,
+                    playCount: parseInt(stat.playCount),
+                    completionRate: parseFloat(parseFloat(stat.completionRate).toFixed(4)),
+                    avgWatchDuration: Math.round(parseFloat(stat.avgDuration) || 0),
+                    likeCount: 0,
+                    dislikeCount: 0,
+                    shareCount: 0,
+                    favoriteCount: 0,
+                    commentCount: 0,
+                });
+            });
+            reactionStats.forEach(stat => {
+                const key = `${stat.date}-${stat.seriesId}`;
+                const data = resultMap.get(key);
+                if (data) {
+                    data.likeCount = parseInt(stat.likeCount);
+                    data.dislikeCount = parseInt(stat.dislikeCount);
+                }
+            });
+            favoriteStats.forEach(stat => {
+                const key = `${stat.date}-${stat.seriesId}`;
+                const data = resultMap.get(key);
+                if (data) {
+                    data.favoriteCount = parseInt(stat.favoriteCount);
+                }
+            });
+            commentStatsBySeriesMap.forEach((count, key) => {
+                const data = resultMap.get(key);
+                if (data) {
+                    data.commentCount = count;
+                }
+            });
+            const result = Array.from(resultMap.values()).sort((a, b) => {
+                if (a.date !== b.date) {
+                    return b.date.localeCompare(a.date);
+                }
+                return b.playCount - a.playCount;
+            });
+            return {
+                code: 200,
+                message: 'success',
+                timestamp: new Date().toISOString(),
+                data: result,
+            };
+        }
+        catch (error) {
+            return {
+                code: 500,
+                message: `获取系列明细数据失败: ${error instanceof Error ? error.message : String(error)}`,
+                timestamp: new Date().toISOString(),
+                data: [],
+            };
+        }
+    }
     formatDate(dateStr) {
         const date = new Date(dateStr);
         const month = date.getMonth() + 1;
@@ -242,6 +408,13 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], AdminExportController.prototype, "getUserStats", null);
+__decorate([
+    (0, common_1.Get)('series-details'),
+    __param(0, (0, common_1.Query)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [export_series_details_dto_1.ExportSeriesDetailsDto]),
+    __metadata("design:returntype", Promise)
+], AdminExportController.prototype, "getSeriesDetails", null);
 exports.AdminExportController = AdminExportController = __decorate([
     (0, common_1.Controller)('admin/export'),
     __param(0, (0, typeorm_1.InjectRepository)(watch_progress_entity_1.WatchProgress)),
@@ -249,7 +422,11 @@ exports.AdminExportController = AdminExportController = __decorate([
     __param(2, (0, typeorm_1.InjectRepository)(episode_reaction_entity_1.EpisodeReaction)),
     __param(3, (0, typeorm_1.InjectRepository)(favorite_entity_1.Favorite)),
     __param(4, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),
+    __param(5, (0, typeorm_1.InjectRepository)(series_entity_1.Series)),
+    __param(6, (0, typeorm_1.InjectRepository)(comment_entity_1.Comment)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

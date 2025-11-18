@@ -22,6 +22,7 @@ export declare class UpdateIngestSeriesDto {
     status?: string;
     releaseDate?: string;
     isCompleted?: boolean;
+    seriesScore?: number;
     score?: number;
     playCount?: number;
     starring?: string;

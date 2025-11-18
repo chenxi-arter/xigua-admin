@@ -101,6 +101,7 @@ class IngestSeriesDto {
     status;
     releaseDate;
     isCompleted;
+    seriesScore;
     score;
     playCount;
     starring;
@@ -155,6 +156,13 @@ __decorate([
     (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], IngestSeriesDto.prototype, "isCompleted", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    (0, class_validator_1.Max)(10),
+    __metadata("design:type", Number)
+], IngestSeriesDto.prototype, "seriesScore", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),

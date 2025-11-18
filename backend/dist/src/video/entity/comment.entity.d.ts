@@ -8,6 +8,7 @@ export declare class Comment {
     replyToUserId?: number;
     floorNumber: number;
     replyCount: number;
+    likeCount: number;
     content: string;
     appearSecond: number;
     createdAt: Date;

@@ -67,6 +67,17 @@ let BannerController = class BannerController {
         const resp = admin_response_util_1.AdminResponseUtil.success(null, 'ok');
         return { code: resp.code, msg: 'ok', success: resp.success, timestamp: resp.timestamp };
     }
+    async track(body) {
+        const { id, type } = body;
+        if (type === 'click') {
+            await this.bannerService.incrementClick(id);
+        }
+        else if (type === 'impression') {
+            await this.bannerService.incrementImpression(id);
+        }
+        const resp = admin_response_util_1.AdminResponseUtil.success(null, 'ok');
+        return { code: resp.code, msg: 'ok', success: resp.success, timestamp: resp.timestamp };
+    }
     async click(id) {
         await this.bannerService.incrementClick(id);
         const resp = admin_response_util_1.AdminResponseUtil.success(null, 'ok');
@@ -145,6 +156,13 @@ __decorate([
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], BannerController.prototype, "impression", null);
+__decorate([
+    (0, common_1.Post)('track'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], BannerController.prototype, "track", null);
 __decorate([
     (0, common_1.Post)(':id/click'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),

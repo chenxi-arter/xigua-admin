@@ -21,6 +21,7 @@ let Comment = class Comment {
     replyToUserId;
     floorNumber;
     replyCount;
+    likeCount;
     content;
     appearSecond;
     createdAt;
@@ -59,6 +60,10 @@ __decorate([
     (0, typeorm_1.Column)({ name: 'reply_count', type: 'int', default: 0 }),
     __metadata("design:type", Number)
 ], Comment.prototype, "replyCount", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'like_count', type: 'int', default: 0 }),
+    __metadata("design:type", Number)
+], Comment.prototype, "likeCount", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'text', name: 'content' }),
     __metadata("design:type", String)

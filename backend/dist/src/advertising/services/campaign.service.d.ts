@@ -1,12 +1,14 @@
 import { Repository } from 'typeorm';
-import { AdvertisingCampaign, AdvertisingPlatform } from '../entity';
+import { AdvertisingCampaign, AdvertisingPlatform, AdvertisingEvent, AdvertisingConversion } from '../entity';
 import { CreateCampaignDto, UpdateCampaignDto, UpdateCampaignStatusDto, CampaignQueryDto, CampaignListResponseDto, CampaignResponseDto } from '../dto';
 import { PlatformService } from './platform.service';
 export declare class CampaignService {
     private campaignRepository;
     private platformRepository;
+    private eventRepository;
+    private conversionRepository;
     private platformService;
-    constructor(campaignRepository: Repository<AdvertisingCampaign>, platformRepository: Repository<AdvertisingPlatform>, platformService: PlatformService);
+    constructor(campaignRepository: Repository<AdvertisingCampaign>, platformRepository: Repository<AdvertisingPlatform>, eventRepository: Repository<AdvertisingEvent>, conversionRepository: Repository<AdvertisingConversion>, platformService: PlatformService);
     findAll(query: CampaignQueryDto): Promise<CampaignListResponseDto>;
     findOne(id: number): Promise<CampaignResponseDto>;
     findByCode(campaignCode: string): Promise<AdvertisingCampaign>;
@@ -15,4 +17,5 @@ export declare class CampaignService {
     updateStatus(id: number, updateStatusDto: UpdateCampaignStatusDto): Promise<CampaignResponseDto>;
     remove(id: number): Promise<void>;
     private transformToResponseDto;
+    private calculateCampaignStats;
 }

@@ -22,10 +22,14 @@ const platform_service_1 = require("./platform.service");
 let CampaignService = class CampaignService {
     campaignRepository;
     platformRepository;
+    eventRepository;
+    conversionRepository;
     platformService;
-    constructor(campaignRepository, platformRepository, platformService) {
+    constructor(campaignRepository, platformRepository, eventRepository, conversionRepository, platformService) {
         this.campaignRepository = campaignRepository;
         this.platformRepository = platformRepository;
+        this.eventRepository = eventRepository;
+        this.conversionRepository = conversionRepository;
         this.platformService = platformService;
     }
     async findAll(query) {
@@ -146,15 +150,7 @@ let CampaignService = class CampaignService {
         await this.campaignRepository.remove(campaign);
     }
     async transformToResponseDto(campaign) {
-        const stats = {
-            totalClicks: 0,
-            totalViews: 0,
-            totalConversions: 0,
-            conversionRate: 0,
-            cost: 0,
-            cpc: 0,
-            cpa: 0,
-        };
+        const stats = await this.calculateCampaignStats(campaign.id);
         return {
             id: campaign.id,
             name: campaign.name,
@@ -175,13 +171,49 @@ let CampaignService = class CampaignService {
             updatedAt: campaign.updatedAt,
         };
     }
+    async calculateCampaignStats(campaignId) {
+        const totalClicks = await this.eventRepository.count({
+            where: {
+                campaignId,
+                eventType: entity_1.EventType.CLICK,
+            },
+        });
+        const totalViews = await this.eventRepository.count({
+            where: {
+                campaignId,
+                eventType: entity_1.EventType.VIEW,
+            },
+        });
+        const totalConversions = await this.conversionRepository.count({
+            where: {
+                campaignId,
+            },
+        });
+        const conversionRate = totalClicks > 0 ? totalConversions / totalClicks : 0;
+        const cpc = 2.0;
+        const cost = totalClicks * cpc;
+        const cpa = totalConversions > 0 ? cost / totalConversions : 0;
+        return {
+            totalClicks,
+            totalViews,
+            totalConversions,
+            conversionRate: parseFloat(conversionRate.toFixed(4)),
+            cost: parseFloat(cost.toFixed(2)),
+            cpc: parseFloat(cpc.toFixed(2)),
+            cpa: parseFloat(cpa.toFixed(2)),
+        };
+    }
 };
 exports.CampaignService = CampaignService;
 exports.CampaignService = CampaignService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(entity_1.AdvertisingCampaign)),
     __param(1, (0, typeorm_1.InjectRepository)(entity_1.AdvertisingPlatform)),
+    __param(2, (0, typeorm_1.InjectRepository)(entity_1.AdvertisingEvent)),
+    __param(3, (0, typeorm_1.InjectRepository)(entity_1.AdvertisingConversion)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         platform_service_1.PlatformService])
 ], CampaignService);

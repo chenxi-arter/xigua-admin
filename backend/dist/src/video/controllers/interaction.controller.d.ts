@@ -55,6 +55,7 @@ export declare class InteractionController extends BaseController {
         rootId: number | undefined;
         floorNumber: number;
         content: string;
+        likeCount: number;
         createdAt: Date;
         username: string | null;
         nickname: string | null;
@@ -70,6 +71,7 @@ export declare class InteractionController extends BaseController {
             nickname: string | null;
             photoUrl: string | null;
             replyCount: number;
+            likeCount: number;
             createdAt: Date;
         };
         replies: {
@@ -77,6 +79,7 @@ export declare class InteractionController extends BaseController {
             parentId: number | undefined;
             floorNumber: number;
             content: string;
+            likeCount: number;
             createdAt: Date;
             username: string | null;
             nickname: string | null;

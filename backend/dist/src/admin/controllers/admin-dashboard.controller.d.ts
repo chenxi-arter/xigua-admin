@@ -34,6 +34,9 @@ export declare class AdminDashboardController {
         };
         banners: {
             total: number;
+            totalClicks: number;
+            totalImpressions: number;
+            ctr: number;
         };
         comments: {
             total: number;

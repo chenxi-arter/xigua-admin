@@ -31,6 +31,12 @@ let TrackingService = class TrackingService {
     async createEvent(createEventDto, ipAddress) {
         try {
             const campaign = await this.campaignService.findByCode(createEventDto.campaignCode);
+            if (!campaign.isActive) {
+                return {
+                    success: false,
+                    message: '广告计划已暂停，无法记录事件',
+                };
+            }
             const location = await campaign_utils_1.CampaignUtils.getLocationFromIp(ipAddress || '');
             const event = this.eventRepository.create({
                 campaignId: campaign.id,
@@ -50,14 +56,14 @@ let TrackingService = class TrackingService {
             await this.eventRepository.save(event);
             return {
                 success: true,
-                message: 'Event recorded successfully',
+                message: '事件记录成功',
             };
         }
         catch (error) {
             console.error('Failed to record event:', error);
             return {
                 success: false,
-                message: 'Failed to record event',
+                message: '事件记录失败',
             };
         }
     }
@@ -69,6 +75,9 @@ let TrackingService = class TrackingService {
             const events = [];
             for (const eventDto of batchCreateEventDto.events) {
                 const campaign = await this.campaignService.findByCode(eventDto.campaignCode);
+                if (!campaign.isActive) {
+                    continue;
+                }
                 const location = await campaign_utils_1.CampaignUtils.getLocationFromIp(ipAddress || '');
                 const event = this.eventRepository.create({
                     campaignId: campaign.id,
@@ -91,7 +100,7 @@ let TrackingService = class TrackingService {
             await queryRunner.commitTransaction();
             return {
                 success: true,
-                message: `${events.length} events recorded successfully`,
+                message: `成功记录 ${events.length} 个事件`,
             };
         }
         catch (error) {
@@ -99,7 +108,7 @@ let TrackingService = class TrackingService {
             console.error('Failed to record batch events:', error);
             return {
                 success: false,
-                message: 'Failed to record batch events',
+                message: '批量事件记录失败',
             };
         }
         finally {
@@ -109,6 +118,12 @@ let TrackingService = class TrackingService {
     async createConversion(createConversionDto) {
         try {
             const campaign = await this.campaignService.findByCode(createConversionDto.campaignCode);
+            if (!campaign.isActive) {
+                return {
+                    success: false,
+                    message: '广告计划已暂停，无法记录转化',
+                };
+            }
             const existingConversion = await this.conversionRepository.findOne({
                 where: {
                     campaignId: campaign.id,
@@ -119,7 +134,7 @@ let TrackingService = class TrackingService {
             if (existingConversion) {
                 return {
                     success: false,
-                    message: 'Conversion already exists for this user and type',
+                    message: '该用户的此类型转化已存在',
                 };
             }
             const firstClickEvent = await this.eventRepository.findOne({
@@ -150,7 +165,7 @@ let TrackingService = class TrackingService {
             const savedConversion = await this.conversionRepository.save(conversion);
             return {
                 success: true,
-                message: 'Conversion recorded successfully',
+                message: '转化记录成功',
                 conversionId: savedConversion.id,
             };
         }
@@ -158,7 +173,7 @@ let TrackingService = class TrackingService {
             console.error('Failed to record conversion:', error);
             return {
                 success: false,
-                message: 'Failed to record conversion',
+                message: '转化记录失败',
             };
         }
     }

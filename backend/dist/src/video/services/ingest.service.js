@@ -157,7 +157,7 @@ let IngestService = class IngestService {
                 categoryId: payload.categoryId,
                 releaseDate: payload.releaseDate ? new Date(payload.releaseDate) : undefined,
                 isCompleted: payload.isCompleted,
-                score: payload.score ?? 0,
+                score: payload.seriesScore ?? payload.score ?? 0,
                 playCount: payload.playCount ?? 0,
                 starring: payload.starring,
                 actor: payload.actor,
@@ -179,8 +179,9 @@ let IngestService = class IngestService {
             }
             if (payload.releaseDate !== undefined)
                 series.releaseDate = new Date(payload.releaseDate);
-            if (payload.score !== undefined)
-                series.score = payload.score;
+            const scoreValue = payload.seriesScore ?? payload.score;
+            if (scoreValue !== undefined)
+                series.score = scoreValue;
             if (payload.playCount !== undefined)
                 series.playCount = payload.playCount;
             if (payload.starring !== undefined)
@@ -302,8 +303,9 @@ let IngestService = class IngestService {
         }
         if (payload.releaseDate !== undefined)
             update.releaseDate = new Date(payload.releaseDate);
-        if (payload.score !== undefined)
-            update.score = payload.score;
+        const scoreValue = payload.seriesScore ?? payload.score;
+        if (scoreValue !== undefined)
+            update.score = scoreValue;
         if (payload.playCount !== undefined)
             update.playCount = payload.playCount;
         if (payload.starring !== undefined)

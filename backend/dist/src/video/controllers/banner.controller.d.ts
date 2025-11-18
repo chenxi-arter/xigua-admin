@@ -71,6 +71,15 @@ export declare class BannerController {
         success: boolean;
         timestamp: number;
     }>;
+    track(body: {
+        id: number;
+        type: 'click' | 'impression';
+    }): Promise<{
+        code: number;
+        msg: string;
+        success: boolean;
+        timestamp: number;
+    }>;
     click(id: number): Promise<{
         code: number;
         msg: string;

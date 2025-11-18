@@ -102,6 +102,13 @@ let AdminDashboardController = class AdminDashboardController {
             .select('COALESCE(SUM(ep.play_count), 0)', 'sum')
             .getRawOne();
         const totalPlayCount = Number(playSumRaw?.sum ?? 0);
+        const bannerStatsRaw = await this.bannerRepo
+            .createQueryBuilder('b')
+            .select('COALESCE(SUM(b.clicks), 0)', 'totalClicks')
+            .addSelect('COALESCE(SUM(b.impressions), 0)', 'totalImpressions')
+            .getRawOne();
+        const totalClicks = Number(bannerStatsRaw?.totalClicks ?? 0);
+        const totalImpressions = Number(bannerStatsRaw?.totalImpressions ?? 0);
         let range;
         if (start && end) {
             const [usersInRange, visitsInRange, playActiveInRange] = await Promise.all([
@@ -129,7 +136,12 @@ let AdminDashboardController = class AdminDashboardController {
             },
             series: { total: seriesTotal },
             episodes: { total: episodesTotal },
-            banners: { total: bannersTotal },
+            banners: {
+                total: bannersTotal,
+                totalClicks,
+                totalImpressions,
+                ctr: totalImpressions > 0 ? totalClicks / totalImpressions : 0,
+            },
             comments: { total: commentsTotal, new24h: comments24h },
             plays: { totalPlayCount, last24hVisits: visits24h },
             range,

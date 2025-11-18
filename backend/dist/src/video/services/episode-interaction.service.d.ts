@@ -22,6 +22,7 @@ export declare class EpisodeInteractionService {
         rootId: number | undefined;
         floorNumber: number;
         content: string;
+        likeCount: number;
         createdAt: Date;
         username: string | null;
         nickname: string | null;
@@ -37,6 +38,7 @@ export declare class EpisodeInteractionService {
             nickname: string | null;
             photoUrl: string | null;
             replyCount: number;
+            likeCount: number;
             createdAt: Date;
         };
         replies: {
@@ -44,6 +46,7 @@ export declare class EpisodeInteractionService {
             parentId: number | undefined;
             floorNumber: number;
             content: string;
+            likeCount: number;
             createdAt: Date;
             username: string | null;
             nickname: string | null;
