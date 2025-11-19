@@ -3,14 +3,16 @@ import { Cache } from 'cache-manager';
 import { Comment } from '../entity/comment.entity';
 import { Episode } from '../entity/episode.entity';
 import { FakeCommentService } from './fake-comment.service';
+import { CommentLikeService } from './comment-like.service';
 export declare class CommentService {
     private readonly commentRepo;
     private readonly episodeRepo;
     private readonly cacheManager;
     private readonly fakeCommentService;
-    constructor(commentRepo: Repository<Comment>, episodeRepo: Repository<Episode>, cacheManager: Cache, fakeCommentService: FakeCommentService);
+    private readonly commentLikeService;
+    constructor(commentRepo: Repository<Comment>, episodeRepo: Repository<Episode>, cacheManager: Cache, fakeCommentService: FakeCommentService, commentLikeService: CommentLikeService);
     addComment(userId: number, episodeShortId: string, content: string, appearSecond?: number): Promise<Comment>;
-    getCommentsByEpisodeShortId(episodeShortId: string, page?: number, size?: number, replyPreviewCount?: number): Promise<{
+    getCommentsByEpisodeShortId(episodeShortId: string, page?: number, size?: number, replyPreviewCount?: number, userId?: number): Promise<{
         comments: (Record<string, any> | {
             id: number;
             content: string;
@@ -43,7 +45,7 @@ export declare class CommentService {
         replyToUsername: string | null;
         replyToNickname: string | null;
     }>;
-    getCommentReplies(commentId: number, page?: number, size?: number): Promise<{
+    getCommentReplies(commentId: number, page?: number, size?: number, userId?: number): Promise<{
         rootComment: {
             id: number;
             content: string;
@@ -52,6 +54,7 @@ export declare class CommentService {
             photoUrl: string | null;
             replyCount: number;
             likeCount: number;
+            liked: boolean | undefined;
             createdAt: Date;
         };
         replies: {
@@ -60,6 +63,7 @@ export declare class CommentService {
             floorNumber: number;
             content: string;
             likeCount: number;
+            liked: boolean | undefined;
             createdAt: Date;
             username: string | null;
             nickname: string | null;

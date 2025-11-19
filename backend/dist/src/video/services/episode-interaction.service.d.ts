@@ -30,7 +30,7 @@ export declare class EpisodeInteractionService {
         replyToUsername: string | null;
         replyToNickname: string | null;
     }>;
-    getCommentReplies(commentId: number, page: number, size: number): Promise<{
+    getCommentReplies(commentId: number, page: number, size: number, userId?: number): Promise<{
         rootComment: {
             id: number;
             content: string;
@@ -39,6 +39,7 @@ export declare class EpisodeInteractionService {
             photoUrl: string | null;
             replyCount: number;
             likeCount: number;
+            liked: boolean | undefined;
             createdAt: Date;
         };
         replies: {
@@ -47,6 +48,7 @@ export declare class EpisodeInteractionService {
             floorNumber: number;
             content: string;
             likeCount: number;
+            liked: boolean | undefined;
             createdAt: Date;
             username: string | null;
             nickname: string | null;

@@ -20,16 +20,19 @@ const cache_manager_1 = require("@nestjs/cache-manager");
 const comment_entity_1 = require("../entity/comment.entity");
 const episode_entity_1 = require("../entity/episode.entity");
 const fake_comment_service_1 = require("./fake-comment.service");
+const comment_like_service_1 = require("./comment-like.service");
 let CommentService = class CommentService {
     commentRepo;
     episodeRepo;
     cacheManager;
     fakeCommentService;
-    constructor(commentRepo, episodeRepo, cacheManager, fakeCommentService) {
+    commentLikeService;
+    constructor(commentRepo, episodeRepo, cacheManager, fakeCommentService, commentLikeService) {
         this.commentRepo = commentRepo;
         this.episodeRepo = episodeRepo;
         this.cacheManager = cacheManager;
         this.fakeCommentService = fakeCommentService;
+        this.commentLikeService = commentLikeService;
     }
     async addComment(userId, episodeShortId, content, appearSecond) {
         const comment = this.commentRepo.create({
@@ -42,7 +45,7 @@ let CommentService = class CommentService {
         await this.clearCommentCache(episodeShortId);
         return saved;
     }
-    async getCommentsByEpisodeShortId(episodeShortId, page = 1, size = 20, replyPreviewCount = 2) {
+    async getCommentsByEpisodeShortId(episodeShortId, page = 1, size = 20, replyPreviewCount = 2, userId) {
         const skip = (page - 1) * size;
         const [comments, total] = await this.commentRepo.findAndCount({
             where: { episodeShortId, rootId: (0, typeorm_2.IsNull)() },
@@ -90,6 +93,16 @@ let CommentService = class CommentService {
                 });
             });
         }
+        let likedCommentsMap = new Map();
+        let likedRepliesMap = new Map();
+        if (userId) {
+            const allCommentIds = [
+                ...commentIds,
+                ...allReplies.map(r => r.id)
+            ];
+            likedCommentsMap = await this.commentLikeService.batchCheckLiked(userId, allCommentIds);
+            likedRepliesMap = likedCommentsMap;
+        }
         const formattedComments = comments.map(comment => {
             const recentReplies = repliesMap.get(comment.id) || [];
             return {
@@ -98,6 +111,7 @@ let CommentService = class CommentService {
                 appearSecond: comment.appearSecond,
                 replyCount: comment.replyCount,
                 likeCount: comment.likeCount || 0,
+                liked: userId ? (likedCommentsMap.get(comment.id) || false) : undefined,
                 createdAt: comment.createdAt,
                 username: comment.user?.username || null,
                 nickname: comment.user?.nickname || null,
@@ -109,6 +123,7 @@ let CommentService = class CommentService {
                         content: reply.content,
                         floorNumber: reply.floorNumber,
                         likeCount: reply.likeCount || 0,
+                        liked: userId ? (likedRepliesMap.get(reply.id) || false) : undefined,
                         createdAt: reply.createdAt,
                         username: reply.user?.username || null,
                         nickname: reply.user?.nickname || null,
@@ -173,7 +188,7 @@ let CommentService = class CommentService {
             replyToNickname: parentComment.user?.nickname || null,
         };
     }
-    async getCommentReplies(commentId, page = 1, size = 20) {
+    async getCommentReplies(commentId, page = 1, size = 20, userId) {
         const rootComment = await this.commentRepo.findOne({
             where: { id: commentId },
             relations: ['user'],
@@ -205,6 +220,11 @@ let CommentService = class CommentService {
                 });
             });
         }
+        let likedMap = new Map();
+        if (userId) {
+            const allCommentIds = [commentId, ...replies.map(r => r.id)];
+            likedMap = await this.commentLikeService.batchCheckLiked(userId, allCommentIds);
+        }
         return {
             rootComment: {
                 id: rootComment.id,
@@ -214,6 +234,7 @@ let CommentService = class CommentService {
                 photoUrl: rootComment.user?.photo_url || null,
                 replyCount: rootComment.replyCount,
                 likeCount: rootComment.likeCount || 0,
+                liked: userId ? (likedMap.get(commentId) || false) : undefined,
                 createdAt: rootComment.createdAt,
             },
             replies: replies.map(reply => {
@@ -224,6 +245,7 @@ let CommentService = class CommentService {
                     floorNumber: reply.floorNumber,
                     content: reply.content,
                     likeCount: reply.likeCount || 0,
+                    liked: userId ? (likedMap.get(reply.id) || false) : undefined,
                     createdAt: reply.createdAt,
                     username: reply.user?.username || null,
                     nickname: reply.user?.nickname || null,
@@ -439,6 +461,7 @@ exports.CommentService = CommentService = __decorate([
     __param(1, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),
     __param(2, (0, common_1.Inject)(cache_manager_1.CACHE_MANAGER)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        typeorm_2.Repository, Object, fake_comment_service_1.FakeCommentService])
+        typeorm_2.Repository, Object, fake_comment_service_1.FakeCommentService,
+        comment_like_service_1.CommentLikeService])
 ], CommentService);
 //# sourceMappingURL=comment.service.js.map

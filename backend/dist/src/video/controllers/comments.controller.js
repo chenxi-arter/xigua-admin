@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const base_controller_1 = require("./base.controller");
 const video_service_1 = require("../video.service");
 const comment_service_1 = require("../services/comment.service");
+const optional_jwt_auth_guard_1 = require("../../auth/guards/optional-jwt-auth.guard");
 let CommentsController = class CommentsController extends base_controller_1.BaseController {
     videoService;
     commentService;
@@ -25,14 +26,15 @@ let CommentsController = class CommentsController extends base_controller_1.Base
         this.videoService = videoService;
         this.commentService = commentService;
     }
-    async listByEpisodeShortId(episodeShortId, page, size) {
+    async listByEpisodeShortId(req, episodeShortId, page, size) {
         try {
             const shortId = (episodeShortId ?? '').trim();
             if (!shortId)
                 return this.error('episodeShortId 必填', 400);
             const pageNum = Math.max(parseInt(page ?? '1', 10) || 1, 1);
             const sizeNum = Math.max(parseInt(size ?? '20', 10) || 20, 1);
-            const result = await this.commentService.getCommentsByEpisodeShortId(shortId, pageNum, sizeNum);
+            const userId = req.user?.userId;
+            const result = await this.commentService.getCommentsByEpisodeShortId(shortId, pageNum, sizeNum, 2, userId);
             return this.success(result, '获取评论成功', 200);
         }
         catch (error) {
@@ -42,12 +44,14 @@ let CommentsController = class CommentsController extends base_controller_1.Base
 };
 exports.CommentsController = CommentsController;
 __decorate([
+    (0, common_1.UseGuards)(optional_jwt_auth_guard_1.OptionalJwtAuthGuard),
     (0, common_1.Get)(),
-    __param(0, (0, common_1.Query)('episodeShortId')),
-    __param(1, (0, common_1.Query)('page')),
-    __param(2, (0, common_1.Query)('size')),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)('episodeShortId')),
+    __param(2, (0, common_1.Query)('page')),
+    __param(3, (0, common_1.Query)('size')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:paramtypes", [Object, String, String, String]),
     __metadata("design:returntype", Promise)
 ], CommentsController.prototype, "listByEpisodeShortId", null);
 exports.CommentsController = CommentsController = __decorate([

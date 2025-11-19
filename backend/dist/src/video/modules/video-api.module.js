@@ -17,6 +17,7 @@ const category_controller_1 = require("../category.controller");
 const banner_controller_1 = require("../controllers/banner.controller");
 const progress_controller_1 = require("../controllers/progress.controller");
 const comment_controller_1 = require("../controllers/comment.controller");
+const comment_like_controller_1 = require("../controllers/comment-like.controller");
 const url_controller_1 = require("../controllers/url.controller");
 const content_controller_1 = require("../controllers/content.controller");
 const interaction_controller_1 = require("../controllers/interaction.controller");
@@ -25,6 +26,7 @@ const compat_browse_history_controller_1 = require("../controllers/compat-browse
 const recommend_controller_1 = require("../controllers/recommend.controller");
 const video_service_1 = require("../video.service");
 const comment_service_1 = require("../services/comment.service");
+const comment_like_service_1 = require("../services/comment-like.service");
 const fake_comment_service_1 = require("../services/fake-comment.service");
 const playback_service_1 = require("../services/playback.service");
 const content_service_1 = require("../services/content.service");
@@ -53,6 +55,7 @@ const episode_entity_1 = require("../entity/episode.entity");
 const episode_url_entity_1 = require("../entity/episode-url.entity");
 const episode_reaction_entity_1 = require("../entity/episode-reaction.entity");
 const comment_entity_1 = require("../entity/comment.entity");
+const comment_like_entity_1 = require("../entity/comment-like.entity");
 const watch_progress_entity_1 = require("../entity/watch-progress.entity");
 const category_entity_1 = require("../entity/category.entity");
 const short_video_entity_1 = require("../entity/short-video.entity");
@@ -71,7 +74,7 @@ exports.VideoApiModule = VideoApiModule = __decorate([
             episode_module_1.EpisodeModule,
             banner_module_1.BannerModule,
             typeorm_1.TypeOrmModule.forFeature([
-                series_entity_1.Series, episode_entity_1.Episode, episode_url_entity_1.EpisodeUrl, episode_reaction_entity_1.EpisodeReaction, comment_entity_1.Comment, watch_progress_entity_1.WatchProgress, category_entity_1.Category, short_video_entity_1.ShortVideo, banner_entity_1.Banner, filter_type_entity_1.FilterType, filter_option_entity_1.FilterOption,
+                series_entity_1.Series, episode_entity_1.Episode, episode_url_entity_1.EpisodeUrl, episode_reaction_entity_1.EpisodeReaction, comment_entity_1.Comment, comment_like_entity_1.CommentLike, watch_progress_entity_1.WatchProgress, category_entity_1.Category, short_video_entity_1.ShortVideo, banner_entity_1.Banner, filter_type_entity_1.FilterType, filter_option_entity_1.FilterOption,
                 series_genre_option_entity_1.SeriesGenreOption
             ]),
             (0, common_1.forwardRef)(() => Promise.resolve().then(() => require('../../user/user.module')).then(m => m.UserModule)),
@@ -86,6 +89,7 @@ exports.VideoApiModule = VideoApiModule = __decorate([
             compat_browse_history_controller_1.CompatBrowseHistoryController,
             progress_controller_1.ProgressController,
             comment_controller_1.CommentController,
+            comment_like_controller_1.CommentLikeController,
             url_controller_1.UrlController,
             content_controller_1.ContentController,
             interaction_controller_1.InteractionController,
@@ -111,6 +115,7 @@ exports.VideoApiModule = VideoApiModule = __decorate([
             ingest_service_1.IngestService,
             fake_comment_service_1.FakeCommentService,
             comment_service_1.CommentService,
+            comment_like_service_1.CommentLikeService,
             recommend_service_1.RecommendService,
             app_logger_service_1.AppLoggerService,
             app_config_service_1.AppConfigService,

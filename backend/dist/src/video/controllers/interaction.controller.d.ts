@@ -63,7 +63,7 @@ export declare class InteractionController extends BaseController {
         replyToUsername: string | null;
         replyToNickname: string | null;
     }>>;
-    getCommentReplies(commentId: string, page?: string, size?: string): Promise<import("../controllers/base.controller").ApiResponse<null> | import("../controllers/base.controller").ApiResponse<{
+    getCommentReplies(req: any, commentId: string, page?: string, size?: string): Promise<import("../controllers/base.controller").ApiResponse<null> | import("../controllers/base.controller").ApiResponse<{
         rootComment: {
             id: number;
             content: string;
@@ -72,6 +72,7 @@ export declare class InteractionController extends BaseController {
             photoUrl: string | null;
             replyCount: number;
             likeCount: number;
+            liked: boolean | undefined;
             createdAt: Date;
         };
         replies: {
@@ -80,6 +81,7 @@ export declare class InteractionController extends BaseController {
             floorNumber: number;
             content: string;
             likeCount: number;
+            liked: boolean | undefined;
             createdAt: Date;
             username: string | null;
             nickname: string | null;

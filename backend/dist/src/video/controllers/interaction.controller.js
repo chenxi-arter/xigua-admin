@@ -18,6 +18,7 @@ const base_controller_1 = require("../controllers/base.controller");
 const episode_interaction_service_1 = require("../services/episode-interaction.service");
 const episode_service_1 = require("../services/episode.service");
 const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
+const optional_jwt_auth_guard_1 = require("../../auth/guards/optional-jwt-auth.guard");
 const video_service_1 = require("../video.service");
 const favorite_service_1 = require("../../user/services/favorite.service");
 class EpisodeActivityDto {
@@ -151,11 +152,12 @@ let InteractionController = class InteractionController extends base_controller_
             return this.error(errMsg, 400);
         }
     }
-    async getCommentReplies(commentId, page, size) {
+    async getCommentReplies(req, commentId, page, size) {
         try {
             const pageNum = Math.max(parseInt(page ?? '1', 10) || 1, 1);
             const sizeNum = Math.max(parseInt(size ?? '20', 10) || 20, 1);
-            const result = await this.interactionService.getCommentReplies(parseInt(commentId, 10), pageNum, sizeNum);
+            const userId = req.user?.userId;
+            const result = await this.interactionService.getCommentReplies(parseInt(commentId, 10), pageNum, sizeNum, userId);
             return this.success(result, '获取成功', 200);
         }
         catch (error) {
@@ -217,12 +219,14 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], InteractionController.prototype, "replyComment", null);
 __decorate([
+    (0, common_1.UseGuards)(optional_jwt_auth_guard_1.OptionalJwtAuthGuard),
     (0, common_1.Get)('comments/:commentId/replies'),
-    __param(0, (0, common_1.Param)('commentId')),
-    __param(1, (0, common_1.Query)('page')),
-    __param(2, (0, common_1.Query)('size')),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('commentId')),
+    __param(2, (0, common_1.Query)('page')),
+    __param(3, (0, common_1.Query)('size')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String]),
+    __metadata("design:paramtypes", [Object, String, String, String]),
     __metadata("design:returntype", Promise)
 ], InteractionController.prototype, "getCommentReplies", null);
 __decorate([

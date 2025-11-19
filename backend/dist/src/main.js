@@ -6,7 +6,13 @@ const core_1 = require("@nestjs/core");
 const app_module_1 = require("./app.module");
 const common_1 = require("@nestjs/common");
 const date_util_1 = require("./common/utils/date.util");
+const legal_constants_1 = require("./common/constants/legal.constants");
 async function bootstrap() {
+    console.log('\n' + '='.repeat(80));
+    console.log('法律免责声明 / Legal Disclaimer');
+    console.log('='.repeat(80));
+    console.log(legal_constants_1.LEGAL_DISCLAIMER.DEVELOPER_STATEMENT);
+    console.log('='.repeat(80) + '\n');
     const app = await core_1.NestFactory.create(app_module_1.AppModule);
     app.setGlobalPrefix('api');
     app.useGlobalPipes(new common_1.ValidationPipe({

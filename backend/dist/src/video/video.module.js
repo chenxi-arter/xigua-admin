@@ -14,6 +14,7 @@ const episode_entity_1 = require("./entity/episode.entity");
 const episode_url_entity_1 = require("./entity/episode-url.entity");
 const episode_reaction_entity_1 = require("./entity/episode-reaction.entity");
 const comment_entity_1 = require("./entity/comment.entity");
+const comment_like_entity_1 = require("./entity/comment-like.entity");
 const watch_progress_entity_1 = require("./entity/watch-progress.entity");
 const browse_history_entity_1 = require("./entity/browse-history.entity");
 const category_entity_1 = require("./entity/category.entity");
@@ -28,6 +29,7 @@ const cache_monitor_controller_1 = require("./cache-monitor.controller");
 const video_api_module_1 = require("./modules/video-api.module");
 const watch_progress_service_1 = require("./services/watch-progress.service");
 const comment_service_1 = require("./services/comment.service");
+const comment_like_service_1 = require("./services/comment-like.service");
 const fake_comment_service_1 = require("./services/fake-comment.service");
 const episode_service_1 = require("./services/episode.service");
 const category_service_1 = require("./services/category.service");
@@ -71,6 +73,7 @@ exports.VideoModule = VideoModule = __decorate([
                 episode_url_entity_1.EpisodeUrl,
                 episode_reaction_entity_1.EpisodeReaction,
                 comment_entity_1.Comment,
+                comment_like_entity_1.CommentLike,
                 watch_progress_entity_1.WatchProgress,
                 category_entity_1.Category,
                 short_video_entity_1.ShortVideo,
@@ -95,6 +98,7 @@ exports.VideoModule = VideoModule = __decorate([
             watch_progress_service_1.WatchProgressService,
             fake_comment_service_1.FakeCommentService,
             comment_service_1.CommentService,
+            comment_like_service_1.CommentLikeService,
             episode_service_1.EpisodeService,
             episode_interaction_service_1.EpisodeInteractionService,
             category_service_1.CategoryService,

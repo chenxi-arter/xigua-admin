@@ -119,8 +119,8 @@ let EpisodeInteractionService = class EpisodeInteractionService {
     async addReply(userId, episodeShortId, parentId, content) {
         return this.commentService.addReply(userId, episodeShortId, parentId, content);
     }
-    async getCommentReplies(commentId, page, size) {
-        return this.commentService.getCommentReplies(commentId, page, size);
+    async getCommentReplies(commentId, page, size, userId) {
+        return this.commentService.getCommentReplies(commentId, page, size, userId);
     }
     async getUserReceivedReplies(userId, page, size) {
         return this.commentService.getUserReceivedReplies(userId, page, size);

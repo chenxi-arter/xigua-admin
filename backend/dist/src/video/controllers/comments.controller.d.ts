@@ -5,7 +5,7 @@ export declare class CommentsController extends BaseController {
     private readonly videoService;
     private readonly commentService;
     constructor(videoService: VideoService, commentService: CommentService);
-    listByEpisodeShortId(episodeShortId?: string, page?: string, size?: string): Promise<void | import("./base.controller").ApiResponse<null> | import("./base.controller").ApiResponse<{
+    listByEpisodeShortId(req: any, episodeShortId?: string, page?: string, size?: string): Promise<void | import("./base.controller").ApiResponse<null> | import("./base.controller").ApiResponse<{
         comments: (Record<string, any> | {
             id: number;
             content: string;
