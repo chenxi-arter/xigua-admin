@@ -60,7 +60,7 @@ let IngestController = class IngestController {
         return response_util_1.ResponseUtil.success({
             summary: { created: createdCount, updated: updatedCount, failed: failedCount, total: (payload.items || []).length },
             items: results
-        }, '批量系列采集写入完成');
+        }, '批量系列数据导入完成');
     }
     async updateSeries(dto) {
         return this.ingestService.updateSeries(dto);

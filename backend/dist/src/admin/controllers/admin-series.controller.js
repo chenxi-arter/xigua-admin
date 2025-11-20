@@ -146,7 +146,13 @@ let AdminSeriesController = class AdminSeriesController {
             take,
             order: { id: 'DESC' },
             where,
-            relations: ['category']
+            relations: [
+                'category',
+                'regionOption',
+                'languageOption',
+                'statusOption',
+                'yearOption'
+            ]
         });
         return { total, items, page: Number(page) || 1, size: take };
     }
@@ -214,18 +220,120 @@ let AdminSeriesController = class AdminSeriesController {
         const chineseFilters = await this.resolveChineseFilters(body);
         const normalized = this.normalize(body);
         const payload = { ...normalized, ...chineseFilters };
-        const entity = this.seriesRepo.create(payload);
-        return this.seriesRepo.save(entity);
+        await this.validateFilterOptionIds(payload);
+        try {
+            const entity = this.seriesRepo.create(payload);
+            return this.seriesRepo.save(entity);
+        }
+        catch (error) {
+            if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+                throw new common_1.BadRequestException({
+                    message: '外键约束失败：引用的选项不存在',
+                    details: error.sqlMessage,
+                    hint: '请调用 GET /api/admin/options?types=region,language,status,year 获取有效的选项列表'
+                });
+            }
+            throw error;
+        }
+    }
+    async validateFilterOptionIds(payload) {
+        const errors = [];
+        if (payload.regionOptionId) {
+            const exists = await this.filterOptionRepo
+                .createQueryBuilder('option')
+                .innerJoin('option.filterType', 'filterType')
+                .where('option.id = :id', { id: payload.regionOptionId })
+                .andWhere('filterType.code = :code', { code: 'region' })
+                .andWhere('option.isActive = 1')
+                .getOne();
+            if (!exists) {
+                errors.push(`地区选项 ID ${payload.regionOptionId} 不存在或已禁用`);
+            }
+        }
+        if (payload.languageOptionId) {
+            const exists = await this.filterOptionRepo
+                .createQueryBuilder('option')
+                .innerJoin('option.filterType', 'filterType')
+                .where('option.id = :id', { id: payload.languageOptionId })
+                .andWhere('filterType.code = :code', { code: 'language' })
+                .andWhere('option.isActive = 1')
+                .getOne();
+            if (!exists) {
+                errors.push(`语言选项 ID ${payload.languageOptionId} 不存在或已禁用`);
+            }
+        }
+        if (payload.statusOptionId) {
+            const exists = await this.filterOptionRepo
+                .createQueryBuilder('option')
+                .innerJoin('option.filterType', 'filterType')
+                .where('option.id = :id', { id: payload.statusOptionId })
+                .andWhere('filterType.code = :code', { code: 'status' })
+                .andWhere('option.isActive = 1')
+                .getOne();
+            if (!exists) {
+                errors.push(`状态选项 ID ${payload.statusOptionId} 不存在或已禁用`);
+            }
+        }
+        if (payload.yearOptionId) {
+            const exists = await this.filterOptionRepo
+                .createQueryBuilder('option')
+                .innerJoin('option.filterType', 'filterType')
+                .where('option.id = :id', { id: payload.yearOptionId })
+                .andWhere('filterType.code = :code', { code: 'year' })
+                .andWhere('option.isActive = 1')
+                .getOne();
+            if (!exists) {
+                errors.push(`年份选项 ID ${payload.yearOptionId} 不存在或已禁用`);
+            }
+        }
+        if (errors.length > 0) {
+            const availableOptions = {};
+            for (const typeCode of ['region', 'language', 'status', 'year']) {
+                const options = await this.filterOptionRepo
+                    .createQueryBuilder('option')
+                    .innerJoin('option.filterType', 'filterType')
+                    .where('filterType.code = :typeCode', { typeCode })
+                    .andWhere('option.isActive = 1')
+                    .andWhere('option.isDefault = 0')
+                    .orderBy('option.sortOrder', 'ASC')
+                    .select(['option.id', 'option.name', 'option.value'])
+                    .getMany();
+                availableOptions[typeCode] = options.map(opt => ({
+                    id: opt.id,
+                    name: opt.name,
+                    value: opt.value,
+                }));
+            }
+            throw new common_1.BadRequestException({
+                message: '筛选选项验证失败',
+                errors,
+                availableOptions,
+                hint: '请使用 availableOptions 中的有效 ID，或调用 GET /api/admin/options?types=region,language,status,year 获取最新选项'
+            });
+        }
     }
     async update(id, body) {
         const chineseFilters = await this.resolveChineseFilters(body);
         const normalized = this.normalize(body);
         const payload = { ...normalized, ...chineseFilters };
-        await this.seriesRepo.update({ id: Number(id) }, payload);
-        return this.seriesRepo.findOne({
-            where: { id: Number(id) },
-            relations: ['category', 'regionOption', 'languageOption', 'statusOption', 'yearOption']
-        });
+        await this.validateFilterOptionIds(payload);
+        try {
+            await this.seriesRepo.update({ id: Number(id) }, payload);
+            return this.seriesRepo.findOne({
+                where: { id: Number(id) },
+                relations: ['category', 'regionOption', 'languageOption', 'statusOption', 'yearOption']
+            });
+        }
+        catch (error) {
+            if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+                throw new common_1.BadRequestException({
+                    message: '外键约束失败：引用的选项不存在',
+                    details: error.sqlMessage,
+                    hint: '请调用 GET /api/admin/options?types=region,language,status,year 获取有效的选项列表'
+                });
+            }
+            throw error;
+        }
     }
     async remove(id) {
         const result = await this.videoService.softDeleteSeries(Number(id));

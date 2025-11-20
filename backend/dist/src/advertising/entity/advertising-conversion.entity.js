@@ -101,11 +101,7 @@ __decorate([
 ], AdvertisingConversion.prototype, "campaign", void 0);
 exports.AdvertisingConversion = AdvertisingConversion = __decorate([
     (0, typeorm_1.Entity)('advertising_conversions'),
-    (0, typeorm_1.Index)(['campaignId']),
     (0, typeorm_1.Index)(['campaignCode']),
-    (0, typeorm_1.Index)(['conversionType']),
-    (0, typeorm_1.Index)(['userId']),
-    (0, typeorm_1.Index)(['conversionTime']),
-    (0, typeorm_1.Index)(['createdAt'])
+    (0, typeorm_1.Index)(['userId'])
 ], AdvertisingConversion);
 //# sourceMappingURL=advertising-conversion.entity.js.map

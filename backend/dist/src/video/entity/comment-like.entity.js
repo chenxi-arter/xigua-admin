@@ -49,6 +49,9 @@ __decorate([
     __metadata("design:type", comment_entity_1.Comment)
 ], CommentLike.prototype, "comment", void 0);
 exports.CommentLike = CommentLike = __decorate([
-    (0, typeorm_1.Entity)('comment_likes')
+    (0, typeorm_1.Entity)('comment_likes'),
+    (0, typeorm_1.Unique)('idx_user_comment', ['userId', 'commentId']),
+    (0, typeorm_1.Index)(['commentId']),
+    (0, typeorm_1.Index)(['createdAt'])
 ], CommentLike);
 //# sourceMappingURL=comment-like.entity.js.map

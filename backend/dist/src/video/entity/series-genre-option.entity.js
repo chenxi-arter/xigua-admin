@@ -49,9 +49,8 @@ __decorate([
     __metadata("design:type", filter_option_entity_1.FilterOption)
 ], SeriesGenreOption.prototype, "option", void 0);
 exports.SeriesGenreOption = SeriesGenreOption = __decorate([
+    (0, typeorm_1.Entity)('series_genre_options'),
     (0, typeorm_1.Unique)('uq_series_option', ['seriesId', 'optionId']),
-    (0, typeorm_1.Index)('idx_series', ['seriesId']),
-    (0, typeorm_1.Index)('idx_option', ['optionId']),
-    (0, typeorm_1.Entity)('series_genre_options')
+    (0, typeorm_1.Index)('idx_option', ['optionId'])
 ], SeriesGenreOption);
 //# sourceMappingURL=series-genre-option.entity.js.map

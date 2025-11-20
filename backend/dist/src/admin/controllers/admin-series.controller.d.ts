@@ -37,6 +37,7 @@ export declare class AdminSeriesController {
     }>;
     get(id: string): Promise<Series | null>;
     create(body: any): Promise<Series>;
+    private validateFilterOptionIds;
     update(id: string, body: any): Promise<Series | null>;
     remove(id: string): Promise<{
         success: boolean;

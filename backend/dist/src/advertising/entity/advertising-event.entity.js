@@ -118,13 +118,8 @@ __decorate([
 ], AdvertisingEvent.prototype, "campaign", void 0);
 exports.AdvertisingEvent = AdvertisingEvent = __decorate([
     (0, typeorm_1.Entity)('advertising_events'),
-    (0, typeorm_1.Index)(['campaignId']),
     (0, typeorm_1.Index)(['campaignCode']),
-    (0, typeorm_1.Index)(['eventType']),
-    (0, typeorm_1.Index)(['eventTime']),
     (0, typeorm_1.Index)(['userId']),
-    (0, typeorm_1.Index)(['sessionId']),
-    (0, typeorm_1.Index)(['deviceId']),
-    (0, typeorm_1.Index)(['createdAt'])
+    (0, typeorm_1.Index)(['deviceId'])
 ], AdvertisingEvent);
 //# sourceMappingURL=advertising-event.entity.js.map

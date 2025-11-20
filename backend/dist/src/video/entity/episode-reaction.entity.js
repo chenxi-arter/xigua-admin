@@ -59,6 +59,9 @@ __decorate([
     __metadata("design:type", episode_entity_1.Episode)
 ], EpisodeReaction.prototype, "episode", void 0);
 exports.EpisodeReaction = EpisodeReaction = __decorate([
-    (0, typeorm_1.Entity)('episode_reactions')
+    (0, typeorm_1.Entity)('episode_reactions'),
+    (0, typeorm_1.Unique)('idx_user_episode', ['userId', 'episodeId']),
+    (0, typeorm_1.Index)(['episodeId']),
+    (0, typeorm_1.Index)(['reactionType'])
 ], EpisodeReaction);
 //# sourceMappingURL=episode-reaction.entity.js.map

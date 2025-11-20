@@ -14,7 +14,7 @@ let IngestResultInterceptor = class IngestResultInterceptor {
     intercept(context, next) {
         return next.handle().pipe((0, rxjs_1.map)((data) => {
             if (data && data.summary && Array.isArray(data.items)) {
-                return response_util_1.ResponseUtil.success(data, '系列采集写入完成');
+                return response_util_1.ResponseUtil.success(data, '系列数据导入完成');
             }
             if (data && data.seriesId) {
                 const item = {
@@ -33,9 +33,9 @@ let IngestResultInterceptor = class IngestResultInterceptor {
                     },
                     items: [item],
                 };
-                return response_util_1.ResponseUtil.success(wrapped, '系列采集写入完成');
+                return response_util_1.ResponseUtil.success(wrapped, '系列数据导入完成');
             }
-            return response_util_1.ResponseUtil.success(data, '系列采集写入完成');
+            return response_util_1.ResponseUtil.success(data, '系列数据导入完成');
         }), (0, rxjs_1.catchError)((err) => {
             const status = err?.status || 400;
             const error = err?.response?.message || err?.message || 'unknown error';
@@ -45,7 +45,7 @@ let IngestResultInterceptor = class IngestResultInterceptor {
                 summary: { created: 0, updated: 0, failed: 1, total: 1 },
                 items: [item],
             };
-            return (0, rxjs_1.of)(response_util_1.ResponseUtil.success(wrapped, '系列采集写入完成'));
+            return (0, rxjs_1.of)(response_util_1.ResponseUtil.success(wrapped, '系列数据导入完成'));
         }));
     }
 };

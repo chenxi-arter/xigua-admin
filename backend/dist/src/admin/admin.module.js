@@ -24,6 +24,7 @@ const favorite_entity_1 = require("../user/entity/favorite.entity");
 const filter_option_entity_1 = require("../video/entity/filter-option.entity");
 const controllers_1 = require("./controllers");
 const admin_categories_controller_1 = require("./controllers/admin-categories.controller");
+const admin_options_controller_1 = require("./controllers/admin-options.controller");
 const ingest_controller_1 = require("./controllers/ingest.controller");
 const test_ingest_controller_1 = require("./controllers/test-ingest.controller");
 const admin_series_controller_1 = require("./controllers/admin-series.controller");
@@ -63,6 +64,7 @@ exports.AdminModule = AdminModule = __decorate([
             controllers_1.AdminUsersController,
             controllers_1.AdminBannersController,
             admin_categories_controller_1.AdminCategoriesController,
+            admin_options_controller_1.AdminOptionsController,
             controllers_1.AdminEpisodesController,
             admin_series_controller_1.AdminSeriesController,
             admin_dashboard_controller_1.AdminDashboardController,
