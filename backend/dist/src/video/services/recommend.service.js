@@ -45,12 +45,16 @@ let RecommendService = class RecommendService {
         try {
             const offset = (page - 1) * size;
             const cacheKey = `recommend:list:${page}:${size}`;
+            const cacheTTL = 120;
             if (!userId) {
                 const cachedData = await this.cacheManager.get(cacheKey);
                 if (cachedData) {
                     return cachedData;
                 }
             }
+            const maxOffset = 1000;
+            const safeOffset = Math.min(offset, maxOffset);
+            const queryLimit = size + 1;
             const query = `
         SELECT 
           e.id,
@@ -75,22 +79,25 @@ let RecommendService = class RecommendService {
           s.starring as seriesStarring,
           s.actor as seriesActor,
           s.up_status as seriesUpStatus,
-          @current_time := NOW(),
           (
-            (e.like_count * 3 + e.favorite_count * 5) * (0.5 + RAND()) +
-            FLOOR(RAND() * 500) +
-            GREATEST(0, 300 - DATEDIFF(@current_time, e.created_at) * 10)
+            (e.like_count * 3 + e.favorite_count * 5) * (0.5 + RAND(? + e.id)) +
+            FLOOR(RAND(? + e.id) * 500) +
+            CASE 
+              WHEN DATEDIFF(NOW(), e.created_at) <= 7 THEN GREATEST(0, 600 - DATEDIFF(NOW(), e.created_at) * 85)
+              WHEN DATEDIFF(NOW(), e.created_at) <= 30 THEN GREATEST(0, 300 - (DATEDIFF(NOW(), e.created_at) - 7) * 13)
+              ELSE 100
+            END
           ) as recommendScore
         FROM episodes e
         INNER JOIN series s ON e.series_id = s.id
         WHERE e.status = 'published'
-          AND s.is_active = 1
           AND e.episode_number = 1
+          AND s.is_active = 1
           AND s.category_id = 1
-        ORDER BY recommendScore DESC, RAND()
+        ORDER BY recommendScore DESC
         LIMIT ? OFFSET ?
       `;
-            const episodes = await this.episodeRepo.query(query, [size + 1, offset]);
+            const episodes = await this.episodeRepo.query(query, [page, page, queryLimit, safeOffset]);
             const hasMore = episodes.length > size;
             const list = hasMore ? episodes.slice(0, size) : episodes;
             const userInteractions = {};
@@ -161,7 +168,7 @@ let RecommendService = class RecommendService {
                 hasMore,
             };
             if (!userId) {
-                await this.cacheManager.set(cacheKey, result, 2 * 60 * 1000);
+                await this.cacheManager.set(cacheKey, result, cacheTTL * 1000);
             }
             return result;
         }

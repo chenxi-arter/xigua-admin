@@ -87,7 +87,6 @@ let CommentService = class CommentService {
                 .getMany();
             replyToUsers.forEach((user) => {
                 replyToUsersMap.set(user.id, {
-                    username: user.username,
                     nickname: user.nickname,
                     photoUrl: user.photo_url,
                 });
@@ -113,7 +112,7 @@ let CommentService = class CommentService {
                 likeCount: comment.likeCount || 0,
                 liked: userId ? (likedCommentsMap.get(comment.id) || false) : undefined,
                 createdAt: comment.createdAt,
-                username: comment.user?.username || null,
+                username: comment.user?.nickname || null,
                 nickname: comment.user?.nickname || null,
                 photoUrl: comment.user?.photo_url || null,
                 recentReplies: recentReplies.map(reply => {
@@ -125,11 +124,11 @@ let CommentService = class CommentService {
                         likeCount: reply.likeCount || 0,
                         liked: userId ? (likedRepliesMap.get(reply.id) || false) : undefined,
                         createdAt: reply.createdAt,
-                        username: reply.user?.username || null,
+                        username: reply.user?.nickname || null,
                         nickname: reply.user?.nickname || null,
                         photoUrl: reply.user?.photo_url || null,
                         replyToUserId: reply.replyToUserId || null,
-                        replyToUsername: replyToUser?.username || null,
+                        replyToUsername: replyToUser?.nickname || null,
                         replyToNickname: replyToUser?.nickname || null,
                         replyToPhotoUrl: replyToUser?.photoUrl || null,
                     };
@@ -181,10 +180,10 @@ let CommentService = class CommentService {
             content: savedWithUser.content,
             likeCount: savedWithUser.likeCount || 0,
             createdAt: savedWithUser.createdAt,
-            username: savedWithUser.user?.username || null,
+            username: savedWithUser.user?.nickname || null,
             nickname: savedWithUser.user?.nickname || null,
             photoUrl: savedWithUser.user?.photo_url || null,
-            replyToUsername: parentComment.user?.username || null,
+            replyToUsername: parentComment.user?.nickname || null,
             replyToNickname: parentComment.user?.nickname || null,
         };
     }
@@ -214,7 +213,6 @@ let CommentService = class CommentService {
                 .getMany();
             replyToUsers.forEach((user) => {
                 replyToUsersMap.set(user.id, {
-                    username: user.username,
                     nickname: user.nickname,
                     photoUrl: user.photo_url,
                 });
@@ -229,7 +227,7 @@ let CommentService = class CommentService {
             rootComment: {
                 id: rootComment.id,
                 content: rootComment.content,
-                username: rootComment.user?.username || null,
+                username: rootComment.user?.nickname || null,
                 nickname: rootComment.user?.nickname || null,
                 photoUrl: rootComment.user?.photo_url || null,
                 replyCount: rootComment.replyCount,
@@ -247,11 +245,11 @@ let CommentService = class CommentService {
                     likeCount: reply.likeCount || 0,
                     liked: userId ? (likedMap.get(reply.id) || false) : undefined,
                     createdAt: reply.createdAt,
-                    username: reply.user?.username || null,
+                    username: reply.user?.nickname || null,
                     nickname: reply.user?.nickname || null,
                     photoUrl: reply.user?.photo_url || null,
                     replyToUserId: reply.replyToUserId || null,
-                    replyToUsername: replyToUser?.username || null,
+                    replyToUsername: replyToUser?.nickname || null,
                     replyToNickname: replyToUser?.nickname || null,
                     replyToPhotoUrl: replyToUser?.photoUrl || null,
                 };
@@ -361,7 +359,7 @@ let CommentService = class CommentService {
                 seriesShortId: episodeInfo?.seriesShortId || null,
                 seriesTitle: episodeInfo?.seriesTitle || null,
                 seriesCoverUrl: episodeInfo?.seriesCoverUrl || null,
-                fromUsername: reply.user?.username || null,
+                fromUsername: reply.user?.nickname || null,
                 fromNickname: reply.user?.nickname || null,
                 fromPhotoUrl: reply.user?.photo_url || null,
                 myComment: parentComment?.content || null,
