@@ -77,6 +77,40 @@ let R2StorageService = class R2StorageService {
         const base = (this.publicBaseUrl ?? this.endpointBucketBase).replace(/\/$/, '');
         return `${base}/${fileKey}`;
     }
+    generateShortPath(id) {
+        const padding = 'zpxw';
+        const hash = (0, crypto_1.createHash)('md5')
+            .update(String(id) + padding)
+            .digest();
+        return hash.toString('base64url').substring(0, 11);
+    }
+    generateVideoPath(seriesId, episodeId, quality, filename, type = 't1') {
+        const mePath = this.generateShortPath(seriesId);
+        const epPath = this.generateShortPath(episodeId);
+        const sanitizedFilename = this.sanitizeFilename(filename);
+        return `admin.v1.0.0.${type}/${mePath}/${epPath}/${quality}/${sanitizedFilename}`;
+    }
+    sanitizeFilename(filename) {
+        const parts = filename.split('.');
+        const extension = parts.length > 1 ? parts.pop()?.toLowerCase() : '';
+        let basename = parts.join('.');
+        if (!basename || basename.trim() === '') {
+            basename = 'video';
+        }
+        basename = basename
+            .replace(/[^\w\-\.]/g, '_')
+            .replace(/_{2,}/g, '_')
+            .replace(/^_+|_+$/g, '')
+            .substring(0, 100);
+        if (!basename) {
+            basename = 'video';
+        }
+        return extension ? `${basename}.${extension}` : basename;
+    }
+    getVideoUrl(seriesId, episodeId, quality, filename = 'video.mp4', type = 't1') {
+        const path = this.generateVideoPath(seriesId, episodeId, quality, filename, type);
+        return this.getPublicUrl(path);
+    }
 };
 exports.R2StorageService = R2StorageService;
 exports.R2StorageService = R2StorageService = __decorate([
