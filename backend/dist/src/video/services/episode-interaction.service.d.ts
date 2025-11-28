@@ -24,18 +24,18 @@ export declare class EpisodeInteractionService {
         content: string;
         likeCount: number;
         createdAt: Date;
-        username: string | null;
-        nickname: string | null;
+        username: any;
+        nickname: any;
         photoUrl: string | null;
-        replyToUsername: string | null;
-        replyToNickname: string | null;
+        replyToUsername: any;
+        replyToNickname: any;
     }>;
     getCommentReplies(commentId: number, page: number, size: number, userId?: number): Promise<{
         rootComment: {
             id: number;
             content: string;
-            username: string | null;
-            nickname: string | null;
+            username: any;
+            nickname: any;
             photoUrl: string | null;
             replyCount: number;
             likeCount: number;
@@ -50,8 +50,8 @@ export declare class EpisodeInteractionService {
             likeCount: number;
             liked: boolean | undefined;
             createdAt: Date;
-            username: string | null;
-            nickname: string | null;
+            username: any;
+            nickname: any;
             photoUrl: string | null;
             replyToUserId: number | null;
             replyToUsername: any;

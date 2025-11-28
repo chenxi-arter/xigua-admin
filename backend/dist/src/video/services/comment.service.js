@@ -104,6 +104,16 @@ let CommentService = class CommentService {
         }
         const formattedComments = comments.map(comment => {
             const recentReplies = repliesMap.get(comment.id) || [];
+            const getDisplayNickname = (user) => {
+                if (user?.nickname?.trim())
+                    return user.nickname.trim();
+                const firstName = user?.first_name?.trim() || '';
+                const lastName = user?.last_name?.trim() || '';
+                const fullName = [firstName, lastName].filter(Boolean).join(' ');
+                if (fullName)
+                    return fullName;
+                return user?.username || null;
+            };
             return {
                 id: comment.id,
                 content: comment.content,
@@ -112,8 +122,8 @@ let CommentService = class CommentService {
                 likeCount: comment.likeCount || 0,
                 liked: userId ? (likedCommentsMap.get(comment.id) || false) : undefined,
                 createdAt: comment.createdAt,
-                username: comment.user?.nickname || null,
-                nickname: comment.user?.nickname || null,
+                username: getDisplayNickname(comment.user),
+                nickname: getDisplayNickname(comment.user),
                 photoUrl: comment.user?.photo_url || null,
                 recentReplies: recentReplies.map(reply => {
                     const replyToUser = reply.replyToUserId ? replyToUsersMap.get(reply.replyToUserId) : null;
@@ -124,12 +134,12 @@ let CommentService = class CommentService {
                         likeCount: reply.likeCount || 0,
                         liked: userId ? (likedRepliesMap.get(reply.id) || false) : undefined,
                         createdAt: reply.createdAt,
-                        username: reply.user?.nickname || null,
-                        nickname: reply.user?.nickname || null,
+                        username: getDisplayNickname(reply.user),
+                        nickname: getDisplayNickname(reply.user),
                         photoUrl: reply.user?.photo_url || null,
                         replyToUserId: reply.replyToUserId || null,
-                        replyToUsername: replyToUser?.nickname || null,
-                        replyToNickname: replyToUser?.nickname || null,
+                        replyToUsername: getDisplayNickname(replyToUser),
+                        replyToNickname: getDisplayNickname(replyToUser),
                         replyToPhotoUrl: replyToUser?.photoUrl || null,
                     };
                 }),
@@ -172,6 +182,16 @@ let CommentService = class CommentService {
         if (!savedWithUser) {
             throw new Error('保存的评论未找到');
         }
+        const getDisplayNickname = (user) => {
+            if (user?.nickname?.trim())
+                return user.nickname.trim();
+            const firstName = user?.first_name?.trim() || '';
+            const lastName = user?.last_name?.trim() || '';
+            const fullName = [firstName, lastName].filter(Boolean).join(' ');
+            if (fullName)
+                return fullName;
+            return user?.username || null;
+        };
         return {
             id: savedWithUser.id,
             parentId: savedWithUser.parentId,
@@ -180,11 +200,11 @@ let CommentService = class CommentService {
             content: savedWithUser.content,
             likeCount: savedWithUser.likeCount || 0,
             createdAt: savedWithUser.createdAt,
-            username: savedWithUser.user?.nickname || null,
-            nickname: savedWithUser.user?.nickname || null,
+            username: getDisplayNickname(savedWithUser.user),
+            nickname: getDisplayNickname(savedWithUser.user),
             photoUrl: savedWithUser.user?.photo_url || null,
-            replyToUsername: parentComment.user?.nickname || null,
-            replyToNickname: parentComment.user?.nickname || null,
+            replyToUsername: getDisplayNickname(parentComment.user),
+            replyToNickname: getDisplayNickname(parentComment.user),
         };
     }
     async getCommentReplies(commentId, page = 1, size = 20, userId) {
@@ -223,12 +243,22 @@ let CommentService = class CommentService {
             const allCommentIds = [commentId, ...replies.map(r => r.id)];
             likedMap = await this.commentLikeService.batchCheckLiked(userId, allCommentIds);
         }
+        const getDisplayNickname = (user) => {
+            if (user?.nickname?.trim())
+                return user.nickname.trim();
+            const firstName = user?.first_name?.trim() || '';
+            const lastName = user?.last_name?.trim() || '';
+            const fullName = [firstName, lastName].filter(Boolean).join(' ');
+            if (fullName)
+                return fullName;
+            return user?.username || null;
+        };
         return {
             rootComment: {
                 id: rootComment.id,
                 content: rootComment.content,
-                username: rootComment.user?.nickname || null,
-                nickname: rootComment.user?.nickname || null,
+                username: getDisplayNickname(rootComment.user),
+                nickname: getDisplayNickname(rootComment.user),
                 photoUrl: rootComment.user?.photo_url || null,
                 replyCount: rootComment.replyCount,
                 likeCount: rootComment.likeCount || 0,
@@ -245,12 +275,12 @@ let CommentService = class CommentService {
                     likeCount: reply.likeCount || 0,
                     liked: userId ? (likedMap.get(reply.id) || false) : undefined,
                     createdAt: reply.createdAt,
-                    username: reply.user?.nickname || null,
-                    nickname: reply.user?.nickname || null,
+                    username: getDisplayNickname(reply.user),
+                    nickname: getDisplayNickname(reply.user),
                     photoUrl: reply.user?.photo_url || null,
                     replyToUserId: reply.replyToUserId || null,
-                    replyToUsername: replyToUser?.nickname || null,
-                    replyToNickname: replyToUser?.nickname || null,
+                    replyToUsername: getDisplayNickname(replyToUser),
+                    replyToNickname: getDisplayNickname(replyToUser),
                     replyToPhotoUrl: replyToUser?.photoUrl || null,
                 };
             }),
