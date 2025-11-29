@@ -331,6 +331,84 @@ let CommentService = class CommentService {
             totalPages: Math.ceil(total / size),
         };
     }
+    async getUserUnreadReplies(userId, page = 1, size = 20) {
+        const skip = (page - 1) * size;
+        const [replies, total] = await this.commentRepo.findAndCount({
+            where: {
+                replyToUserId: userId,
+                isRead: false,
+            },
+            order: { createdAt: 'DESC' },
+            skip,
+            take: size,
+            relations: ['user'],
+        });
+        const parentIds = [...new Set(replies.map(r => r.parentId).filter(Boolean))];
+        const parentCommentsMap = new Map();
+        if (parentIds.length > 0) {
+            const parentComments = await this.commentRepo
+                .createQueryBuilder('comment')
+                .where('comment.id IN (:...ids)', { ids: parentIds })
+                .getMany();
+            parentComments.forEach(comment => {
+                parentCommentsMap.set(comment.id, {
+                    id: comment.id,
+                    content: comment.content,
+                    episodeShortId: comment.episodeShortId,
+                });
+            });
+        }
+        const episodeShortIds = [...new Set(replies.map(r => r.episodeShortId).filter(Boolean))];
+        const episodeInfoMap = new Map();
+        if (episodeShortIds.length > 0) {
+            const episodes = await this.commentRepo.manager
+                .getRepository('Episode')
+                .createQueryBuilder('episode')
+                .leftJoinAndSelect('episode.series', 'series')
+                .where('episode.shortId IN (:...shortIds)', { shortIds: episodeShortIds })
+                .getMany();
+            episodes.forEach((episode) => {
+                episodeInfoMap.set(episode.shortId, {
+                    episodeId: episode.id,
+                    episodeShortId: episode.shortId,
+                    episodeNumber: episode.episodeNumber,
+                    episodeTitle: episode.title,
+                    seriesId: episode.series?.id,
+                    seriesShortId: episode.series?.shortId,
+                    seriesTitle: episode.series?.title,
+                    seriesCoverUrl: episode.series?.coverUrl,
+                });
+            });
+        }
+        const formattedReplies = replies.map(reply => {
+            const parentComment = reply.parentId ? parentCommentsMap.get(reply.parentId) : null;
+            const episodeInfo = episodeInfoMap.get(reply.episodeShortId) || null;
+            return {
+                id: reply.id,
+                content: reply.content,
+                createdAt: reply.createdAt,
+                isRead: reply.isRead,
+                episodeNumber: episodeInfo?.episodeNumber || null,
+                episodeTitle: episodeInfo?.episodeTitle || null,
+                seriesShortId: episodeInfo?.seriesShortId || null,
+                seriesTitle: episodeInfo?.seriesTitle || null,
+                seriesCoverUrl: episodeInfo?.seriesCoverUrl || null,
+                fromUsername: reply.user?.nickname || null,
+                fromNickname: reply.user?.nickname || null,
+                fromPhotoUrl: reply.user?.photo_url || null,
+                myComment: parentComment?.content || null,
+                floorNumber: reply.floorNumber,
+            };
+        });
+        return {
+            list: formattedReplies,
+            total,
+            page,
+            size,
+            hasMore: total > page * size,
+            totalPages: Math.ceil(total / size),
+        };
+    }
     async getUserReceivedReplies(userId, page = 1, size = 20) {
         const skip = (page - 1) * size;
         const [replies, total] = await this.commentRepo.findAndCount({
@@ -480,6 +558,30 @@ let CommentService = class CommentService {
     async getCommentCountByShortId(episodeShortId) {
         const countMap = await this.getCommentCountsByShortIds([episodeShortId]);
         return countMap.get(episodeShortId) || 0;
+    }
+    async markRepliesAsRead(userId, replyIds) {
+        const updateQuery = this.commentRepo
+            .createQueryBuilder()
+            .update(comment_entity_1.Comment)
+            .set({ isRead: true })
+            .where('replyToUserId = :userId', { userId })
+            .andWhere('isRead = :isRead', { isRead: false });
+        if (replyIds && replyIds.length > 0) {
+            updateQuery.andWhere('id IN (:...replyIds)', { replyIds });
+        }
+        const result = await updateQuery.execute();
+        return {
+            ok: true,
+            affected: result.affected || 0
+        };
+    }
+    async getUnreadReplyCount(userId) {
+        return await this.commentRepo.count({
+            where: {
+                replyToUserId: userId,
+                isRead: false,
+            },
+        });
     }
 };
 exports.CommentService = CommentService;

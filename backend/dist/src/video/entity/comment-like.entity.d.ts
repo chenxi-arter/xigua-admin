@@ -4,6 +4,7 @@ export declare class CommentLike {
     id: number;
     userId: number;
     commentId: number;
+    isRead: boolean;
     createdAt: Date;
     user: User;
     comment: Comment;

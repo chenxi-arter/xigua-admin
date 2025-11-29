@@ -89,6 +89,29 @@ export declare class CommentService {
         size: number;
         totalPages: number;
     }>;
+    getUserUnreadReplies(userId: number, page?: number, size?: number): Promise<{
+        list: {
+            id: number;
+            content: string;
+            createdAt: Date;
+            isRead: boolean;
+            episodeNumber: any;
+            episodeTitle: any;
+            seriesShortId: any;
+            seriesTitle: any;
+            seriesCoverUrl: any;
+            fromUsername: string | null;
+            fromNickname: string | null;
+            fromPhotoUrl: string | null;
+            myComment: any;
+            floorNumber: number;
+        }[];
+        total: number;
+        page: number;
+        size: number;
+        hasMore: boolean;
+        totalPages: number;
+    }>;
     getUserReceivedReplies(userId: number, page?: number, size?: number): Promise<{
         list: {
             id: number;
@@ -126,4 +149,9 @@ export declare class CommentService {
     private clearCommentCache;
     getCommentCountsByShortIds(episodeShortIds: string[]): Promise<Map<string, number>>;
     getCommentCountByShortId(episodeShortId: string): Promise<number>;
+    markRepliesAsRead(userId: number, replyIds?: number[]): Promise<{
+        ok: boolean;
+        affected: number;
+    }>;
+    getUnreadReplyCount(userId: number): Promise<number>;
 }

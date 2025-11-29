@@ -122,5 +122,49 @@ export declare class InteractionController extends BaseController {
         hasMore: boolean;
         totalPages: number;
     }>>;
+    getMyUnreadReplies(req: {
+        user?: {
+            userId?: number;
+        };
+    }, page?: string, size?: string): Promise<import("../controllers/base.controller").ApiResponse<null> | import("../controllers/base.controller").ApiResponse<{
+        list: {
+            id: number;
+            content: string;
+            createdAt: Date;
+            isRead: boolean;
+            episodeNumber: any;
+            episodeTitle: any;
+            seriesShortId: any;
+            seriesTitle: any;
+            seriesCoverUrl: any;
+            fromUsername: string | null;
+            fromNickname: string | null;
+            fromPhotoUrl: string | null;
+            myComment: any;
+            floorNumber: number;
+        }[];
+        total: number;
+        page: number;
+        size: number;
+        hasMore: boolean;
+        totalPages: number;
+    }>>;
+    markRepliesAsRead(req: {
+        user?: {
+            userId?: number;
+        };
+    }, body: {
+        replyIds?: number[];
+    }): Promise<import("../controllers/base.controller").ApiResponse<null> | import("../controllers/base.controller").ApiResponse<{
+        ok: boolean;
+        affected: number;
+    }>>;
+    getUnreadReplyCount(req: {
+        user?: {
+            userId?: number;
+        };
+    }): Promise<import("../controllers/base.controller").ApiResponse<null> | import("../controllers/base.controller").ApiResponse<{
+        count: number;
+    }>>;
 }
 export {};

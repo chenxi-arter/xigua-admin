@@ -125,6 +125,15 @@ let EpisodeInteractionService = class EpisodeInteractionService {
     async getUserReceivedReplies(userId, page, size) {
         return this.commentService.getUserReceivedReplies(userId, page, size);
     }
+    async getUserUnreadReplies(userId, page, size) {
+        return this.commentService.getUserUnreadReplies(userId, page, size);
+    }
+    async markRepliesAsRead(userId, replyIds) {
+        return this.commentService.markRepliesAsRead(userId, replyIds);
+    }
+    async getUnreadReplyCount(userId) {
+        return this.commentService.getUnreadReplyCount(userId);
+    }
 };
 exports.EpisodeInteractionService = EpisodeInteractionService;
 exports.EpisodeInteractionService = EpisodeInteractionService = __decorate([

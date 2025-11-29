@@ -180,6 +180,47 @@ let InteractionController = class InteractionController extends base_controller_
             return this.error(errMsg, 400);
         }
     }
+    async getMyUnreadReplies(req, page, size) {
+        const userId = req.user?.userId ? Number(req.user.userId) : 0;
+        if (!userId)
+            return this.error('未认证', 401);
+        try {
+            const pageNum = Math.max(parseInt(page ?? '1', 10) || 1, 1);
+            const sizeNum = Math.max(parseInt(size ?? '20', 10) || 20, 1);
+            const result = await this.interactionService.getUserUnreadReplies(userId, pageNum, sizeNum);
+            return this.success(result, '获取成功', 200);
+        }
+        catch (error) {
+            const errMsg = error instanceof Error ? error.message : '获取失败';
+            return this.error(errMsg, 400);
+        }
+    }
+    async markRepliesAsRead(req, body) {
+        const userId = req.user?.userId ? Number(req.user.userId) : 0;
+        if (!userId)
+            return this.error('未认证', 401);
+        try {
+            const result = await this.interactionService.markRepliesAsRead(userId, body.replyIds);
+            return this.success(result, '已标记为已读', 200);
+        }
+        catch (error) {
+            const errMsg = error instanceof Error ? error.message : '标记失败';
+            return this.error(errMsg, 400);
+        }
+    }
+    async getUnreadReplyCount(req) {
+        const userId = req.user?.userId ? Number(req.user.userId) : 0;
+        if (!userId)
+            return this.error('未认证', 401);
+        try {
+            const count = await this.interactionService.getUnreadReplyCount(userId);
+            return this.success({ count }, '获取成功', 200);
+        }
+        catch (error) {
+            const errMsg = error instanceof Error ? error.message : '获取失败';
+            return this.error(errMsg, 400);
+        }
+    }
 };
 exports.InteractionController = InteractionController;
 __decorate([
@@ -239,6 +280,33 @@ __decorate([
     __metadata("design:paramtypes", [Object, String, String]),
     __metadata("design:returntype", Promise)
 ], InteractionController.prototype, "getMyReplies", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Get)('my-unread-replies'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)('page')),
+    __param(2, (0, common_1.Query)('size')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, String]),
+    __metadata("design:returntype", Promise)
+], InteractionController.prototype, "getMyUnreadReplies", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Post)('replies/mark-read'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], InteractionController.prototype, "markRepliesAsRead", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Get)('unread-reply-count'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], InteractionController.prototype, "getUnreadReplyCount", null);
 exports.InteractionController = InteractionController = __decorate([
     (0, common_1.Controller)('video/episode'),
     __metadata("design:paramtypes", [episode_interaction_service_1.EpisodeInteractionService,

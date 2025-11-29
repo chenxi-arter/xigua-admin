@@ -22,6 +22,7 @@ let Comment = class Comment {
     floorNumber;
     replyCount;
     likeCount;
+    isRead;
     content;
     appearSecond;
     createdAt;
@@ -64,6 +65,10 @@ __decorate([
     (0, typeorm_1.Column)({ name: 'like_count', type: 'int', default: 0 }),
     __metadata("design:type", Number)
 ], Comment.prototype, "likeCount", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'is_read', type: 'boolean', default: false }),
+    __metadata("design:type", Boolean)
+], Comment.prototype, "isRead", void 0);
 __decorate([
     (0, typeorm_1.Column)({ type: 'text', name: 'content' }),
     __metadata("design:type", String)
