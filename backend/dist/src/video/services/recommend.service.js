@@ -44,14 +44,6 @@ let RecommendService = class RecommendService {
     async getRecommendList(page = 1, size = 20, userId) {
         try {
             const offset = (page - 1) * size;
-            const cacheKey = `recommend:list:${page}:${size}`;
-            const cacheTTL = 120;
-            if (!userId) {
-                const cachedData = await this.cacheManager.get(cacheKey);
-                if (cachedData) {
-                    return cachedData;
-                }
-            }
             const maxOffset = 1000;
             const safeOffset = Math.min(offset, maxOffset);
             const queryLimit = size + 1;
@@ -80,12 +72,13 @@ let RecommendService = class RecommendService {
           s.actor as seriesActor,
           s.up_status as seriesUpStatus,
           (
-            (e.like_count * 3 + e.favorite_count * 5) * (0.5 + RAND(? + e.id)) +
-            FLOOR(RAND(? + e.id) * 500) +
+            (e.like_count * 2 + e.favorite_count * 4) * (0.8 + RAND() * 0.7) +
+            FLOOR(RAND() * 400) +
             CASE 
-              WHEN DATEDIFF(NOW(), e.created_at) <= 7 THEN GREATEST(0, 600 - DATEDIFF(NOW(), e.created_at) * 85)
-              WHEN DATEDIFF(NOW(), e.created_at) <= 30 THEN GREATEST(0, 300 - (DATEDIFF(NOW(), e.created_at) - 7) * 13)
-              ELSE 100
+              WHEN DATEDIFF(NOW(), e.created_at) <= 3 THEN GREATEST(0, 800 - DATEDIFF(NOW(), e.created_at) * 267)
+              WHEN DATEDIFF(NOW(), e.created_at) <= 14 THEN GREATEST(0, 600 - (DATEDIFF(NOW(), e.created_at) - 3) * 54)
+              WHEN DATEDIFF(NOW(), e.created_at) <= 30 THEN GREATEST(0, 300 - (DATEDIFF(NOW(), e.created_at) - 14) * 19)
+              ELSE 120
             END
           ) as recommendScore
         FROM episodes e
@@ -97,7 +90,7 @@ let RecommendService = class RecommendService {
         ORDER BY recommendScore DESC
         LIMIT ? OFFSET ?
       `;
-            const episodes = await this.episodeRepo.query(query, [page, page, queryLimit, safeOffset]);
+            const episodes = await this.episodeRepo.query(query, [queryLimit, safeOffset]);
             const hasMore = episodes.length > size;
             const list = hasMore ? episodes.slice(0, size) : episodes;
             const userInteractions = {};
@@ -161,16 +154,12 @@ let RecommendService = class RecommendService {
                 }
                 return baseEpisode;
             }));
-            const result = {
+            return {
                 list: enrichedList,
                 page,
                 size,
                 hasMore,
             };
-            if (!userId) {
-                await this.cacheManager.set(cacheKey, result, cacheTTL * 1000);
-            }
-            return result;
         }
         catch (error) {
             console.error('获取推荐列表失败:', error);
