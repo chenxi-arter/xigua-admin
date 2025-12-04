@@ -69,7 +69,6 @@ class CreateConversionDto {
     campaignCode;
     conversionType;
     conversionValue;
-    userId;
     sessionId;
     deviceId;
 }
@@ -87,10 +86,6 @@ __decorate([
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], CreateConversionDto.prototype, "conversionValue", void 0);
-__decorate([
-    (0, class_validator_1.IsNumber)(),
-    __metadata("design:type", Number)
-], CreateConversionDto.prototype, "userId", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),

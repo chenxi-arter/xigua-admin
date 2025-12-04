@@ -16,6 +16,7 @@ exports.TrackingController = void 0;
 const common_1 = require("@nestjs/common");
 const services_1 = require("../services");
 const dto_1 = require("../dto");
+const optional_jwt_auth_guard_1 = require("../../auth/guards/optional-jwt-auth.guard");
 let TrackingController = class TrackingController {
     trackingService;
     constructor(trackingService) {
@@ -23,7 +24,8 @@ let TrackingController = class TrackingController {
     }
     async createEvent(createEventDto, req) {
         const ipAddress = this.getClientIp(req);
-        const result = await this.trackingService.createEvent(createEventDto, ipAddress);
+        const userId = req.user?.userId;
+        const result = await this.trackingService.createEvent(createEventDto, ipAddress, userId);
         return {
             code: result.success ? 200 : 400,
             message: result.message || (result.success ? 'success' : 'error'),
@@ -39,8 +41,19 @@ let TrackingController = class TrackingController {
             data: result,
         };
     }
-    async createConversion(createConversionDto) {
-        const result = await this.trackingService.createConversion(createConversionDto);
+    async createConversion(createConversionDto, req) {
+        const userId = req.user?.userId;
+        if (!userId) {
+            return {
+                code: 400,
+                message: '转化记录需要用户ID，请先登录',
+                data: {
+                    success: false,
+                    message: '转化记录需要用户ID，请先登录',
+                },
+            };
+        }
+        const result = await this.trackingService.createConversion(createConversionDto, userId);
         return {
             code: result.success ? 200 : 400,
             message: result.message || (result.success ? 'success' : 'error'),
@@ -57,6 +70,7 @@ let TrackingController = class TrackingController {
 exports.TrackingController = TrackingController;
 __decorate([
     (0, common_1.Post)('event'),
+    (0, common_1.UseGuards)(optional_jwt_auth_guard_1.OptionalJwtAuthGuard),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -73,9 +87,11 @@ __decorate([
 ], TrackingController.prototype, "createEventsBatch", null);
 __decorate([
     (0, common_1.Post)('conversion'),
+    (0, common_1.UseGuards)(optional_jwt_auth_guard_1.OptionalJwtAuthGuard),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [dto_1.CreateConversionDto]),
+    __metadata("design:paramtypes", [dto_1.CreateConversionDto, Object]),
     __metadata("design:returntype", Promise)
 ], TrackingController.prototype, "createConversion", null);
 exports.TrackingController = TrackingController = __decorate([
