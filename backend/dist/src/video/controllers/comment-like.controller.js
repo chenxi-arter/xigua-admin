@@ -73,6 +73,44 @@ let CommentLikeController = class CommentLikeController extends base_controller_
             return this.handleServiceError(error, '获取点赞用户列表失败');
         }
     }
+    async getMyUnreadLikes(req, page, size) {
+        try {
+            const userId = req.user?.userId;
+            if (!userId)
+                return this.error('未认证', 401);
+            const pageNum = Math.max(parseInt(page ?? '1', 10) || 1, 1);
+            const sizeNum = Math.max(parseInt(size ?? '20', 10) || 20, 1);
+            const result = await this.commentLikeService.getUserUnreadLikes(userId, pageNum, sizeNum);
+            return this.success(result, '获取成功', 200);
+        }
+        catch (error) {
+            return this.handleServiceError(error, '获取未读点赞失败');
+        }
+    }
+    async markLikesAsRead(req, likeIds) {
+        try {
+            const userId = req.user?.userId;
+            if (!userId)
+                return this.error('未认证', 401);
+            const result = await this.commentLikeService.markLikesAsRead(userId, likeIds);
+            return this.success(result, '已标记为已读', 200);
+        }
+        catch (error) {
+            return this.handleServiceError(error, '标记失败');
+        }
+    }
+    async getUnreadLikeCount(req) {
+        try {
+            const userId = req.user?.userId;
+            if (!userId)
+                return this.error('未认证', 401);
+            const count = await this.commentLikeService.getUnreadLikeCount(userId);
+            return this.success({ count }, '获取成功', 200);
+        }
+        catch (error) {
+            return this.handleServiceError(error, '获取未读点赞数量失败');
+        }
+    }
 };
 exports.CommentLikeController = CommentLikeController;
 __decorate([
@@ -94,6 +132,33 @@ __decorate([
     __metadata("design:paramtypes", [Number, Number, Number]),
     __metadata("design:returntype", Promise)
 ], CommentLikeController.prototype, "getLikeUsers", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Get)('my-unread-likes'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Query)('page')),
+    __param(2, (0, common_1.Query)('size')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String, String]),
+    __metadata("design:returntype", Promise)
+], CommentLikeController.prototype, "getMyUnreadLikes", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Post)('likes/mark-read'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)('likeIds')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Array]),
+    __metadata("design:returntype", Promise)
+], CommentLikeController.prototype, "markLikesAsRead", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Get)('unread-like-count'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], CommentLikeController.prototype, "getUnreadLikeCount", null);
 exports.CommentLikeController = CommentLikeController = __decorate([
     (0, common_1.Controller)('video/comment'),
     __metadata("design:paramtypes", [comment_like_service_1.CommentLikeService])

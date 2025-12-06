@@ -24,18 +24,18 @@ export declare class EpisodeInteractionService {
         content: string;
         likeCount: number;
         createdAt: Date;
-        username: string | null;
-        nickname: string | null;
+        username: any;
+        nickname: any;
         photoUrl: string | null;
-        replyToUsername: string | null;
-        replyToNickname: string | null;
+        replyToUsername: any;
+        replyToNickname: any;
     }>;
     getCommentReplies(commentId: number, page: number, size: number, userId?: number): Promise<{
         rootComment: {
             id: number;
             content: string;
-            username: string | null;
-            nickname: string | null;
+            username: any;
+            nickname: any;
             photoUrl: string | null;
             replyCount: number;
             likeCount: number;
@@ -50,8 +50,8 @@ export declare class EpisodeInteractionService {
             likeCount: number;
             liked: boolean | undefined;
             createdAt: Date;
-            username: string | null;
-            nickname: string | null;
+            username: any;
+            nickname: any;
             photoUrl: string | null;
             replyToUserId: number | null;
             replyToUsername: any;
@@ -73,8 +73,9 @@ export declare class EpisodeInteractionService {
             seriesShortId: any;
             seriesTitle: any;
             seriesCoverUrl: any;
-            fromUsername: string | null;
-            fromNickname: string | null;
+            fromUserId: number;
+            fromUsername: any;
+            fromNickname: any;
             fromPhotoUrl: string | null;
             myComment: any;
             floorNumber: number;
@@ -85,4 +86,33 @@ export declare class EpisodeInteractionService {
         hasMore: boolean;
         totalPages: number;
     }>;
+    getUserUnreadReplies(userId: number, page: number, size: number): Promise<{
+        list: {
+            id: number;
+            content: string;
+            createdAt: Date;
+            isRead: boolean;
+            episodeNumber: any;
+            episodeTitle: any;
+            seriesShortId: any;
+            seriesTitle: any;
+            seriesCoverUrl: any;
+            fromUserId: number;
+            fromUsername: any;
+            fromNickname: any;
+            fromPhotoUrl: string | null;
+            myComment: any;
+            floorNumber: number;
+        }[];
+        total: number;
+        page: number;
+        size: number;
+        hasMore: boolean;
+        totalPages: number;
+    }>;
+    markRepliesAsRead(userId: number, replyIds?: number[]): Promise<{
+        ok: boolean;
+        affected: number;
+    }>;
+    getUnreadReplyCount(userId: number): Promise<number>;
 }

@@ -15,7 +15,6 @@ export declare class CreateConversionDto {
     campaignCode: string;
     conversionType: ConversionType;
     conversionValue?: number;
-    userId: number;
     sessionId?: string;
     deviceId?: string;
 }

@@ -9,6 +9,7 @@ export declare class Comment {
     floorNumber: number;
     replyCount: number;
     likeCount: number;
+    isRead: boolean;
     content: string;
     appearSecond: number;
     createdAt: Date;

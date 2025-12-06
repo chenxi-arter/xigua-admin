@@ -17,4 +17,35 @@ export declare class CommentLikeController extends BaseController {
         size: number;
         totalPages: number;
     }>>;
+    getMyUnreadLikes(req: any, page?: string, size?: string): Promise<void | import("./base.controller").ApiResponse<null> | import("./base.controller").ApiResponse<{
+        list: {
+            id: number;
+            likedAt: Date;
+            isRead: boolean;
+            likerUserId: number;
+            likerUsername: string | null;
+            likerNickname: string | null;
+            likerPhotoUrl: string | null;
+            commentId: number | null;
+            commentContent: string | null;
+            episodeShortId: string | null;
+            episodeNumber: any;
+            episodeTitle: any;
+            seriesShortId: any;
+            seriesTitle: any;
+            seriesCoverUrl: any;
+        }[];
+        total: number;
+        page: number;
+        size: number;
+        hasMore: boolean;
+        totalPages: number;
+    }>>;
+    markLikesAsRead(req: any, likeIds?: number[]): Promise<void | import("./base.controller").ApiResponse<null> | import("./base.controller").ApiResponse<{
+        ok: boolean;
+        affected: number;
+    }>>;
+    getUnreadLikeCount(req: any): Promise<void | import("./base.controller").ApiResponse<null> | import("./base.controller").ApiResponse<{
+        count: number;
+    }>>;
 }

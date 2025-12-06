@@ -21,7 +21,6 @@ const episode_url_entity_1 = require("../../video/entity/episode-url.entity");
 const r2_storage_service_1 = require("../../core/storage/r2-storage.service");
 const episode_service_1 = require("../../video/services/episode.service");
 const presigned_upload_dto_1 = require("../dto/presigned-upload.dto");
-const crypto_1 = require("crypto");
 let AdminEpisodesController = class AdminEpisodesController {
     episodeRepo;
     episodeUrlRepo;
@@ -137,7 +136,10 @@ let AdminEpisodesController = class AdminEpisodesController {
         };
     }
     async getPresignedUploadUrl(id, query) {
-        const episode = await this.episodeRepo.findOne({ where: { id: Number(id) } });
+        const episode = await this.episodeRepo.findOne({
+            where: { id: Number(id) },
+            relations: ['series']
+        });
         if (!episode) {
             throw new common_1.NotFoundException('Episode not found');
         }
@@ -150,7 +152,7 @@ let AdminEpisodesController = class AdminEpisodesController {
             throw new common_1.BadRequestException('Invalid filename');
         }
         const extension = filename.split('.').pop()?.toLowerCase();
-        const allowedExtensions = ['mp4', 'mpeg', 'mpg', 'mov', 'avi', 'webm'];
+        const allowedExtensions = ['mp4', 'mpeg', 'mpg', 'mov', 'avi', 'webm', 'm3u8', 'ts'];
         if (!extension || !allowedExtensions.includes(extension)) {
             throw new common_1.BadRequestException('Invalid file extension');
         }
@@ -158,7 +160,7 @@ let AdminEpisodesController = class AdminEpisodesController {
         if (quality && !allowedQualities.includes(quality)) {
             throw new common_1.BadRequestException('Invalid quality parameter');
         }
-        const fileKey = `episodes/${id}/video_${quality}_${(0, crypto_1.randomUUID)()}.${extension}`;
+        const fileKey = this.storage.generateVideoPath(episode.seriesId, episode.id, quality, filename);
         const uploadUrl = await this.storage.generatePresignedUploadUrl(fileKey, contentType, 7200);
         const publicUrl = this.storage.getPublicUrl(fileKey);
         return {

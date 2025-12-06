@@ -24,10 +24,12 @@ const interaction_controller_1 = require("../controllers/interaction.controller"
 const comments_controller_1 = require("../controllers/comments.controller");
 const compat_browse_history_controller_1 = require("../controllers/compat-browse-history.controller");
 const recommend_controller_1 = require("../controllers/recommend.controller");
+const notification_controller_1 = require("../controllers/notification.controller");
 const video_service_1 = require("../video.service");
 const comment_service_1 = require("../services/comment.service");
 const comment_like_service_1 = require("../services/comment-like.service");
 const fake_comment_service_1 = require("../services/fake-comment.service");
+const notification_service_1 = require("../services/notification.service");
 const playback_service_1 = require("../services/playback.service");
 const content_service_1 = require("../services/content.service");
 const home_service_1 = require("../services/home.service");
@@ -95,6 +97,7 @@ exports.VideoApiModule = VideoApiModule = __decorate([
             interaction_controller_1.InteractionController,
             comments_controller_1.CommentsController,
             recommend_controller_1.RecommendController,
+            notification_controller_1.NotificationController,
         ],
         providers: [
             video_service_1.VideoService,
@@ -116,6 +119,7 @@ exports.VideoApiModule = VideoApiModule = __decorate([
             fake_comment_service_1.FakeCommentService,
             comment_service_1.CommentService,
             comment_like_service_1.CommentLikeService,
+            notification_service_1.NotificationService,
             recommend_service_1.RecommendService,
             app_logger_service_1.AppLoggerService,
             app_config_service_1.AppConfigService,

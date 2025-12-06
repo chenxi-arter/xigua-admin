@@ -17,6 +17,7 @@ let CommentLike = class CommentLike {
     id;
     userId;
     commentId;
+    isRead;
     createdAt;
     user;
     comment;
@@ -34,6 +35,10 @@ __decorate([
     (0, typeorm_1.Column)({ name: 'comment_id', type: 'int' }),
     __metadata("design:type", Number)
 ], CommentLike.prototype, "commentId", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ name: 'is_read', type: 'boolean', default: false }),
+    __metadata("design:type", Boolean)
+], CommentLike.prototype, "isRead", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)({ name: 'created_at' }),
     __metadata("design:type", Date)

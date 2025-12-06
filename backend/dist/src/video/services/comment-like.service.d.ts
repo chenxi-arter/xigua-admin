@@ -30,4 +30,33 @@ export declare class CommentLikeService {
         size: number;
         totalPages: number;
     }>;
+    getUserUnreadLikes(userId: number, page?: number, size?: number): Promise<{
+        list: {
+            id: number;
+            likedAt: Date;
+            isRead: boolean;
+            likerUserId: number;
+            likerUsername: string | null;
+            likerNickname: string | null;
+            likerPhotoUrl: string | null;
+            commentId: number | null;
+            commentContent: string | null;
+            episodeShortId: string | null;
+            episodeNumber: any;
+            episodeTitle: any;
+            seriesShortId: any;
+            seriesTitle: any;
+            seriesCoverUrl: any;
+        }[];
+        total: number;
+        page: number;
+        size: number;
+        hasMore: boolean;
+        totalPages: number;
+    }>;
+    markLikesAsRead(userId: number, likeIds?: number[]): Promise<{
+        ok: boolean;
+        affected: number;
+    }>;
+    getUnreadLikeCount(userId: number): Promise<number>;
 }

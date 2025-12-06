@@ -4,7 +4,11 @@ import { CreateEventDto, BatchCreateEventDto, CreateConversionDto, EventResponse
 export declare class TrackingController {
     private readonly trackingService;
     constructor(trackingService: TrackingService);
-    createEvent(createEventDto: CreateEventDto, req: Request): Promise<{
+    createEvent(createEventDto: CreateEventDto, req: Request & {
+        user?: {
+            userId: number;
+        };
+    }): Promise<{
         code: number;
         message: string;
         data: EventResponseDto;
@@ -14,7 +18,11 @@ export declare class TrackingController {
         message: string;
         data: EventResponseDto;
     }>;
-    createConversion(createConversionDto: CreateConversionDto): Promise<{
+    createConversion(createConversionDto: CreateConversionDto, req: Request & {
+        user?: {
+            userId: number;
+        };
+    }): Promise<{
         code: number;
         message: string;
         data: ConversionResponseDto;

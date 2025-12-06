@@ -140,6 +140,99 @@ let CommentLikeService = class CommentLikeService {
             totalPages: Math.ceil(total / size),
         };
     }
+    async getUserUnreadLikes(userId, page = 1, size = 20) {
+        const skip = (page - 1) * size;
+        const [likes, total] = await this.commentLikeRepo
+            .createQueryBuilder('like')
+            .leftJoinAndSelect('like.user', 'liker')
+            .leftJoinAndSelect('like.comment', 'comment')
+            .where('comment.userId = :userId', { userId })
+            .andWhere('like.isRead = :isRead', { isRead: false })
+            .orderBy('like.createdAt', 'DESC')
+            .skip(skip)
+            .take(size)
+            .getManyAndCount();
+        const episodeShortIds = [...new Set(likes.map(like => like.comment?.episodeShortId).filter(Boolean))];
+        const episodeInfoMap = new Map();
+        if (episodeShortIds.length > 0) {
+            const episodes = await this.commentRepo.manager
+                .getRepository('Episode')
+                .createQueryBuilder('episode')
+                .leftJoinAndSelect('episode.series', 'series')
+                .where('episode.shortId IN (:...shortIds)', { shortIds: episodeShortIds })
+                .getMany();
+            episodes.forEach((episode) => {
+                episodeInfoMap.set(episode.shortId, {
+                    episodeNumber: episode.episodeNumber,
+                    episodeTitle: episode.title,
+                    seriesShortId: episode.series?.shortId,
+                    seriesTitle: episode.series?.title,
+                    seriesCoverUrl: episode.series?.coverUrl,
+                });
+            });
+        }
+        const formattedLikes = likes.map((like) => {
+            const comment = like.comment;
+            const episodeInfo = comment?.episodeShortId ? episodeInfoMap.get(comment.episodeShortId) : null;
+            return {
+                id: like.id,
+                likedAt: like.createdAt,
+                isRead: like.isRead,
+                likerUserId: like.userId,
+                likerUsername: like.user?.nickname || like.user?.username || null,
+                likerNickname: like.user?.nickname || null,
+                likerPhotoUrl: like.user?.photo_url || null,
+                commentId: comment?.id || null,
+                commentContent: comment?.content || null,
+                episodeShortId: comment?.episodeShortId || null,
+                episodeNumber: episodeInfo?.episodeNumber || null,
+                episodeTitle: episodeInfo?.episodeTitle || null,
+                seriesShortId: episodeInfo?.seriesShortId || null,
+                seriesTitle: episodeInfo?.seriesTitle || null,
+                seriesCoverUrl: episodeInfo?.seriesCoverUrl || null,
+            };
+        });
+        return {
+            list: formattedLikes,
+            total,
+            page,
+            size,
+            hasMore: total > page * size,
+            totalPages: Math.ceil(total / size),
+        };
+    }
+    async markLikesAsRead(userId, likeIds) {
+        const userComments = await this.commentRepo.find({
+            where: { userId },
+            select: ['id'],
+        });
+        const commentIds = userComments.map(c => c.id);
+        if (commentIds.length === 0) {
+            return { ok: true, affected: 0 };
+        }
+        const queryBuilder = this.commentLikeRepo
+            .createQueryBuilder()
+            .update(comment_like_entity_1.CommentLike)
+            .set({ isRead: true })
+            .where('commentId IN (:...commentIds)', { commentIds })
+            .andWhere('isRead = :isRead', { isRead: false });
+        if (likeIds && likeIds.length > 0) {
+            queryBuilder.andWhere('id IN (:...likeIds)', { likeIds });
+        }
+        const result = await queryBuilder.execute();
+        return {
+            ok: true,
+            affected: result.affected || 0,
+        };
+    }
+    async getUnreadLikeCount(userId) {
+        return await this.commentLikeRepo
+            .createQueryBuilder('like')
+            .leftJoin('like.comment', 'comment')
+            .where('comment.userId = :userId', { userId })
+            .andWhere('like.isRead = :isRead', { isRead: false })
+            .getCount();
+    }
 };
 exports.CommentLikeService = CommentLikeService;
 exports.CommentLikeService = CommentLikeService = __decorate([
