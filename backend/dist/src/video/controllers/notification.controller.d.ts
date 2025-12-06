@@ -21,8 +21,9 @@ export declare class NotificationController extends BaseController {
             seriesShortId: any;
             seriesTitle: any;
             seriesCoverUrl: any;
-            fromUsername: string | null;
-            fromNickname: string | null;
+            fromUserId: number;
+            fromUsername: any;
+            fromNickname: any;
             fromPhotoUrl: string | null;
             myComment: any;
             floorNumber: number;

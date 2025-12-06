@@ -100,8 +100,9 @@ export declare class CommentService {
             seriesShortId: any;
             seriesTitle: any;
             seriesCoverUrl: any;
-            fromUsername: string | null;
-            fromNickname: string | null;
+            fromUserId: number;
+            fromUsername: any;
+            fromNickname: any;
             fromPhotoUrl: string | null;
             myComment: any;
             floorNumber: number;
@@ -122,8 +123,9 @@ export declare class CommentService {
             seriesShortId: any;
             seriesTitle: any;
             seriesCoverUrl: any;
-            fromUsername: string | null;
-            fromNickname: string | null;
+            fromUserId: number;
+            fromUsername: any;
+            fromNickname: any;
             fromPhotoUrl: string | null;
             myComment: any;
             floorNumber: number;
