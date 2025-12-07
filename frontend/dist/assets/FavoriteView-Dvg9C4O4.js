@@ -1,1 +1,0 @@
-import{_ as e,b as c,o}from"./index-m9kgVP5a.js";const r={};function t(n,a){return o(),c("div")}const _=e(r,[["render",t]]);export{_ as default};
