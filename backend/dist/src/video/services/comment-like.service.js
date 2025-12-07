@@ -146,8 +146,8 @@ let CommentLikeService = class CommentLikeService {
             .createQueryBuilder('like')
             .leftJoinAndSelect('like.user', 'liker')
             .leftJoinAndSelect('like.comment', 'comment')
-            .where('comment.userId = :userId', { userId })
-            .andWhere('like.isRead = :isRead', { isRead: false })
+            .where('comment.user_id = :userId', { userId })
+            .andWhere('like.is_read = :isRead', { isRead: false })
             .orderBy('like.createdAt', 'DESC')
             .skip(skip)
             .take(size)
@@ -229,8 +229,8 @@ let CommentLikeService = class CommentLikeService {
         return await this.commentLikeRepo
             .createQueryBuilder('like')
             .leftJoin('like.comment', 'comment')
-            .where('comment.userId = :userId', { userId })
-            .andWhere('like.isRead = :isRead', { isRead: false })
+            .where('comment.user_id = :userId', { userId })
+            .andWhere('like.is_read = :isRead', { isRead: false })
             .getCount();
     }
 };
