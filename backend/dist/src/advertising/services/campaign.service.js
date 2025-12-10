@@ -117,19 +117,46 @@ let CampaignService = class CampaignService {
         if (!campaign) {
             throw new common_1.NotFoundException(`Campaign with ID ${id} not found`);
         }
+        const updateData = {};
+        if (updateCampaignDto.name !== undefined) {
+            updateData.name = updateCampaignDto.name;
+        }
+        if (updateCampaignDto.description !== undefined) {
+            updateData.description = updateCampaignDto.description;
+        }
+        if (updateCampaignDto.targetUrl !== undefined) {
+            updateData.targetUrl = updateCampaignDto.targetUrl;
+        }
+        if (updateCampaignDto.budget !== undefined) {
+            updateData.budget = updateCampaignDto.budget;
+        }
+        if (updateCampaignDto.targetClicks !== undefined) {
+            updateData.targetClicks = updateCampaignDto.targetClicks;
+        }
+        if (updateCampaignDto.targetConversions !== undefined) {
+            updateData.targetConversions = updateCampaignDto.targetConversions;
+        }
         if (updateCampaignDto.startDate || updateCampaignDto.endDate) {
             const startDate = updateCampaignDto.startDate ? new Date(updateCampaignDto.startDate) : campaign.startDate;
             const endDate = updateCampaignDto.endDate ? new Date(updateCampaignDto.endDate) : campaign.endDate;
             if (endDate && endDate <= startDate) {
                 throw new common_1.BadRequestException('End date must be after start date');
             }
-            updateCampaignDto.startDate = startDate.toISOString();
-            if (endDate) {
-                updateCampaignDto.endDate = endDate.toISOString();
+            if (updateCampaignDto.startDate) {
+                updateData.startDate = startDate;
+            }
+            if (updateCampaignDto.endDate) {
+                updateData.endDate = endDate;
             }
         }
-        Object.assign(campaign, updateCampaignDto);
-        await this.campaignRepository.save(campaign);
+        if (Object.keys(updateData).length > 0) {
+            await this.campaignRepository
+                .createQueryBuilder()
+                .update(entity_1.AdvertisingCampaign)
+                .set(updateData)
+                .where('id = :id', { id })
+                .execute();
+        }
         return this.findOne(id);
     }
     async updateStatus(id, updateStatusDto) {
