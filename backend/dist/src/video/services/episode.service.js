@@ -19,7 +19,7 @@ const typeorm_2 = require("typeorm");
 const cache_manager_1 = require("@nestjs/cache-manager");
 const episode_entity_1 = require("../entity/episode.entity");
 const episode_url_entity_1 = require("../entity/episode-url.entity");
-const access_key_util_1 = require("../../shared/utils/access-key.util");
+const access_key_util_1 = require("../../common/utils/access-key.util");
 let EpisodeService = class EpisodeService {
     episodeRepo;
     episodeUrlRepo;

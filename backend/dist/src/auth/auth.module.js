@@ -16,6 +16,7 @@ const jwt_strategy_1 = require("./strategies/jwt.strategy");
 const telegram_strategy_1 = require("./strategies/telegram.strategy");
 const auth_service_1 = require("./auth.service");
 const telegram_auth_service_1 = require("./telegram-auth.service");
+const guest_service_1 = require("./guest.service");
 const auth_controller_1 = require("./auth.controller");
 const refresh_token_entity_1 = require("./entity/refresh-token.entity");
 const user_entity_1 = require("../user/entity/user.entity");
@@ -41,8 +42,8 @@ exports.AuthModule = AuthModule = __decorate([
             }),
         ],
         controllers: [auth_controller_1.AuthController],
-        providers: [jwt_strategy_1.JwtStrategy, telegram_strategy_1.TelegramStrategy, auth_service_1.AuthService, telegram_auth_service_1.TelegramAuthService],
-        exports: [passport_1.PassportModule, jwt_1.JwtModule, auth_service_1.AuthService, telegram_auth_service_1.TelegramAuthService],
+        providers: [jwt_strategy_1.JwtStrategy, telegram_strategy_1.TelegramStrategy, auth_service_1.AuthService, telegram_auth_service_1.TelegramAuthService, guest_service_1.GuestService],
+        exports: [passport_1.PassportModule, jwt_1.JwtModule, auth_service_1.AuthService, telegram_auth_service_1.TelegramAuthService, guest_service_1.GuestService],
     })
 ], AuthModule);
 //# sourceMappingURL=auth.module.js.map

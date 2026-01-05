@@ -11,7 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SharedModule = void 0;
 const common_1 = require("@nestjs/common");
-const entities_module_1 = require("./entities/entities.module");
+const entities_module_1 = require("./base/entities.module");
 const access_key_util_1 = require("./utils/access-key.util");
 let SharedModule = class SharedModule {
     constructor() {

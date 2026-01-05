@@ -14,7 +14,7 @@ const test_module_1 = require("./test/test.module");
 const video_module_1 = require("./video/video.module");
 const auth_module_1 = require("./auth/auth.module");
 const core_module_1 = require("./core/core.module");
-const shared_module_1 = require("./shared/shared.module");
+const shared_module_1 = require("./common/shared.module");
 const admin_module_1 = require("./admin/admin.module");
 let AppModule = class AppModule {
 };

@@ -13,7 +13,7 @@ exports.User = void 0;
 const typeorm_1 = require("typeorm");
 const comment_entity_1 = require("../../video/entity/comment.entity");
 const watch_progress_entity_1 = require("../../video/entity/watch-progress.entity");
-const short_id_util_1 = require("../../shared/utils/short-id.util");
+const short_id_util_1 = require("../../common/utils/short-id.util");
 let User = class User {
     id;
     email;
@@ -26,6 +26,8 @@ let User = class User {
     nickname;
     photo_url;
     is_active;
+    isGuest;
+    guestToken;
     created_at;
     comments;
     watchProgresses;
@@ -80,6 +82,14 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'tinyint', default: 1 }),
     __metadata("design:type", Boolean)
 ], User.prototype, "is_active", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'tinyint', default: 0, name: 'is_guest' }),
+    __metadata("design:type", Boolean)
+], User.prototype, "isGuest", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'varchar', length: 64, unique: true, nullable: true, name: 'guest_token' }),
+    __metadata("design:type", String)
+], User.prototype, "guestToken", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)

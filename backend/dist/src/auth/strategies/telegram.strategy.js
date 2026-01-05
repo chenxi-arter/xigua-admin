@@ -74,7 +74,7 @@ let TelegramStrategy = class TelegramStrategy extends (0, passport_1.PassportStr
                 user.photo_url = userData.photo_url;
             }
             if (!user.shortId) {
-                const { ShortIdUtil } = await Promise.resolve().then(() => require('../../shared/utils/short-id.util'));
+                const { ShortIdUtil } = await Promise.resolve().then(() => require('../../common/utils/short-id.util'));
                 user.shortId = ShortIdUtil.generate();
             }
             await this.userRepository.save(user);

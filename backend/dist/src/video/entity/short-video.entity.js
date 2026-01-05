@@ -12,7 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ShortVideo = void 0;
 const typeorm_1 = require("typeorm");
 const category_entity_1 = require("./category.entity");
-const short_id_util_1 = require("../../shared/utils/short-id.util");
+const short_id_util_1 = require("../../common/utils/short-id.util");
 let ShortVideo = class ShortVideo {
     id;
     shortId;

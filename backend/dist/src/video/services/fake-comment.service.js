@@ -8,7 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FakeCommentService = void 0;
 const common_1 = require("@nestjs/common");
-const default_avatar_util_1 = require("../../shared/utils/default-avatar.util");
+const default_avatar_util_1 = require("../../common/utils/default-avatar.util");
 let FakeCommentService = class FakeCommentService {
     enabled = process.env.ENABLE_FAKE_COMMENTS !== 'false';
     minFakeComments = parseInt(process.env.MIN_FAKE_COMMENTS || '30', 10);
