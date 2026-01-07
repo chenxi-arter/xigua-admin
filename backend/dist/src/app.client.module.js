@@ -15,6 +15,7 @@ const auth_module_1 = require("./auth/auth.module");
 const user_module_1 = require("./user/user.module");
 const video_api_module_1 = require("./video/modules/video-api.module");
 const advertising_module_1 = require("./advertising/advertising.module");
+const short_link_module_1 = require("./common/short-link.module");
 let ClientAppModule = class ClientAppModule {
 };
 exports.ClientAppModule = ClientAppModule;
@@ -28,6 +29,7 @@ exports.ClientAppModule = ClientAppModule = __decorate([
             user_module_1.UserModule,
             video_api_module_1.VideoApiModule,
             advertising_module_1.AdvertisingModule,
+            short_link_module_1.ShortLinkModule,
         ],
     })
 ], ClientAppModule);

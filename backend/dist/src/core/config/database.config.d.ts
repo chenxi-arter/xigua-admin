@@ -25,6 +25,8 @@ export declare class DatabaseConfig {
         charset?: undefined;
         timezone?: undefined;
         extra?: undefined;
+        poolSize?: undefined;
+        connectTimeout?: undefined;
         retryAttempts?: undefined;
         retryDelay?: undefined;
     } | {
@@ -42,8 +44,16 @@ export declare class DatabaseConfig {
             connectionLimit: number | undefined;
             charset: string;
             dateStrings: boolean;
+            waitForConnections: boolean;
+            queueLimit: number;
+            enableKeepAlive: boolean;
+            keepAliveInitialDelay: number;
+            idleTimeoutMillis: number;
+            maxLifetime: number;
             typeCast: (field: any, next: () => any) => any;
         };
+        poolSize: number | undefined;
+        connectTimeout: number;
         autoLoadEntities: boolean;
         retryAttempts: number;
         retryDelay: number;
