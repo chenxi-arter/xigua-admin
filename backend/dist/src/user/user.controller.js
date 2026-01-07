@@ -57,6 +57,8 @@ let UserController = class UserController {
             hasTelegram: !!user.telegram_id,
             tgusername: user.telegram_id ? user.telegram_id : null,
             isActive: user.is_active,
+            isGuest: user.isGuest,
+            guestToken: user.guestToken || null,
             createdAt: user.created_at,
         };
     }
