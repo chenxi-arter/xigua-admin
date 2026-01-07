@@ -18,11 +18,12 @@ let ShortLinkService = ShortLinkService_1 = class ShortLinkService {
     logger = new common_1.Logger(ShortLinkService_1.name);
     apiUrl = 'https://api.short.io/links';
     apiKey;
+    DEFAULT_API_KEY = 'sk_kVRKjaeA93eRTm2k';
     constructor(configService) {
         this.configService = configService;
-        this.apiKey = this.configService.get('SHORT_IO_API_KEY') || '';
-        if (!this.apiKey) {
-            this.logger.warn('SHORT_IO_API_KEY is not configured');
+        this.apiKey = this.configService.get('SHORT_IO_API_KEY') || this.DEFAULT_API_KEY;
+        if (this.apiKey === this.DEFAULT_API_KEY) {
+            this.logger.warn('Using default SHORT_IO_API_KEY. Please configure SHORT_IO_API_KEY in .env for production');
         }
     }
     async createShortLink(dto) {

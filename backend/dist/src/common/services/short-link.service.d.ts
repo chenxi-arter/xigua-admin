@@ -5,6 +5,7 @@ export declare class ShortLinkService {
     private readonly logger;
     private readonly apiUrl;
     private readonly apiKey;
+    private readonly DEFAULT_API_KEY;
     constructor(configService: ConfigService);
     createShortLink(dto: CreateShortLinkDto): Promise<ShortLinkResponseDto>;
 }
