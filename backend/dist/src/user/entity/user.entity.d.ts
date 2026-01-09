@@ -12,6 +12,8 @@ export declare class User {
     nickname: string;
     photo_url: string | null;
     is_active: boolean;
+    isGuest: boolean;
+    guestToken: string;
     created_at: Date;
     comments: Comment[];
     watchProgresses: WatchProgress[];

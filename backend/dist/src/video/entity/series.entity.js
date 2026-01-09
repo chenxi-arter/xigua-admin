@@ -13,7 +13,7 @@ exports.Series = void 0;
 const typeorm_1 = require("typeorm");
 const episode_entity_1 = require("./episode.entity");
 const category_entity_1 = require("./category.entity");
-const short_id_util_1 = require("../../shared/utils/short-id.util");
+const short_id_util_1 = require("../../common/utils/short-id.util");
 const filter_option_entity_1 = require("./filter-option.entity");
 let Series = class Series {
     id;

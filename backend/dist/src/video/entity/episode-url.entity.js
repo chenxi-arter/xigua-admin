@@ -12,7 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.EpisodeUrl = void 0;
 const typeorm_1 = require("typeorm");
 const episode_entity_1 = require("./episode.entity");
-const access_key_util_1 = require("../../shared/utils/access-key.util");
+const access_key_util_1 = require("../../common/utils/access-key.util");
 let EpisodeUrl = class EpisodeUrl {
     id;
     episodeId;

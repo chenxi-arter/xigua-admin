@@ -14,8 +14,8 @@ const typeorm_1 = require("typeorm");
 const series_entity_1 = require("./series.entity");
 const episode_url_entity_1 = require("./episode-url.entity");
 const watch_progress_entity_1 = require("./watch-progress.entity");
-const short_id_util_1 = require("../../shared/utils/short-id.util");
-const access_key_util_1 = require("../../shared/utils/access-key.util");
+const short_id_util_1 = require("../../common/utils/short-id.util");
+const access_key_util_1 = require("../../common/utils/access-key.util");
 let Episode = class Episode {
     id;
     shortId;

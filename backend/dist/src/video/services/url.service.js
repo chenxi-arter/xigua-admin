@@ -21,7 +21,7 @@ const typeorm_2 = require("typeorm");
 const episode_entity_1 = require("../entity/episode.entity");
 const episode_url_entity_1 = require("../entity/episode-url.entity");
 const series_entity_1 = require("../entity/series.entity");
-const access_key_util_1 = require("../../shared/utils/access-key.util");
+const access_key_util_1 = require("../../common/utils/access-key.util");
 let UrlService = class UrlService {
     episodeRepo;
     episodeUrlRepo;

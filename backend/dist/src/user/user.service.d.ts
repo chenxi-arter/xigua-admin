@@ -8,9 +8,10 @@ import { BindEmailDto } from './dto/bind-email.dto';
 import { UpdateNicknameDto, UpdateNicknameResponseDto } from './dto/update-nickname.dto';
 import { UpdatePasswordDto, UpdatePasswordResponseDto } from './dto/update-password.dto';
 import { UpdateAvatarDto, UpdateAvatarResponseDto } from './dto/update-avatar.dto';
+import { ConvertGuestToEmailDto, ConvertGuestResponseDto } from './dto/convert-guest.dto';
 import { AuthService } from '../auth/auth.service';
 import { TelegramAuthService } from '../auth/telegram-auth.service';
-interface TokenResult {
+export interface TokenResult {
     access_token: string;
     refresh_token: string;
     token_type: string;
@@ -53,5 +54,6 @@ export declare class UserService {
     updateNickname(userId: number, dto: UpdateNicknameDto): Promise<UpdateNicknameResponseDto>;
     updatePassword(userId: number, dto: UpdatePasswordDto): Promise<UpdatePasswordResponseDto>;
     updateAvatar(userId: number, dto: UpdateAvatarDto): Promise<UpdateAvatarResponseDto>;
+    convertGuestToEmailUser(userId: number, dto: ConvertGuestToEmailDto): Promise<ConvertGuestResponseDto>;
+    convertGuestToTelegramUser(userId: number, dto: TelegramUserDto): Promise<TokenResult>;
 }
-export {};

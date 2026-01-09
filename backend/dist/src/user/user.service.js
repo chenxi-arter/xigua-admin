@@ -151,7 +151,7 @@ let UserService = class UserService {
         console.log('photo_url:', userData.photo_url);
         let photoUrl = userData.photo_url;
         if (!photoUrl) {
-            const { DefaultAvatarUtil } = await Promise.resolve().then(() => require('../shared/utils/default-avatar.util'));
+            const { DefaultAvatarUtil } = await Promise.resolve().then(() => require('../common/utils/default-avatar.util'));
             photoUrl = DefaultAvatarUtil.getRandomAvatar();
             console.log('分配默认头像:', photoUrl);
         }
@@ -191,7 +191,7 @@ let UserService = class UserService {
             user.photo_url = userData.photo_url;
         }
         if (!user.shortId) {
-            const { ShortIdUtil } = await Promise.resolve().then(() => require('../shared/utils/short-id.util'));
+            const { ShortIdUtil } = await Promise.resolve().then(() => require('../common/utils/short-id.util'));
             user.shortId = ShortIdUtil.generate();
         }
         return await this.userRepo.save(user);
@@ -224,7 +224,7 @@ let UserService = class UserService {
         const randomSuffix = Math.floor(Math.random() * 1000000);
         const emailUsername = `e${randomSuffix}`;
         const passwordHash = await password_util_1.PasswordUtil.hashPassword(dto.password);
-        const { DefaultAvatarUtil } = await Promise.resolve().then(() => require('../shared/utils/default-avatar.util'));
+        const { DefaultAvatarUtil } = await Promise.resolve().then(() => require('../common/utils/default-avatar.util'));
         const defaultAvatar = DefaultAvatarUtil.getRandomAvatar();
         const user = this.userRepo.create({
             id: userId,
@@ -366,6 +366,74 @@ let UserService = class UserService {
             success: true,
             message: '头像更新成功',
             photo_url: dto.photo_url
+        };
+    }
+    async convertGuestToEmailUser(userId, dto) {
+        if (dto.password !== dto.confirmPassword) {
+            throw new common_1.BadRequestException('密码和确认密码不匹配');
+        }
+        const passwordValidation = password_util_1.PasswordUtil.validatePasswordStrength(dto.password);
+        if (!passwordValidation.valid) {
+            throw new common_1.BadRequestException(passwordValidation.message);
+        }
+        const user = await this.userRepo.findOneBy({ id: userId, isGuest: true });
+        if (!user) {
+            throw new common_1.BadRequestException('游客用户不存在或已转为正式用户');
+        }
+        const existingUser = await this.userRepo.findOneBy({ email: dto.email });
+        if (existingUser) {
+            throw new common_1.ConflictException('该邮箱已被注册');
+        }
+        if (dto.username) {
+            const existingUsername = await this.userRepo.findOneBy({ username: dto.username });
+            if (existingUsername) {
+                throw new common_1.ConflictException('该用户名已被使用');
+            }
+        }
+        const passwordHash = await password_util_1.PasswordUtil.hashPassword(dto.password);
+        user.isGuest = false;
+        user.email = dto.email;
+        user.password_hash = passwordHash;
+        if (dto.username) {
+            user.username = dto.username;
+        }
+        if (dto.firstName) {
+            user.first_name = dto.firstName;
+        }
+        if (dto.lastName) {
+            user.last_name = dto.lastName;
+        }
+        await this.userRepo.save(user);
+        const tokens = await this.authService.generateTokens(user, 'Email Registration');
+        return {
+            success: true,
+            message: '游客账号已成功转为正式用户，所有历史数据已保留',
+            ...tokens,
+        };
+    }
+    async convertGuestToTelegramUser(userId, dto) {
+        this.validateBotToken();
+        const userData = this.validateAndExtractUserData(dto);
+        const guestUser = await this.userRepo.findOneBy({ id: userId, isGuest: true });
+        if (!guestUser) {
+            throw new common_1.BadRequestException('游客用户不存在或已转为正式用户');
+        }
+        const existingTgUser = await this.userRepo.findOneBy({ telegram_id: userData.id });
+        if (existingTgUser) {
+            throw new common_1.ConflictException('该Telegram账号已被其他用户绑定');
+        }
+        guestUser.isGuest = false;
+        guestUser.telegram_id = userData.id;
+        guestUser.first_name = userData.first_name;
+        guestUser.last_name = userData.last_name || guestUser.last_name;
+        guestUser.username = userData.username || guestUser.username;
+        if (userData.photo_url) {
+            guestUser.photo_url = userData.photo_url;
+        }
+        await this.userRepo.save(guestUser);
+        const tokens = await this.generateUserTokens(guestUser, dto.deviceInfo);
+        return {
+            ...tokens,
         };
     }
 };

@@ -25,6 +25,8 @@ export declare class UserController {
         hasTelegram?: undefined;
         tgusername?: undefined;
         isActive?: undefined;
+        isGuest?: undefined;
+        guestToken?: undefined;
         createdAt?: undefined;
     } | {
         email: string | null;
@@ -36,6 +38,8 @@ export declare class UserController {
         hasTelegram: boolean;
         tgusername: number | null;
         isActive: boolean;
+        isGuest: boolean;
+        guestToken: string | null;
         createdAt: Date;
         message?: undefined;
     }>;

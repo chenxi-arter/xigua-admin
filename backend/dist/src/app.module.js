@@ -14,8 +14,9 @@ const test_module_1 = require("./test/test.module");
 const video_module_1 = require("./video/video.module");
 const auth_module_1 = require("./auth/auth.module");
 const core_module_1 = require("./core/core.module");
-const shared_module_1 = require("./shared/shared.module");
+const shared_module_1 = require("./common/shared.module");
 const admin_module_1 = require("./admin/admin.module");
+const short_link_module_1 = require("./common/short-link.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -30,6 +31,7 @@ exports.AppModule = AppModule = __decorate([
             video_module_1.VideoModule,
             admin_module_1.AdminModule,
             test_module_1.TestModule,
+            short_link_module_1.ShortLinkModule,
         ],
     })
 ], AppModule);

@@ -22,14 +22,23 @@ const refresh_token_dto_1 = require("./dto/refresh-token.dto");
 const email_login_dto_1 = require("../user/dto/email-login.dto");
 const register_dto_1 = require("../user/dto/register.dto");
 const bot_login_dto_1 = require("./dto/bot-login.dto");
+const guest_login_dto_1 = require("./dto/guest-login.dto");
 const user_service_1 = require("../user/user.service");
 const telegram_user_dto_1 = require("../user/dto/telegram-user.dto");
+const guest_service_1 = require("./guest.service");
+const convert_guest_dto_1 = require("../user/dto/convert-guest.dto");
+const common_2 = require("@nestjs/common");
 let AuthController = class AuthController {
     authService;
     userService;
-    constructor(authService, userService) {
+    guestService;
+    constructor(authService, userService, guestService) {
         this.authService = authService;
         this.userService = userService;
+        this.guestService = guestService;
+    }
+    async guestLogin(dto) {
+        return this.guestService.guestLogin(dto.guestToken, dto.deviceInfo);
     }
     async telegramLogin(loginDto) {
         const telegramUserDto = {
@@ -116,8 +125,55 @@ let AuthController = class AuthController {
         }
         return { userId, message: '用户已认证' };
     }
+    async convertGuestToEmail(req, dto) {
+        const userId = req.user?.userId;
+        if (!userId) {
+            throw new common_1.UnauthorizedException('用户信息无效');
+        }
+        return this.userService.convertGuestToEmailUser(userId, dto);
+    }
+    async convertGuestToTelegram(req, dto) {
+        const userId = req.user?.userId;
+        if (!userId) {
+            throw new common_1.UnauthorizedException('用户信息无效');
+        }
+        const telegramUserDto = {
+            loginType: telegram_user_dto_1.LoginType.WEBAPP,
+            initData: dto.initData,
+            deviceInfo: dto.deviceInfo,
+        };
+        return this.userService.convertGuestToTelegramUser(userId, telegramUserDto);
+    }
+    async cleanInactiveGuests(inactiveDays, recentActivityDays) {
+        const inactive = inactiveDays ? parseInt(String(inactiveDays)) : 90;
+        const recent = recentActivityDays ? parseInt(String(recentActivityDays)) : 30;
+        return this.guestService.cleanInactiveGuests(inactive, recent);
+    }
+    async getGuestStatistics() {
+        return this.guestService.getGuestStatistics();
+    }
+    async reactivateGuest(userId) {
+        return this.guestService.reactivateGuest(parseInt(userId));
+    }
 };
 exports.AuthController = AuthController;
+__decorate([
+    (0, common_1.Post)('guest-login'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({
+        summary: '游客登录',
+        description: '自动创建游客账号，用于匿名用户访问。首次访问会创建新游客，后续可通过guestToken识别'
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: '登录成功',
+        type: guest_login_dto_1.GuestLoginResponseDto
+    }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [guest_login_dto_1.GuestLoginDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "guestLogin", null);
 __decorate([
     (0, common_1.Post)('telegram/webapp-login'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
@@ -273,10 +329,126 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], AuthController.prototype, "getProfile", null);
+__decorate([
+    (0, common_1.Post)('convert-guest-to-email'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, swagger_1.ApiOperation)({
+        summary: '游客转正式用户（邮箱注册）',
+        description: '将当前游客账号转换为正式邮箱注册用户，保留所有历史数据（观看记录、收藏、评论等）'
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: '转换成功',
+        type: convert_guest_dto_1.ConvertGuestResponseDto
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 400,
+        description: '请求参数错误或用户已是正式用户'
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 409,
+        description: '邮箱或用户名已被使用'
+    }),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, convert_guest_dto_1.ConvertGuestToEmailDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "convertGuestToEmail", null);
+__decorate([
+    (0, common_1.Post)('convert-guest-to-telegram'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, swagger_1.ApiOperation)({
+        summary: '游客转正式用户（Telegram登录）',
+        description: '将当前游客账号通过Telegram登录转换为正式用户，保留所有历史数据'
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: '转换成功',
+        type: telegram_login_dto_1.TelegramLoginResponseDto
+    }),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, telegram_login_dto_1.TelegramLoginDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "convertGuestToTelegram", null);
+__decorate([
+    (0, common_1.Post)('admin/clean-inactive-guests'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({
+        summary: '清理不活跃游客（管理员）',
+        description: '将长期不活跃的游客标记为不活跃状态（软删除），不会删除数据，可恢复'
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: '清理成功',
+        schema: {
+            type: 'object',
+            properties: {
+                success: { type: 'boolean' },
+                deactivated: { type: 'number' },
+                message: { type: 'string' },
+                details: { type: 'object' }
+            }
+        }
+    }),
+    __param(0, (0, common_2.Query)('inactiveDays')),
+    __param(1, (0, common_2.Query)('recentActivityDays')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Number]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "cleanInactiveGuests", null);
+__decorate([
+    (0, common_1.Get)('admin/guest-statistics'),
+    (0, swagger_1.ApiOperation)({
+        summary: '获取游客统计信息（管理员）',
+        description: '获取游客总数、活跃数、转化率等统计数据'
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: '统计信息',
+        schema: {
+            type: 'object',
+            properties: {
+                totalGuests: { type: 'number' },
+                activeGuests: { type: 'number' },
+                inactiveGuests: { type: 'number' },
+                convertedGuests: { type: 'number' },
+                recentGuests: { type: 'number' },
+                conversionRate: { type: 'string' }
+            }
+        }
+    }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "getGuestStatistics", null);
+__decorate([
+    (0, common_1.Post)('admin/reactivate-guest/:userId'),
+    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    (0, swagger_1.ApiOperation)({
+        summary: '恢复不活跃游客（管理员）',
+        description: '将被标记为不活跃的游客恢复为活跃状态'
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 200,
+        description: '恢复成功'
+    }),
+    __param(0, (0, common_1.Param)('userId')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "reactivateGuest", null);
 exports.AuthController = AuthController = __decorate([
     (0, swagger_1.ApiTags)('认证'),
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [auth_service_1.AuthService,
-        user_service_1.UserService])
+        user_service_1.UserService,
+        guest_service_1.GuestService])
 ], AuthController);
 //# sourceMappingURL=auth.controller.js.map

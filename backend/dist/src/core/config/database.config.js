@@ -52,6 +52,12 @@ class DatabaseConfig {
                 connectionLimit: this.maxConnections,
                 charset: 'utf8mb4',
                 dateStrings: true,
+                waitForConnections: true,
+                queueLimit: 0,
+                enableKeepAlive: true,
+                keepAliveInitialDelay: 0,
+                idleTimeoutMillis: 28800000,
+                maxLifetime: 1800000,
                 typeCast: function (field, next) {
                     if (field.type === 'DATETIME' || field.type === 'TIMESTAMP') {
                         const val = field.string();
@@ -63,6 +69,8 @@ class DatabaseConfig {
                     return next();
                 },
             },
+            poolSize: this.maxConnections,
+            connectTimeout: 60000,
             autoLoadEntities: true,
             retryAttempts: 3,
             retryDelay: 3000,

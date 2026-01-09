@@ -13,7 +13,7 @@ const category_entity_1 = require("../src/video/entity/category.entity");
 const episode_url_entity_1 = require("../src/video/entity/episode-url.entity");
 const watch_progress_entity_1 = require("../src/video/entity/watch-progress.entity");
 const comment_entity_1 = require("../src/video/entity/comment.entity");
-const short_id_util_1 = require("../src/shared/utils/short-id.util");
+const short_id_util_1 = require("../src/common/utils/short-id.util");
 const dataSource = new typeorm_1.DataSource({
     type: 'mysql',
     host: process.env.DB_HOST || 'localhost',
