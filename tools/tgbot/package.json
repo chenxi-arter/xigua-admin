@@ -1,0 +1,26 @@
+{
+  "name": "xigua-telegram-bot",
+  "version": "1.0.0",
+  "description": "Telegram Bot with auto-reply functionality",
+  "main": "bot.js",
+  "type": "module",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "nodemon bot.js"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "auto-reply"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "telegraf": "^4.15.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
+
