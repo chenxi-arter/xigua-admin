@@ -1,0 +1,1 @@
+import{_ as t,p as o,q as c,y as s}from"./index-CHPVFmvc.js";const n={},a={class:"coming-soon"};function r(d,e){return c(),o("div",a,e[0]||(e[0]=[s("div",{class:"content"},[s("h1",{class:"title"},"敬请期待"),s("p",{class:"subtitle"},"我们正在为您准备全新的体验"),s("div",{class:"underline"})],-1)]))}const i=t(n,[["render",r],["__scopeId","data-v-2e14df9f"]]);export{i as default};
