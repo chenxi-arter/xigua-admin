@@ -1,10 +1,13 @@
+import { Repository } from 'typeorm';
 import { VideoService } from './video.service';
 import { MediaQueryDto } from './dto/media-query.dto';
 import { EpisodeListDto } from './dto/episode-list.dto';
 import { BaseController } from './controllers/base.controller';
+import { User } from '../user/entity/user.entity';
 export declare class VideoController extends BaseController {
     private readonly videoService;
-    constructor(videoService: VideoService);
+    private readonly userRepo;
+    constructor(videoService: VideoService, userRepo: Repository<User>);
     saveProgress(req: any, episodeIdentifier: string | number, stopAtSecond: number): Promise<void | import("./controllers/base.controller").ApiResponse<null> | import("./controllers/base.controller").ApiResponse<{
         readonly ok: false;
         readonly reason: "episode_not_found";

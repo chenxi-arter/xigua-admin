@@ -1,8 +1,10 @@
+import { Repository } from 'typeorm';
 import { BaseController } from '../controllers/base.controller';
 import { EpisodeInteractionService, EpisodeReactionType } from '../services/episode-interaction.service';
 import { EpisodeService } from '../services/episode.service';
 import { VideoService } from '../video.service';
 import { FavoriteService } from '../../user/services/favorite.service';
+import { User } from '../../user/entity/user.entity';
 declare class EpisodeActivityDto {
     shortId: string;
     type: 'play' | EpisodeReactionType;
@@ -12,7 +14,8 @@ export declare class InteractionController extends BaseController {
     private readonly episodeService;
     private readonly videoService;
     private readonly favoriteService;
-    constructor(interactionService: EpisodeInteractionService, episodeService: EpisodeService, videoService: VideoService, favoriteService: FavoriteService);
+    private readonly userRepo;
+    constructor(interactionService: EpisodeInteractionService, episodeService: EpisodeService, videoService: VideoService, favoriteService: FavoriteService, userRepo: Repository<User>);
     activity(body: EpisodeActivityDto, req: {
         user?: {
             userId?: number;

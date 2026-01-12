@@ -14,16 +14,21 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.VideoController = void 0;
 const common_1 = require("@nestjs/common");
+const typeorm_1 = require("@nestjs/typeorm");
+const typeorm_2 = require("typeorm");
 const video_service_1 = require("./video.service");
 const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const media_query_dto_1 = require("./dto/media-query.dto");
 const episode_list_dto_1 = require("./dto/episode-list.dto");
 const base_controller_1 = require("./controllers/base.controller");
+const user_entity_1 = require("../user/entity/user.entity");
 let VideoController = class VideoController extends base_controller_1.BaseController {
     videoService;
-    constructor(videoService) {
+    userRepo;
+    constructor(videoService, userRepo) {
         super();
         this.videoService = videoService;
+        this.userRepo = userRepo;
     }
     async saveProgress(req, episodeIdentifier, stopAtSecond) {
         try {
@@ -78,6 +83,13 @@ let VideoController = class VideoController extends base_controller_1.BaseContro
     }
     async addComment(req, episodeIdentifier, content, appearSecond) {
         try {
+            const user = await this.userRepo.findOne({ where: { id: req.user.userId } });
+            if (!user) {
+                return this.error('用户不存在', 404, common_1.HttpStatus.NOT_FOUND);
+            }
+            if (Boolean(user.isGuest)) {
+                return this.error('游客用户暂不支持发表评论，请先注册成为正式用户', 403, common_1.HttpStatus.FORBIDDEN);
+            }
             if (!episodeIdentifier) {
                 return this.error('剧集标识符不能为空', 400);
             }
@@ -298,6 +310,8 @@ __decorate([
 exports.VideoController = VideoController = __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Controller)('video'),
-    __metadata("design:paramtypes", [video_service_1.VideoService])
+    __param(1, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
+    __metadata("design:paramtypes", [video_service_1.VideoService,
+        typeorm_2.Repository])
 ], VideoController);
 //# sourceMappingURL=video.controller.js.map

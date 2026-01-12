@@ -65,6 +65,7 @@ const banner_entity_1 = require("../entity/banner.entity");
 const filter_type_entity_1 = require("../entity/filter-type.entity");
 const filter_option_entity_1 = require("../entity/filter-option.entity");
 const series_genre_option_entity_1 = require("../entity/series-genre-option.entity");
+const user_entity_1 = require("../../user/entity/user.entity");
 let VideoApiModule = class VideoApiModule {
 };
 exports.VideoApiModule = VideoApiModule;
@@ -77,7 +78,7 @@ exports.VideoApiModule = VideoApiModule = __decorate([
             banner_module_1.BannerModule,
             typeorm_1.TypeOrmModule.forFeature([
                 series_entity_1.Series, episode_entity_1.Episode, episode_url_entity_1.EpisodeUrl, episode_reaction_entity_1.EpisodeReaction, comment_entity_1.Comment, comment_like_entity_1.CommentLike, watch_progress_entity_1.WatchProgress, category_entity_1.Category, short_video_entity_1.ShortVideo, banner_entity_1.Banner, filter_type_entity_1.FilterType, filter_option_entity_1.FilterOption,
-                series_genre_option_entity_1.SeriesGenreOption
+                series_genre_option_entity_1.SeriesGenreOption, user_entity_1.User
             ]),
             (0, common_1.forwardRef)(() => Promise.resolve().then(() => require('../../user/user.module')).then(m => m.UserModule)),
         ],

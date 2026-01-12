@@ -11,6 +11,7 @@ import { UpdateAvatarDto, UpdateAvatarResponseDto } from './dto/update-avatar.dt
 import { ConvertGuestToEmailDto, ConvertGuestResponseDto } from './dto/convert-guest.dto';
 import { AuthService } from '../auth/auth.service';
 import { TelegramAuthService } from '../auth/telegram-auth.service';
+import { AccountMergeService } from '../auth/account-merge.service';
 export interface TokenResult {
     access_token: string;
     refresh_token: string;
@@ -21,7 +22,9 @@ export declare class UserService {
     private readonly userRepo;
     private readonly authService;
     private readonly telegramAuthService;
-    constructor(userRepo: Repository<User>, authService: AuthService, telegramAuthService: TelegramAuthService);
+    private readonly accountMergeService;
+    private readonly logger;
+    constructor(userRepo: Repository<User>, authService: AuthService, telegramAuthService: TelegramAuthService, accountMergeService: AccountMergeService);
     telegramLogin(dto: TelegramUserDto): Promise<TokenResult>;
     private validateBotToken;
     bindEmail(userId: number, dto: BindEmailDto): Promise<{

@@ -17,14 +17,26 @@ const common_1 = require("@nestjs/common");
 const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
 const video_service_1 = require("../video.service");
 const base_controller_1 = require("./base.controller");
+const typeorm_1 = require("@nestjs/typeorm");
+const typeorm_2 = require("typeorm");
+const user_entity_1 = require("../../user/entity/user.entity");
 let CommentController = class CommentController extends base_controller_1.BaseController {
     videoService;
-    constructor(videoService) {
+    userRepo;
+    constructor(videoService, userRepo) {
         super();
         this.videoService = videoService;
+        this.userRepo = userRepo;
     }
     async addComment(req, episodeIdentifier, content, appearSecond) {
         try {
+            const user = await this.userRepo.findOne({ where: { id: req.user.userId } });
+            if (!user) {
+                return this.error('用户不存在', 404);
+            }
+            if (Boolean(user.isGuest)) {
+                return this.error('游客用户暂不支持发表评论，请先注册成为正式用户', 403, common_1.HttpStatus.FORBIDDEN);
+            }
             if (!episodeIdentifier) {
                 return this.error('剧集标识符不能为空', 400);
             }
@@ -66,6 +78,8 @@ __decorate([
 exports.CommentController = CommentController = __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Controller)('video/comment'),
-    __metadata("design:paramtypes", [video_service_1.VideoService])
+    __param(1, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
+    __metadata("design:paramtypes", [video_service_1.VideoService,
+        typeorm_2.Repository])
 ], CommentController);
 //# sourceMappingURL=comment.controller.js.map

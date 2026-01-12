@@ -17,9 +17,15 @@ const telegram_strategy_1 = require("./strategies/telegram.strategy");
 const auth_service_1 = require("./auth.service");
 const telegram_auth_service_1 = require("./telegram-auth.service");
 const guest_service_1 = require("./guest.service");
+const account_merge_service_1 = require("./account-merge.service");
 const auth_controller_1 = require("./auth.controller");
 const refresh_token_entity_1 = require("./entity/refresh-token.entity");
 const user_entity_1 = require("../user/entity/user.entity");
+const watch_progress_entity_1 = require("../video/entity/watch-progress.entity");
+const favorite_entity_1 = require("../user/entity/favorite.entity");
+const episode_reaction_entity_1 = require("../video/entity/episode-reaction.entity");
+const comment_entity_1 = require("../video/entity/comment.entity");
+const comment_like_entity_1 = require("../video/entity/comment-like.entity");
 const user_module_1 = require("../user/user.module");
 let AuthModule = class AuthModule {
 };
@@ -29,7 +35,15 @@ exports.AuthModule = AuthModule = __decorate([
         imports: [
             config_1.ConfigModule,
             passport_1.PassportModule,
-            typeorm_1.TypeOrmModule.forFeature([refresh_token_entity_1.RefreshToken, user_entity_1.User]),
+            typeorm_1.TypeOrmModule.forFeature([
+                refresh_token_entity_1.RefreshToken,
+                user_entity_1.User,
+                watch_progress_entity_1.WatchProgress,
+                favorite_entity_1.Favorite,
+                episode_reaction_entity_1.EpisodeReaction,
+                comment_entity_1.Comment,
+                comment_like_entity_1.CommentLike,
+            ]),
             (0, common_1.forwardRef)(() => user_module_1.UserModule),
             jwt_1.JwtModule.registerAsync({
                 useFactory: (configService) => ({
@@ -42,8 +56,22 @@ exports.AuthModule = AuthModule = __decorate([
             }),
         ],
         controllers: [auth_controller_1.AuthController],
-        providers: [jwt_strategy_1.JwtStrategy, telegram_strategy_1.TelegramStrategy, auth_service_1.AuthService, telegram_auth_service_1.TelegramAuthService, guest_service_1.GuestService],
-        exports: [passport_1.PassportModule, jwt_1.JwtModule, auth_service_1.AuthService, telegram_auth_service_1.TelegramAuthService, guest_service_1.GuestService],
+        providers: [
+            jwt_strategy_1.JwtStrategy,
+            telegram_strategy_1.TelegramStrategy,
+            auth_service_1.AuthService,
+            telegram_auth_service_1.TelegramAuthService,
+            guest_service_1.GuestService,
+            account_merge_service_1.AccountMergeService,
+        ],
+        exports: [
+            passport_1.PassportModule,
+            jwt_1.JwtModule,
+            auth_service_1.AuthService,
+            telegram_auth_service_1.TelegramAuthService,
+            guest_service_1.GuestService,
+            account_merge_service_1.AccountMergeService,
+        ],
     })
 ], AuthModule);
 //# sourceMappingURL=auth.module.js.map

@@ -44,10 +44,8 @@ let RecommendService = class RecommendService {
     async getRecommendList(page = 1, size = 20, userId) {
         try {
             const offset = (page - 1) * size;
-            const maxOffset = 1000;
-            const safeOffset = Math.min(offset, maxOffset);
-            const queryLimit = size + 1;
-            const query = `
+            const randomPoolSize = Math.max(size * 10, 200);
+            const candidateQuery = `
         SELECT 
           e.id,
           e.short_id as shortId,
@@ -70,27 +68,56 @@ let RecommendService = class RecommendService {
           s.score as seriesScore,
           s.starring as seriesStarring,
           s.actor as seriesActor,
-          s.up_status as seriesUpStatus,
-          (
-            (e.like_count * 2 + e.favorite_count * 4) * (0.8 + RAND() * 0.7) +
-            FLOOR(RAND() * 400) +
-            CASE 
-              WHEN DATEDIFF(NOW(), e.created_at) <= 3 THEN GREATEST(0, 800 - DATEDIFF(NOW(), e.created_at) * 267)
-              WHEN DATEDIFF(NOW(), e.created_at) <= 14 THEN GREATEST(0, 600 - (DATEDIFF(NOW(), e.created_at) - 3) * 54)
-              WHEN DATEDIFF(NOW(), e.created_at) <= 30 THEN GREATEST(0, 300 - (DATEDIFF(NOW(), e.created_at) - 14) * 19)
-              ELSE 120
-            END
-          ) as recommendScore
+          s.up_status as seriesUpStatus
         FROM episodes e
         INNER JOIN series s ON e.series_id = s.id
         WHERE e.status = 'published'
           AND e.episode_number = 1
           AND s.is_active = 1
           AND s.category_id = 1
-        ORDER BY recommendScore DESC
-        LIMIT ? OFFSET ?
+        ORDER BY RAND()
+        LIMIT ?
       `;
-            const episodes = await this.episodeRepo.query(query, [queryLimit, safeOffset]);
+            const candidates = await this.episodeRepo.query(candidateQuery, [randomPoolSize]);
+            if (candidates.length === 0) {
+                return {
+                    list: [],
+                    page,
+                    size,
+                    hasMore: false,
+                };
+            }
+            const scoredCandidates = candidates.map(candidate => {
+                const likeWeight = (candidate.likeCount || 0) * 2;
+                const favoriteWeight = (candidate.favoriteCount || 0) * 4;
+                const interactionScore = likeWeight + favoriteWeight;
+                const randomWeight = 0.3 + Math.random() * 1.7;
+                const randomFactor = Math.floor(Math.random() * 800);
+                const createdAt = new Date(candidate.createdAt);
+                const daysDiff = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+                let freshnessScore = 120;
+                if (daysDiff <= 3) {
+                    freshnessScore = Math.max(0, 800 - daysDiff * 267);
+                }
+                else if (daysDiff <= 14) {
+                    freshnessScore = Math.max(0, 600 - (daysDiff - 3) * 54);
+                }
+                else if (daysDiff <= 30) {
+                    freshnessScore = Math.max(0, 300 - (daysDiff - 14) * 19);
+                }
+                const recommendScore = interactionScore * randomWeight + randomFactor + freshnessScore;
+                return {
+                    ...candidate,
+                    recommendScore: recommendScore.toString(),
+                };
+            });
+            scoredCandidates.sort((a, b) => parseFloat(b.recommendScore) - parseFloat(a.recommendScore));
+            const topCandidates = scoredCandidates.slice(0, size + 1);
+            for (let i = topCandidates.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [topCandidates[i], topCandidates[j]] = [topCandidates[j], topCandidates[i]];
+            }
+            const episodes = topCandidates;
             const hasMore = episodes.length > size;
             const list = hasMore ? episodes.slice(0, size) : episodes;
             const userInteractions = {};

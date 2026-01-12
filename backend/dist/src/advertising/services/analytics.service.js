@@ -40,30 +40,61 @@ let AnalyticsService = class AnalyticsService {
         };
     }
     async getDashboardStats(from, to) {
-        const startDate = from ? new Date(from) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-        const endDate = to ? new Date(to) : new Date();
+        const hasTimeFilter = from || to;
+        let startDate;
+        let endDate;
+        if (from) {
+            startDate = new Date(from);
+            startDate.setHours(0, 0, 0, 0);
+        }
+        if (to) {
+            endDate = new Date(to);
+            endDate.setHours(23, 59, 59, 999);
+        }
         const totalCampaigns = await this.campaignRepository.count();
         const activeCampaigns = await this.campaignRepository.count({
             where: { isActive: true }
         });
-        const eventStats = await this.eventRepository
-            .createQueryBuilder('event')
-            .select('COUNT(*)', 'totalEvents')
-            .where('event.eventTime BETWEEN :startDate AND :endDate', { startDate, endDate })
-            .getRawOne();
-        const clickStats = await this.eventRepository
-            .createQueryBuilder('event')
-            .select('COUNT(*)', 'totalClicks')
-            .where('event.eventType = :eventType', { eventType: entity_1.EventType.CLICK })
-            .andWhere('event.eventTime BETWEEN :startDate AND :endDate', { startDate, endDate })
-            .getRawOne();
-        const conversionStats = await this.conversionRepository
-            .createQueryBuilder('conversion')
-            .select('COUNT(*)', 'totalConversions')
-            .where('conversion.conversionTime BETWEEN :startDate AND :endDate', { startDate, endDate })
-            .getRawOne();
-        const totalClicks = parseInt(clickStats.totalClicks) || 0;
-        const totalConversions = parseInt(conversionStats.totalConversions) || 0;
+        let totalClicks = 0;
+        let totalConversions = 0;
+        if (hasTimeFilter) {
+            const clicksQueryBuilder = this.eventRepository
+                .createQueryBuilder('event')
+                .select('COUNT(*)', 'totalClicks')
+                .where('event.eventType = :clickType', { clickType: entity_1.EventType.CLICK });
+            if (startDate) {
+                clicksQueryBuilder.andWhere('event.eventTime >= :startDate', { startDate });
+            }
+            if (endDate) {
+                clicksQueryBuilder.andWhere('event.eventTime <= :endDate', { endDate });
+            }
+            const clickStats = await clicksQueryBuilder.getRawOne();
+            totalClicks = parseInt(clickStats?.totalClicks || '0') || 0;
+            const conversionQueryBuilder = this.conversionRepository
+                .createQueryBuilder('conversion')
+                .select('COUNT(*)', 'totalConversions');
+            if (startDate) {
+                conversionQueryBuilder.andWhere('conversion.conversionTime >= :startDate', { startDate });
+            }
+            if (endDate) {
+                conversionQueryBuilder.andWhere('conversion.conversionTime <= :endDate', { endDate });
+            }
+            const conversionStats = await conversionQueryBuilder.getRawOne();
+            totalConversions = parseInt(conversionStats?.totalConversions || '0') || 0;
+        }
+        else {
+            const clickStats = await this.eventRepository
+                .createQueryBuilder('event')
+                .select('COUNT(*)', 'totalClicks')
+                .where('event.eventType = :eventType', { eventType: entity_1.EventType.CLICK })
+                .getRawOne();
+            totalClicks = parseInt(clickStats?.totalClicks || '0') || 0;
+            const conversionStats = await this.conversionRepository
+                .createQueryBuilder('conversion')
+                .select('COUNT(*)', 'totalConversions')
+                .getRawOne();
+            totalConversions = parseInt(conversionStats?.totalConversions || '0') || 0;
+        }
         const avgConversionRate = campaign_utils_1.CampaignUtils.calculateConversionRate(totalConversions, totalClicks);
         const platformStats = await this.getPlatformStats(startDate, endDate);
         const recentEvents = await this.getRecentEvents(10);
@@ -195,30 +226,54 @@ let AnalyticsService = class AnalyticsService {
         return timeline;
     }
     async getPlatformStats(startDate, endDate) {
-        const stats = await this.campaignRepository
+        const platforms = await this.campaignRepository
             .createQueryBuilder('campaign')
             .leftJoin('campaign.platform', 'platform')
-            .leftJoin('campaign.events', 'event', 'event.eventTime BETWEEN :startDate AND :endDate')
-            .leftJoin('campaign.conversions', 'conversion', 'conversion.conversionTime BETWEEN :startDate AND :endDate')
-            .select([
-            'platform.code as platform',
-            'COUNT(DISTINCT campaign.id) as campaigns',
-            'COUNT(CASE WHEN event.eventType = :clickType THEN 1 END) as clicks',
-            'COUNT(conversion.id) as conversions',
-        ])
             .where('campaign.isActive = :isActive', { isActive: true })
-            .setParameter('startDate', startDate)
-            .setParameter('endDate', endDate)
-            .setParameter('clickType', entity_1.EventType.CLICK)
-            .groupBy('platform.code')
+            .select('DISTINCT platform.code', 'platform')
             .getRawMany();
-        return stats.map(stat => ({
-            platform: stat.platform,
-            campaigns: parseInt(stat.campaigns) || 0,
-            clicks: parseInt(stat.clicks) || 0,
-            conversions: parseInt(stat.conversions) || 0,
-            spend: 0,
-        }));
+        const result = [];
+        for (const { platform } of platforms) {
+            if (!platform)
+                continue;
+            const campaignsCount = await this.campaignRepository.count({
+                where: {
+                    isActive: true,
+                    platformCode: platform,
+                },
+            });
+            let clicksQuery = this.eventRepository
+                .createQueryBuilder('event')
+                .leftJoin('event.campaign', 'campaign')
+                .where('campaign.platformCode = :platform', { platform })
+                .andWhere('event.eventType = :clickType', { clickType: entity_1.EventType.CLICK });
+            if (startDate) {
+                clicksQuery = clicksQuery.andWhere('event.eventTime >= :startDate', { startDate });
+            }
+            if (endDate) {
+                clicksQuery = clicksQuery.andWhere('event.eventTime <= :endDate', { endDate });
+            }
+            const clicks = await clicksQuery.getCount();
+            let conversionsQuery = this.conversionRepository
+                .createQueryBuilder('conversion')
+                .leftJoin('conversion.campaign', 'campaign')
+                .where('campaign.platformCode = :platform', { platform });
+            if (startDate) {
+                conversionsQuery = conversionsQuery.andWhere('conversion.conversionTime >= :startDate', { startDate });
+            }
+            if (endDate) {
+                conversionsQuery = conversionsQuery.andWhere('conversion.conversionTime <= :endDate', { endDate });
+            }
+            const conversions = await conversionsQuery.getCount();
+            result.push({
+                platform,
+                campaigns: campaignsCount,
+                clicks,
+                conversions,
+                spend: 0,
+            });
+        }
+        return result;
     }
     async getRecentEvents(limit) {
         const events = await this.eventRepository

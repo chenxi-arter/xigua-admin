@@ -2,6 +2,25 @@
 
 一个简单的 Telegram Bot，用于推广西瓜短剧平台。
 
+1. 拉取代码
+2. 切换到 tgbot 目录
+3. 增加.env文件，复制.env.example文件的内容，修改BOT_TOKEN为真实的Bot Token
+(BOT_TOKEN=8326325358:AAF-0oUGqae0X34i35PgD7Q7nctyc9LCNBI)
+4. 运行部署脚本 deploy.sh
+5. 检查3000端口监听是否正在运行：
+```bash
+curl http://localhost:3000/health
+```
+正确返回：
+```json
+{
+  "status": "ok",
+  "uptime": 123.45,
+  "timestamp": "2026-01-10T12:34:56.789Z"
+}
+```
+
+
 ## 功能特点
 
 - ✅ 自动回复文字消息（带图片）

@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var UserService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserService = void 0;
 const common_1 = require("@nestjs/common");
@@ -21,15 +22,19 @@ const telegram_user_dto_1 = require("./dto/telegram-user.dto");
 const telegram_validator_1 = require("./telegram.validator");
 const auth_service_1 = require("../auth/auth.service");
 const telegram_auth_service_1 = require("../auth/telegram-auth.service");
+const account_merge_service_1 = require("../auth/account-merge.service");
 const password_util_1 = require("../common/utils/password.util");
-let UserService = class UserService {
+let UserService = UserService_1 = class UserService {
     userRepo;
     authService;
     telegramAuthService;
-    constructor(userRepo, authService, telegramAuthService) {
+    accountMergeService;
+    logger = new common_1.Logger(UserService_1.name);
+    constructor(userRepo, authService, telegramAuthService, accountMergeService) {
         this.userRepo = userRepo;
         this.authService = authService;
         this.telegramAuthService = telegramAuthService;
+        this.accountMergeService = accountMergeService;
     }
     async telegramLogin(dto) {
         this.validateBotToken();
@@ -376,13 +381,21 @@ let UserService = class UserService {
         if (!passwordValidation.valid) {
             throw new common_1.BadRequestException(passwordValidation.message);
         }
-        const user = await this.userRepo.findOneBy({ id: userId, isGuest: true });
-        if (!user) {
+        const guestUser = await this.userRepo.findOneBy({ id: userId, isGuest: true });
+        if (!guestUser) {
             throw new common_1.BadRequestException('游客用户不存在或已转为正式用户');
         }
         const existingUser = await this.userRepo.findOneBy({ email: dto.email });
         if (existingUser) {
-            throw new common_1.ConflictException('该邮箱已被注册');
+            this.logger.log(`邮箱 ${dto.email} 已存在，将游客 ${userId} 的数据合并到用户 ${existingUser.id}`);
+            const mergeStats = await this.accountMergeService.mergeGuestToUser(userId, existingUser.id);
+            this.logger.log(`数据合并完成: ${JSON.stringify(mergeStats)}`);
+            const tokens = await this.authService.generateTokens(existingUser, 'Email Login After Merge');
+            return {
+                success: true,
+                message: '检测到该邮箱已注册，已将您的游客数据合并到现有账号',
+                ...tokens,
+            };
         }
         if (dto.username) {
             const existingUsername = await this.userRepo.findOneBy({ username: dto.username });
@@ -391,20 +404,20 @@ let UserService = class UserService {
             }
         }
         const passwordHash = await password_util_1.PasswordUtil.hashPassword(dto.password);
-        user.isGuest = false;
-        user.email = dto.email;
-        user.password_hash = passwordHash;
+        guestUser.isGuest = false;
+        guestUser.email = dto.email;
+        guestUser.password_hash = passwordHash;
         if (dto.username) {
-            user.username = dto.username;
+            guestUser.username = dto.username;
         }
         if (dto.firstName) {
-            user.first_name = dto.firstName;
+            guestUser.first_name = dto.firstName;
         }
         if (dto.lastName) {
-            user.last_name = dto.lastName;
+            guestUser.last_name = dto.lastName;
         }
-        await this.userRepo.save(user);
-        const tokens = await this.authService.generateTokens(user, 'Email Registration');
+        await this.userRepo.save(guestUser);
+        const tokens = await this.authService.generateTokens(guestUser, 'Email Registration');
         return {
             success: true,
             message: '游客账号已成功转为正式用户，所有历史数据已保留',
@@ -420,7 +433,13 @@ let UserService = class UserService {
         }
         const existingTgUser = await this.userRepo.findOneBy({ telegram_id: userData.id });
         if (existingTgUser) {
-            throw new common_1.ConflictException('该Telegram账号已被其他用户绑定');
+            this.logger.log(`Telegram ID ${userData.id} 已存在，将游客 ${userId} 的数据合并到用户 ${existingTgUser.id}`);
+            const mergeStats = await this.accountMergeService.mergeGuestToUser(userId, existingTgUser.id);
+            this.logger.log(`数据合并完成: ${JSON.stringify(mergeStats)}`);
+            const tokens = await this.generateUserTokens(existingTgUser, dto.deviceInfo);
+            return {
+                ...tokens,
+            };
         }
         guestUser.isGuest = false;
         guestUser.telegram_id = userData.id;
@@ -438,11 +457,12 @@ let UserService = class UserService {
     }
 };
 exports.UserService = UserService;
-exports.UserService = UserService = __decorate([
+exports.UserService = UserService = UserService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         auth_service_1.AuthService,
-        telegram_auth_service_1.TelegramAuthService])
+        telegram_auth_service_1.TelegramAuthService,
+        account_merge_service_1.AccountMergeService])
 ], UserService);
 //# sourceMappingURL=user.service.js.map

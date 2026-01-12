@@ -14,6 +14,8 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.InteractionController = void 0;
 const common_1 = require("@nestjs/common");
+const typeorm_1 = require("@nestjs/typeorm");
+const typeorm_2 = require("typeorm");
 const base_controller_1 = require("../controllers/base.controller");
 const episode_interaction_service_1 = require("../services/episode-interaction.service");
 const episode_service_1 = require("../services/episode.service");
@@ -21,6 +23,7 @@ const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
 const optional_jwt_auth_guard_1 = require("../../auth/guards/optional-jwt-auth.guard");
 const video_service_1 = require("../video.service");
 const favorite_service_1 = require("../../user/services/favorite.service");
+const user_entity_1 = require("../../user/entity/user.entity");
 class EpisodeActivityDto {
     shortId;
     type;
@@ -30,12 +33,14 @@ let InteractionController = class InteractionController extends base_controller_
     episodeService;
     videoService;
     favoriteService;
-    constructor(interactionService, episodeService, videoService, favoriteService) {
+    userRepo;
+    constructor(interactionService, episodeService, videoService, favoriteService, userRepo) {
         super();
         this.interactionService = interactionService;
         this.episodeService = episodeService;
         this.videoService = videoService;
         this.favoriteService = favoriteService;
+        this.userRepo = userRepo;
     }
     async activity(body, req) {
         const shortId = body?.shortId?.trim();
@@ -129,6 +134,13 @@ let InteractionController = class InteractionController extends base_controller_
         const userId = req.user?.userId ? Number(req.user.userId) : 0;
         if (!userId)
             return this.error('未认证', 401);
+        const user = await this.userRepo.findOne({ where: { id: userId } });
+        if (!user) {
+            return this.error('用户不存在', 404);
+        }
+        if (Boolean(user.isGuest)) {
+            return this.error('游客用户暂不支持发表评论，请先注册成为正式用户', 403, common_1.HttpStatus.FORBIDDEN);
+        }
         const result = await this.videoService.addComment(userId, shortId, content);
         return this.success(result, '评论发表成功', 200);
     }
@@ -309,9 +321,11 @@ __decorate([
 ], InteractionController.prototype, "getUnreadReplyCount", null);
 exports.InteractionController = InteractionController = __decorate([
     (0, common_1.Controller)('video/episode'),
+    __param(4, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __metadata("design:paramtypes", [episode_interaction_service_1.EpisodeInteractionService,
         episode_service_1.EpisodeService,
         video_service_1.VideoService,
-        favorite_service_1.FavoriteService])
+        favorite_service_1.FavoriteService,
+        typeorm_2.Repository])
 ], InteractionController);
 //# sourceMappingURL=interaction.controller.js.map

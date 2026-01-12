@@ -8,6 +8,7 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ClientAppModule = void 0;
 const common_1 = require("@nestjs/common");
+const core_1 = require("@nestjs/core");
 const schedule_1 = require("@nestjs/schedule");
 const core_module_1 = require("./core/core.module");
 const shared_module_1 = require("./common/shared.module");
@@ -16,6 +17,7 @@ const user_module_1 = require("./user/user.module");
 const video_api_module_1 = require("./video/modules/video-api.module");
 const advertising_module_1 = require("./advertising/advertising.module");
 const short_link_module_1 = require("./common/short-link.module");
+const global_exception_filter_1 = require("./common/filters/global-exception.filter");
 let ClientAppModule = class ClientAppModule {
 };
 exports.ClientAppModule = ClientAppModule;
@@ -30,6 +32,12 @@ exports.ClientAppModule = ClientAppModule = __decorate([
             video_api_module_1.VideoApiModule,
             advertising_module_1.AdvertisingModule,
             short_link_module_1.ShortLinkModule,
+        ],
+        providers: [
+            {
+                provide: core_1.APP_FILTER,
+                useClass: global_exception_filter_1.GlobalExceptionFilter,
+            },
         ],
     })
 ], ClientAppModule);
