@@ -1,6 +1,7 @@
 export declare class TelegramLoginDto {
     initData: string;
     deviceInfo?: string;
+    guestToken?: string;
 }
 export declare class TelegramLoginResponseDto {
     access_token: string;

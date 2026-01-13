@@ -45,6 +45,7 @@ let AuthController = class AuthController {
             loginType: telegram_user_dto_1.LoginType.WEBAPP,
             initData: loginDto.initData,
             deviceInfo: loginDto.deviceInfo,
+            guestToken: loginDto.guestToken,
         };
         return this.userService.telegramLogin(telegramUserDto);
     }
@@ -58,6 +59,7 @@ let AuthController = class AuthController {
             auth_date: dto.auth_date,
             hash: dto.hash,
             deviceInfo: dto.deviceInfo,
+            guestToken: dto.guestToken,
         };
         return this.userService.telegramLogin(loginDto);
     }
@@ -131,18 +133,6 @@ let AuthController = class AuthController {
             throw new common_1.UnauthorizedException('用户信息无效');
         }
         return this.userService.convertGuestToEmailUser(userId, dto);
-    }
-    async convertGuestToTelegram(req, dto) {
-        const userId = req.user?.userId;
-        if (!userId) {
-            throw new common_1.UnauthorizedException('用户信息无效');
-        }
-        const telegramUserDto = {
-            loginType: telegram_user_dto_1.LoginType.WEBAPP,
-            initData: dto.initData,
-            deviceInfo: dto.deviceInfo,
-        };
-        return this.userService.convertGuestToTelegramUser(userId, telegramUserDto);
     }
     async cleanInactiveGuests(inactiveDays, recentActivityDays) {
         const inactive = inactiveDays ? parseInt(String(inactiveDays)) : 90;
@@ -357,26 +347,6 @@ __decorate([
     __metadata("design:paramtypes", [Object, convert_guest_dto_1.ConvertGuestToEmailDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "convertGuestToEmail", null);
-__decorate([
-    (0, common_1.Post)('convert-guest-to-telegram'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    (0, common_1.HttpCode)(common_1.HttpStatus.OK),
-    (0, swagger_1.ApiBearerAuth)(),
-    (0, swagger_1.ApiOperation)({
-        summary: '游客转正式用户（Telegram登录）',
-        description: '将当前游客账号通过Telegram登录转换为正式用户，保留所有历史数据'
-    }),
-    (0, swagger_1.ApiResponse)({
-        status: 200,
-        description: '转换成功',
-        type: telegram_login_dto_1.TelegramLoginResponseDto
-    }),
-    __param(0, (0, common_1.Request)()),
-    __param(1, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, telegram_login_dto_1.TelegramLoginDto]),
-    __metadata("design:returntype", Promise)
-], AuthController.prototype, "convertGuestToTelegram", null);
 __decorate([
     (0, common_1.Post)('admin/clean-inactive-guests'),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),

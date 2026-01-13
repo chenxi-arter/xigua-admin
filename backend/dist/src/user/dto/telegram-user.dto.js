@@ -20,6 +20,7 @@ class TelegramUserDto {
     loginType;
     initData;
     deviceInfo;
+    guestToken;
     id;
     first_name;
     last_name;
@@ -43,6 +44,11 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], TelegramUserDto.prototype, "deviceInfo", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], TelegramUserDto.prototype, "guestToken", void 0);
 __decorate([
     (0, class_validator_1.ValidateIf)((o) => o.loginType === LoginType.BOT),
     (0, class_validator_1.IsNumber)(),

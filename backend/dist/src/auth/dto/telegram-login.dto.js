@@ -15,6 +15,7 @@ const swagger_1 = require("@nestjs/swagger");
 class TelegramLoginDto {
     initData;
     deviceInfo;
+    guestToken;
 }
 exports.TelegramLoginDto = TelegramLoginDto;
 __decorate([
@@ -36,6 +37,16 @@ __decorate([
     }),
     __metadata("design:type", String)
 ], TelegramLoginDto.prototype, "deviceInfo", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, swagger_1.ApiProperty)({
+        description: '游客token（可选），如果提供则自动合并游客数据到Telegram账号',
+        example: 'a1b2c3d4e5f6...',
+        required: false
+    }),
+    __metadata("design:type", String)
+], TelegramLoginDto.prototype, "guestToken", void 0);
 class TelegramLoginResponseDto {
     access_token;
     refresh_token;

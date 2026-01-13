@@ -2,6 +2,7 @@ export declare class EmailLoginDto {
     email: string;
     password: string;
     deviceInfo?: string;
+    guestToken?: string;
 }
 export declare class EmailLoginResponseDto {
     access_token: string;

@@ -64,11 +64,6 @@ export declare class AuthController {
             userId: number;
         };
     }, dto: ConvertGuestToEmailDto): Promise<ConvertGuestResponseDto>;
-    convertGuestToTelegram(req: {
-        user?: {
-            userId: number;
-        };
-    }, dto: TelegramLoginDto): Promise<import("../user/user.service").TokenResult>;
     cleanInactiveGuests(inactiveDays?: number, recentActivityDays?: number): Promise<{
         success: boolean;
         deactivated: number;

@@ -40,6 +40,26 @@ let UserService = UserService_1 = class UserService {
         this.validateBotToken();
         const userData = this.validateAndExtractUserData(dto);
         const user = await this.findOrCreateUser(userData);
+        if (dto.guestToken) {
+            try {
+                const guestUser = await this.userRepo.findOne({
+                    where: { guestToken: dto.guestToken, isGuest: true },
+                });
+                if (guestUser) {
+                    this.logger.log(`检测到游客token，将游客 ${guestUser.id} 的数据合并到Telegram用户 ${user.id}`);
+                    const mergeStats = await this.accountMergeService.mergeGuestToUser(guestUser.id, user.id);
+                    this.logger.log(`游客数据合并完成: ${JSON.stringify(mergeStats)}`);
+                }
+                else {
+                    this.logger.warn(`提供的游客token无效或已转正: ${dto.guestToken}`);
+                }
+            }
+            catch (error) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                const errorStack = error instanceof Error ? error.stack : undefined;
+                this.logger.error(`游客数据合并失败: ${errorMessage}`, errorStack);
+            }
+        }
         const tokens = await this.generateUserTokens(user, dto.deviceInfo);
         return {
             ...tokens,
@@ -267,6 +287,23 @@ let UserService = UserService_1 = class UserService {
         }
         if (!user.is_active) {
             throw new common_1.UnauthorizedException('账号已被禁用');
+        }
+        if (dto.guestToken && !user.isGuest) {
+            try {
+                const guestUser = await this.userRepo.findOne({
+                    where: { guestToken: dto.guestToken, isGuest: true }
+                });
+                if (guestUser) {
+                    this.logger.log(`邮箱登录时发现游客账号 ${guestUser.id}，准备合并到用户 ${user.id}`);
+                    await this.accountMergeService.mergeGuestToUser(guestUser.id, user.id);
+                    this.logger.log(`游客数据合并成功`);
+                }
+            }
+            catch (error) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                const errorStack = error instanceof Error ? error.stack : undefined;
+                this.logger.error(`游客数据合并失败: ${errorMessage}`, errorStack);
+            }
         }
         const tokens = await this.authService.generateTokens(user, dto.deviceInfo || 'Email Login');
         return {

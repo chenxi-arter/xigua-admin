@@ -16,6 +16,7 @@ class EmailLoginDto {
     email;
     password;
     deviceInfo;
+    guestToken;
 }
 exports.EmailLoginDto = EmailLoginDto;
 __decorate([
@@ -49,6 +50,17 @@ __decorate([
     (0, class_validator_1.IsString)({ message: '设备信息必须是字符串' }),
     __metadata("design:type", String)
 ], EmailLoginDto.prototype, "deviceInfo", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        description: '游客唯一标识（可选，用于自动合并游客数据）',
+        example: 'guest_abc123xyz',
+        type: String,
+        required: false
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)({ message: '游客token必须是字符串' }),
+    __metadata("design:type", String)
+], EmailLoginDto.prototype, "guestToken", void 0);
 class EmailLoginResponseDto {
     access_token;
     refresh_token;

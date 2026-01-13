@@ -6,4 +6,5 @@ export declare class BotLoginDto {
     auth_date: number;
     hash: string;
     deviceInfo?: string;
+    guestToken?: string;
 }
