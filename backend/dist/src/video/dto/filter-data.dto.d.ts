@@ -12,6 +12,7 @@ export interface FilterDataItem {
     playCount: number;
     url: string;
     type: string;
+    contentType: string;
     isSerial: boolean;
     upStatus: string;
     upCount: number;
@@ -23,6 +24,7 @@ export interface FilterDataItem {
     cidMapper: string;
     isRecommend: boolean;
     createdAt: string;
+    tags: string[];
 }
 export interface FilterDataResponse {
     code: number;

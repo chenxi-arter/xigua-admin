@@ -19,6 +19,7 @@ const episode_entity_1 = require("../../video/entity/episode.entity");
 const episode_url_entity_1 = require("../../video/entity/episode-url.entity");
 const comment_entity_1 = require("../../video/entity/comment.entity");
 const watch_progress_entity_1 = require("../../video/entity/watch-progress.entity");
+const watch_log_entity_1 = require("../../video/entity/watch-log.entity");
 const category_entity_1 = require("../../video/entity/category.entity");
 const short_video_entity_1 = require("../../video/entity/short-video.entity");
 let EntitiesModule = class EntitiesModule {
@@ -39,6 +40,7 @@ exports.EntitiesModule = EntitiesModule = __decorate([
                 episode_url_entity_1.EpisodeUrl,
                 comment_entity_1.Comment,
                 watch_progress_entity_1.WatchProgress,
+                watch_log_entity_1.WatchLog,
                 category_entity_1.Category,
                 short_video_entity_1.ShortVideo,
             ])

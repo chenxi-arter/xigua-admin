@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const watch_progress_entity_1 = require("../../video/entity/watch-progress.entity");
+const watch_log_entity_1 = require("../../video/entity/watch-log.entity");
 const user_entity_1 = require("../../user/entity/user.entity");
 const episode_reaction_entity_1 = require("../../video/entity/episode-reaction.entity");
 const favorite_entity_1 = require("../../user/entity/favorite.entity");
@@ -24,22 +25,27 @@ const episode_entity_1 = require("../../video/entity/episode.entity");
 const series_entity_1 = require("../../video/entity/series.entity");
 const comment_entity_1 = require("../../video/entity/comment.entity");
 const export_series_details_dto_1 = require("../dto/export-series-details.dto");
+const watch_log_service_1 = require("../../video/services/watch-log.service");
 let AdminExportController = class AdminExportController {
     wpRepo;
+    watchLogRepo;
     userRepo;
     reactionRepo;
     favoriteRepo;
     episodeRepo;
     seriesRepo;
     commentRepo;
-    constructor(wpRepo, userRepo, reactionRepo, favoriteRepo, episodeRepo, seriesRepo, commentRepo) {
+    watchLogService;
+    constructor(wpRepo, watchLogRepo, userRepo, reactionRepo, favoriteRepo, episodeRepo, seriesRepo, commentRepo, watchLogService) {
         this.wpRepo = wpRepo;
+        this.watchLogRepo = watchLogRepo;
         this.userRepo = userRepo;
         this.reactionRepo = reactionRepo;
         this.favoriteRepo = favoriteRepo;
         this.episodeRepo = episodeRepo;
         this.seriesRepo = seriesRepo;
         this.commentRepo = commentRepo;
+        this.watchLogService = watchLogService;
     }
     async getPlayStats(startDate, endDate) {
         try {
@@ -50,7 +56,7 @@ let AdminExportController = class AdminExportController {
                 .createQueryBuilder('wp')
                 .select("DATE_FORMAT(wp.updated_at, '%Y-%m-%d')", 'date')
                 .addSelect('COUNT(*)', 'playCount')
-                .addSelect('AVG(wp.stop_at_second)', 'avgDuration')
+                .addSelect('SUM(wp.stop_at_second) / COUNT(DISTINCT wp.user_id)', 'avgDuration')
                 .where('wp.updated_at BETWEEN :start AND :end', { start, end })
                 .groupBy('date')
                 .orderBy('date', 'ASC')
@@ -149,13 +155,25 @@ let AdminExportController = class AdminExportController {
                 .where('wp.updated_at BETWEEN :start AND :end', { start, end })
                 .groupBy('date')
                 .getRawMany();
-            const avgDurationStats = await this.wpRepo
-                .createQueryBuilder('wp')
-                .select("DATE_FORMAT(wp.updated_at, '%Y-%m-%d')", 'date')
-                .addSelect('AVG(wp.stop_at_second)', 'avgDuration')
-                .where('wp.updated_at BETWEEN :start AND :end', { start, end })
+            const watchLogStats = await this.watchLogRepo
+                .createQueryBuilder('wl')
+                .select("DATE(wl.watch_date)", 'date')
+                .addSelect('SUM(wl.watch_duration) / COUNT(DISTINCT wl.user_id)', 'avgDuration')
+                .where('wl.watch_date BETWEEN :start AND :end', {
+                start: start.toISOString().split('T')[0],
+                end: end.toISOString().split('T')[0]
+            })
                 .groupBy('date')
                 .getRawMany();
+            const avgDurationStats = watchLogStats.length > 0
+                ? watchLogStats
+                : await this.wpRepo
+                    .createQueryBuilder('wp')
+                    .select("DATE_FORMAT(wp.updated_at, '%Y-%m-%d')", 'date')
+                    .addSelect('SUM(wp.stop_at_second) / COUNT(DISTINCT wp.user_id)', 'avgDuration')
+                    .where('wp.updated_at BETWEEN :start AND :end', { start, end })
+                    .groupBy('date')
+                    .getRawMany();
             const retentionMap = new Map();
             for (const item of newUserStats) {
                 const cohortDate = new Date(item.date);
@@ -258,13 +276,31 @@ let AdminExportController = class AdminExportController {
                     data: [],
                 };
             }
+            const watchLogStatsByDate = await this.watchLogRepo
+                .createQueryBuilder('wl')
+                .innerJoin('wl.episode', 'episode')
+                .select("DATE(wl.watch_date)", 'date')
+                .addSelect('episode.series_id', 'seriesId')
+                .addSelect('SUM(wl.watch_duration) / COUNT(DISTINCT wl.user_id)', 'avgDuration')
+                .where('wl.watch_date BETWEEN :start AND :end', {
+                start: start.toISOString().split('T')[0],
+                end: end.toISOString().split('T')[0]
+            })
+                .andWhere('episode.series_id IN (:...seriesIds)', { seriesIds })
+                .groupBy('date, episode.series_id')
+                .getRawMany();
+            const logDataMap = new Map();
+            watchLogStatsByDate.forEach(item => {
+                const key = `${item.date}-${item.seriesId}`;
+                logDataMap.set(key, parseFloat(item.avgDuration || '0'));
+            });
             const watchStats = await this.wpRepo
                 .createQueryBuilder('wp')
                 .innerJoin('wp.episode', 'episode')
                 .select("DATE_FORMAT(wp.updated_at, '%Y-%m-%d')", 'date')
                 .addSelect('episode.series_id', 'seriesId')
                 .addSelect('COUNT(*)', 'playCount')
-                .addSelect('AVG(wp.stop_at_second)', 'avgDuration')
+                .addSelect('SUM(wp.stop_at_second) / COUNT(DISTINCT wp.user_id)', 'avgDurationFallback')
                 .addSelect('AVG(CASE WHEN wp.stop_at_second >= episode.duration * 0.9 THEN 1 ELSE 0 END)', 'completionRate')
                 .where('wp.updated_at BETWEEN :start AND :end', { start, end })
                 .andWhere('episode.series_id IN (:...seriesIds)', { seriesIds })
@@ -325,6 +361,7 @@ let AdminExportController = class AdminExportController {
                 const series = seriesList.find(s => s.id === stat.seriesId);
                 if (!series)
                     return;
+                const avgDuration = logDataMap.get(key) || parseFloat(stat.avgDurationFallback || '0');
                 resultMap.set(key, {
                     date: stat.date,
                     seriesId: stat.seriesId,
@@ -333,7 +370,7 @@ let AdminExportController = class AdminExportController {
                     episodeCount: series.episodes.length,
                     playCount: parseInt(stat.playCount),
                     completionRate: parseFloat(parseFloat(stat.completionRate).toFixed(4)),
-                    avgWatchDuration: Math.round(parseFloat(stat.avgDuration) || 0),
+                    avgWatchDuration: Math.round(avgDuration),
                     likeCount: 0,
                     dislikeCount: 0,
                     shareCount: 0,
@@ -418,18 +455,21 @@ __decorate([
 exports.AdminExportController = AdminExportController = __decorate([
     (0, common_1.Controller)('admin/export'),
     __param(0, (0, typeorm_1.InjectRepository)(watch_progress_entity_1.WatchProgress)),
-    __param(1, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
-    __param(2, (0, typeorm_1.InjectRepository)(episode_reaction_entity_1.EpisodeReaction)),
-    __param(3, (0, typeorm_1.InjectRepository)(favorite_entity_1.Favorite)),
-    __param(4, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),
-    __param(5, (0, typeorm_1.InjectRepository)(series_entity_1.Series)),
-    __param(6, (0, typeorm_1.InjectRepository)(comment_entity_1.Comment)),
+    __param(1, (0, typeorm_1.InjectRepository)(watch_log_entity_1.WatchLog)),
+    __param(2, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
+    __param(3, (0, typeorm_1.InjectRepository)(episode_reaction_entity_1.EpisodeReaction)),
+    __param(4, (0, typeorm_1.InjectRepository)(favorite_entity_1.Favorite)),
+    __param(5, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),
+    __param(6, (0, typeorm_1.InjectRepository)(series_entity_1.Series)),
+    __param(7, (0, typeorm_1.InjectRepository)(comment_entity_1.Comment)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        typeorm_2.Repository,
+        watch_log_service_1.WatchLogService])
 ], AdminExportController);
 //# sourceMappingURL=admin-export.controller.js.map

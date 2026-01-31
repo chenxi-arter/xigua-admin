@@ -13,6 +13,7 @@ export interface FuzzySearchItem {
     playCount: number;
     url: string;
     type: string;
+    contentType: string;
     isSerial: boolean;
     upStatus: string;
     upCount: number;
@@ -22,6 +23,7 @@ export interface FuzzySearchItem {
     isRecommend: boolean;
     createdAt: string;
     channeid: number;
+    tags: string[];
 }
 export interface FuzzySearchResponse {
     code: number;

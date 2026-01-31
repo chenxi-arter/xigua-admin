@@ -18,12 +18,15 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const watch_progress_entity_1 = require("../entity/watch-progress.entity");
 const episode_entity_1 = require("../entity/episode.entity");
+const watch_log_entity_1 = require("../entity/watch-log.entity");
 let WatchProgressService = class WatchProgressService {
     watchProgressRepo;
     episodeRepo;
-    constructor(watchProgressRepo, episodeRepo) {
+    watchLogRepo;
+    constructor(watchProgressRepo, episodeRepo, watchLogRepo) {
         this.watchProgressRepo = watchProgressRepo;
         this.episodeRepo = episodeRepo;
+        this.watchLogRepo = watchLogRepo;
     }
     async updateWatchProgress(userId, episodeId, stopAtSecond) {
         const episode = await this.episodeRepo.findOne({
@@ -38,11 +41,14 @@ let WatchProgressService = class WatchProgressService {
                 episodeId,
             },
         });
+        let startPosition = 0;
         if (watchProgress) {
+            startPosition = watchProgress.stopAtSecond;
             watchProgress.stopAtSecond = stopAtSecond;
             watchProgress.updatedAt = new Date();
         }
         else {
+            startPosition = 0;
             watchProgress = this.watchProgressRepo.create({
                 userId,
                 episodeId,
@@ -51,6 +57,25 @@ let WatchProgressService = class WatchProgressService {
             });
         }
         await this.watchProgressRepo.save(watchProgress);
+        if (stopAtSecond > startPosition) {
+            try {
+                const watchDuration = stopAtSecond - startPosition;
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const watchLog = this.watchLogRepo.create({
+                    userId,
+                    episodeId,
+                    watchDuration,
+                    startPosition,
+                    endPosition: stopAtSecond,
+                    watchDate: today,
+                });
+                await this.watchLogRepo.save(watchLog);
+            }
+            catch (error) {
+                console.error('记录观看日志失败:', error);
+            }
+        }
         return { ok: true };
     }
     async getUserWatchProgress(userId, episodeId) {
@@ -149,7 +174,9 @@ exports.WatchProgressService = WatchProgressService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(watch_progress_entity_1.WatchProgress)),
     __param(1, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),
+    __param(2, (0, typeorm_1.InjectRepository)(watch_log_entity_1.WatchLog)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository])
 ], WatchProgressService);
 //# sourceMappingURL=watch-progress.service.js.map

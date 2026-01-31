@@ -33,4 +33,5 @@ export declare class FilterService {
     clearAllFilterTagsCache(): Promise<void>;
     fuzzySearch(keyword: string, categoryId?: string, page?: number, size?: number): Promise<FuzzySearchResponse>;
     private formatDateTime;
+    private getSeriesTagsBatch;
 }

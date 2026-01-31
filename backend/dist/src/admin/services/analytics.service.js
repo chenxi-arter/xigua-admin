@@ -18,16 +18,19 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const user_entity_1 = require("../../user/entity/user.entity");
 const watch_progress_entity_1 = require("../../video/entity/watch-progress.entity");
+const watch_log_entity_1 = require("../../video/entity/watch-log.entity");
 const browse_history_entity_1 = require("../../video/entity/browse-history.entity");
 const episode_entity_1 = require("../../video/entity/episode.entity");
 let AnalyticsService = class AnalyticsService {
     userRepo;
     wpRepo;
+    watchLogRepo;
     bhRepo;
     episodeRepo;
-    constructor(userRepo, wpRepo, bhRepo, episodeRepo) {
+    constructor(userRepo, wpRepo, watchLogRepo, bhRepo, episodeRepo) {
         this.userRepo = userRepo;
         this.wpRepo = wpRepo;
+        this.watchLogRepo = watchLogRepo;
         this.bhRepo = bhRepo;
         this.episodeRepo = episodeRepo;
     }
@@ -153,10 +156,32 @@ let AnalyticsService = class AnalyticsService {
         };
     }
     async getAverageWatchDuration() {
+        const watchLogResult = await this.watchLogRepo
+            .createQueryBuilder('wl')
+            .select('SUM(wl.watch_duration) / COUNT(DISTINCT wl.user_id)', 'avgDuration')
+            .addSelect('SUM(wl.watch_duration)', 'totalDuration')
+            .addSelect('COUNT(DISTINCT wl.user_id)', 'uniqueUsers')
+            .getRawOne();
+        const watchLogCount = parseInt(watchLogResult?.uniqueUsers || '0', 10);
+        if (watchLogCount > 0) {
+            const avgDuration = Math.round(parseFloat(watchLogResult?.avgDuration || '0'));
+            const totalDuration = parseInt(watchLogResult?.totalDuration || '0', 10);
+            const percentageResult = await this.watchLogRepo
+                .createQueryBuilder('wl')
+                .innerJoin('wl.episode', 'ep')
+                .select('AVG(CASE WHEN ep.duration > 0 THEN (wl.watch_duration / ep.duration * 100) ELSE 0 END)', 'avgPercentage')
+                .where('ep.duration > 0')
+                .getRawOne();
+            return {
+                averageWatchProgress: avgDuration,
+                averageWatchPercentage: Math.round(parseFloat(percentageResult?.avgPercentage || '0') * 100) / 100,
+                totalWatchTime: totalDuration,
+            };
+        }
         const result = await this.wpRepo
             .createQueryBuilder('wp')
             .innerJoin('wp.episode', 'ep')
-            .select('AVG(wp.stopAtSecond)', 'avgProgress')
+            .select('SUM(wp.stopAtSecond) / COUNT(DISTINCT wp.user_id)', 'avgProgress')
             .addSelect('AVG(CASE WHEN ep.duration > 0 THEN (wp.stopAtSecond / ep.duration * 100) ELSE 0 END)', 'avgPercentage')
             .addSelect('SUM(wp.stopAtSecond)', 'totalTime')
             .where('ep.duration > 0')
@@ -485,9 +510,11 @@ exports.AnalyticsService = AnalyticsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __param(1, (0, typeorm_1.InjectRepository)(watch_progress_entity_1.WatchProgress)),
-    __param(2, (0, typeorm_1.InjectRepository)(browse_history_entity_1.BrowseHistory)),
-    __param(3, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),
+    __param(2, (0, typeorm_1.InjectRepository)(watch_log_entity_1.WatchLog)),
+    __param(3, (0, typeorm_1.InjectRepository)(browse_history_entity_1.BrowseHistory)),
+    __param(4, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository])

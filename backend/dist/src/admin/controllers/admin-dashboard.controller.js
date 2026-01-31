@@ -25,6 +25,7 @@ const comment_entity_1 = require("../../video/entity/comment.entity");
 const watch_progress_entity_1 = require("../../video/entity/watch-progress.entity");
 const browse_history_entity_1 = require("../../video/entity/browse-history.entity");
 const analytics_service_1 = require("../services/analytics.service");
+const watch_logs_cleanup_service_1 = require("../../video/services/watch-logs-cleanup.service");
 function toDateStart(d) {
     if (!d)
         return undefined;
@@ -53,7 +54,8 @@ let AdminDashboardController = class AdminDashboardController {
     wpRepo;
     bhRepo;
     analyticsService;
-    constructor(userRepo, rtRepo, seriesRepo, episodeRepo, bannerRepo, commentRepo, wpRepo, bhRepo, analyticsService) {
+    watchLogsCleanupService;
+    constructor(userRepo, rtRepo, seriesRepo, episodeRepo, bannerRepo, commentRepo, wpRepo, bhRepo, analyticsService, watchLogsCleanupService) {
         this.userRepo = userRepo;
         this.rtRepo = rtRepo;
         this.seriesRepo = seriesRepo;
@@ -63,6 +65,7 @@ let AdminDashboardController = class AdminDashboardController {
         this.wpRepo = wpRepo;
         this.bhRepo = bhRepo;
         this.analyticsService = analyticsService;
+        this.watchLogsCleanupService = watchLogsCleanupService;
     }
     async overview(from, to) {
         const start = toDateStart(from);
@@ -359,6 +362,46 @@ let AdminDashboardController = class AdminDashboardController {
             };
         }
     }
+    async getWatchLogsStats() {
+        try {
+            const stats = await this.watchLogsCleanupService.getCleanupStats();
+            return {
+                code: 200,
+                data: stats,
+                message: '获取观看日志统计成功',
+                timestamp: new Date().toISOString(),
+            };
+        }
+        catch (error) {
+            return {
+                code: 500,
+                data: null,
+                message: `获取观看日志统计失败: ${error instanceof Error ? error.message : String(error)}`,
+                timestamp: new Date().toISOString(),
+            };
+        }
+    }
+    async archiveWatchLogs(daysToKeep, archiveBeforeDelete) {
+        try {
+            const days = daysToKeep || 365;
+            const archive = archiveBeforeDelete || false;
+            const result = await this.watchLogsCleanupService.manualArchive(days, archive);
+            return {
+                code: 200,
+                data: result,
+                message: result.success ? '归档任务执行成功' : '归档任务执行失败',
+                timestamp: new Date().toISOString(),
+            };
+        }
+        catch (error) {
+            return {
+                code: 500,
+                data: null,
+                message: `归档任务执行失败: ${error instanceof Error ? error.message : String(error)}`,
+                timestamp: new Date().toISOString(),
+            };
+        }
+    }
 };
 exports.AdminDashboardController = AdminDashboardController;
 __decorate([
@@ -434,6 +477,20 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], AdminDashboardController.prototype, "getWatchStats", null);
+__decorate([
+    (0, common_1.Get)('watch-logs-stats'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AdminDashboardController.prototype, "getWatchLogsStats", null);
+__decorate([
+    (0, common_1.Post)('archive-watch-logs'),
+    __param(0, (0, common_1.Body)('daysToKeep')),
+    __param(1, (0, common_1.Body)('archiveBeforeDelete')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Boolean]),
+    __metadata("design:returntype", Promise)
+], AdminDashboardController.prototype, "archiveWatchLogs", null);
 exports.AdminDashboardController = AdminDashboardController = __decorate([
     (0, common_1.Controller)('admin/dashboard'),
     __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
@@ -452,6 +509,7 @@ exports.AdminDashboardController = AdminDashboardController = __decorate([
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        analytics_service_1.AnalyticsService])
+        analytics_service_1.AnalyticsService,
+        watch_logs_cleanup_service_1.WatchLogsCleanupService])
 ], AdminDashboardController);
 //# sourceMappingURL=admin-dashboard.controller.js.map

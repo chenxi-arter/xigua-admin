@@ -19,6 +19,8 @@ export interface RecommendEpisodeItem {
     seriesStarring: string;
     seriesActor: string;
     updateStatus: string;
+    contentType: string;
+    tags: string[];
     playCount: number;
     likeCount: number;
     dislikeCount: number;

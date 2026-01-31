@@ -20,6 +20,7 @@ const cache_manager_1 = require("@nestjs/cache-manager");
 const episode_entity_1 = require("../entity/episode.entity");
 const episode_url_entity_1 = require("../entity/episode-url.entity");
 const comment_entity_1 = require("../entity/comment.entity");
+const series_entity_1 = require("../entity/series.entity");
 const date_util_1 = require("../../common/utils/date.util");
 const episode_interaction_service_1 = require("./episode-interaction.service");
 const favorite_service_1 = require("../../user/services/favorite.service");
@@ -28,14 +29,16 @@ let RecommendService = class RecommendService {
     episodeRepo;
     episodeUrlRepo;
     commentRepo;
+    seriesRepo;
     cacheManager;
     episodeInteractionService;
     favoriteService;
     commentService;
-    constructor(episodeRepo, episodeUrlRepo, commentRepo, cacheManager, episodeInteractionService, favoriteService, commentService) {
+    constructor(episodeRepo, episodeUrlRepo, commentRepo, seriesRepo, cacheManager, episodeInteractionService, favoriteService, commentService) {
         this.episodeRepo = episodeRepo;
         this.episodeUrlRepo = episodeUrlRepo;
         this.commentRepo = commentRepo;
+        this.seriesRepo = seriesRepo;
         this.cacheManager = cacheManager;
         this.episodeInteractionService = episodeInteractionService;
         this.favoriteService = favoriteService;
@@ -68,9 +71,11 @@ let RecommendService = class RecommendService {
           s.score as seriesScore,
           s.starring as seriesStarring,
           s.actor as seriesActor,
-          s.up_status as seriesUpStatus
+          s.up_status as seriesUpStatus,
+          c.name as categoryName
         FROM episodes e
         INNER JOIN series s ON e.series_id = s.id
+        LEFT JOIN categories c ON s.category_id = c.id
         WHERE e.status = 'published'
           AND e.episode_number = 1
           AND s.is_active = 1
@@ -137,6 +142,8 @@ let RecommendService = class RecommendService {
             }
             const shortIds = list.map(ep => ep.shortId);
             const commentCountMap = await this.commentService.getCommentCountsByShortIds(shortIds);
+            const seriesIds = Array.from(new Set(list.map(ep => ep.seriesId)));
+            const seriesTagsMap = await this.getSeriesTagsBatch(seriesIds);
             const enrichedList = await Promise.all(list.map(async (episode) => {
                 const urls = await this.episodeUrlRepo.find({
                     where: { episodeId: episode.id },
@@ -160,6 +167,8 @@ let RecommendService = class RecommendService {
                     seriesStarring: episode.seriesStarring || '',
                     seriesActor: episode.seriesActor || '',
                     updateStatus: episode.seriesUpStatus || '',
+                    contentType: episode.categoryName || '',
+                    tags: seriesTagsMap.get(episode.seriesId) || [],
                     playCount: episode.playCount || 0,
                     likeCount: episode.likeCount || 0,
                     dislikeCount: episode.dislikeCount || 0,
@@ -193,6 +202,68 @@ let RecommendService = class RecommendService {
             throw new Error('获取推荐列表失败');
         }
     }
+    async getSeriesTagsBatch(seriesIds) {
+        const tagsMap = new Map();
+        if (seriesIds.length === 0) {
+            return tagsMap;
+        }
+        try {
+            seriesIds.forEach(id => tagsMap.set(id, []));
+            const genreTags = await this.seriesRepo
+                .createQueryBuilder('s')
+                .leftJoin('series_genre_options', 'sgo', 'sgo.series_id = s.id')
+                .leftJoin('filter_options', 'fo', 'fo.id = sgo.option_id')
+                .select('s.id', 'series_id')
+                .addSelect('fo.name', 'name')
+                .where('s.id IN (:...seriesIds)', { seriesIds })
+                .andWhere('fo.filter_type_id = 2')
+                .andWhere('fo.is_active = 1')
+                .orderBy('s.id', 'ASC')
+                .addOrderBy('fo.display_order', 'ASC')
+                .getRawMany();
+            genreTags.forEach((tag) => {
+                if (tag.name && tag.series_id) {
+                    const tags = tagsMap.get(tag.series_id);
+                    if (tags && !tags.includes(tag.name)) {
+                        tags.push(tag.name);
+                    }
+                }
+            });
+            const optionRows = await this.seriesRepo
+                .createQueryBuilder('s')
+                .leftJoin('filter_options', 'fo_region', 's.region_option_id = fo_region.id AND fo_region.is_active = 1')
+                .leftJoin('filter_options', 'fo_lang', 's.language_option_id = fo_lang.id AND fo_lang.is_active = 1')
+                .leftJoin('filter_options', 'fo_year', 's.year_option_id = fo_year.id AND fo_year.is_active = 1')
+                .leftJoin('filter_options', 'fo_status', 's.status_option_id = fo_status.id AND fo_status.is_active = 1')
+                .select('s.id', 'series_id')
+                .addSelect('fo_region.name', 'region_name')
+                .addSelect('fo_lang.name', 'lang_name')
+                .addSelect('fo_year.name', 'year_name')
+                .addSelect('fo_status.name', 'status_name')
+                .where('s.id IN (:...seriesIds)', { seriesIds })
+                .getRawMany();
+            optionRows.forEach((row) => {
+                if (!row.series_id)
+                    return;
+                const tags = tagsMap.get(row.series_id);
+                if (!tags)
+                    return;
+                [row.region_name, row.lang_name, row.year_name, row.status_name]
+                    .filter((name) => Boolean(name))
+                    .forEach(name => {
+                    if (!tags.includes(name))
+                        tags.push(name);
+                });
+            });
+            tagsMap.forEach((tags, seriesId) => {
+                tagsMap.set(seriesId, Array.from(new Set(tags)).slice(0, 10));
+            });
+        }
+        catch (error) {
+            console.error('批量获取系列标签失败:', error);
+        }
+        return tagsMap;
+    }
 };
 exports.RecommendService = RecommendService;
 exports.RecommendService = RecommendService = __decorate([
@@ -200,9 +271,11 @@ exports.RecommendService = RecommendService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),
     __param(1, (0, typeorm_1.InjectRepository)(episode_url_entity_1.EpisodeUrl)),
     __param(2, (0, typeorm_1.InjectRepository)(comment_entity_1.Comment)),
-    __param(3, (0, common_1.Inject)(cache_manager_1.CACHE_MANAGER)),
-    __param(5, (0, common_1.Inject)((0, common_1.forwardRef)(() => favorite_service_1.FavoriteService))),
+    __param(3, (0, typeorm_1.InjectRepository)(series_entity_1.Series)),
+    __param(4, (0, common_1.Inject)(cache_manager_1.CACHE_MANAGER)),
+    __param(6, (0, common_1.Inject)((0, common_1.forwardRef)(() => favorite_service_1.FavoriteService))),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository, Object, episode_interaction_service_1.EpisodeInteractionService,
         favorite_service_1.FavoriteService,

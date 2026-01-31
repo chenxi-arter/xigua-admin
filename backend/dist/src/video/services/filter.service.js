@@ -179,27 +179,40 @@ let FilterService = class FilterService {
                     return acc;
                 }, {});
             }
-            const items = series.map(s => ({
-                id: s.id,
-                shortId: s.shortId || '',
-                coverUrl: s.coverUrl || '',
-                title: s.title,
-                score: s.score?.toString() || '0.0',
-                playCount: s.playCount || 0,
-                url: s.id.toString(),
-                type: s.category?.name || '未分类',
-                isSerial: (s.totalEpisodes && s.totalEpisodes > 1) || false,
-                upStatus: s.upStatus || (s.statusOption?.name ? `${s.statusOption.name}` : '已完结'),
-                upCount: upCountMap[s.id] ?? 0,
-                likeCount: statMap[s.id]?.like ?? 0,
-                dislikeCount: statMap[s.id]?.dislike ?? 0,
-                favoriteCount: statMap[s.id]?.favorite ?? 0,
-                author: s.starring || s.actor || '',
-                description: s.description || '',
-                cidMapper: s.category?.id?.toString() || '0',
-                isRecommend: false,
-                createdAt: s.createdAt ? date_util_1.DateUtil.formatDateTime(s.createdAt) : date_util_1.DateUtil.formatDateTime(new Date()),
-            }));
+            const seriesTagsMap = await this.getSeriesTagsBatch(seriesIds);
+            const items = series.map(s => {
+                const genreTags = seriesTagsMap.get(s.id) || [];
+                const optionTags = [
+                    s.regionOption?.name,
+                    s.languageOption?.name,
+                    s.yearOption?.name,
+                    s.statusOption?.name,
+                ].filter((name) => Boolean(name));
+                const tags = Array.from(new Set([...genreTags, ...optionTags])).slice(0, 10);
+                return {
+                    id: s.id,
+                    shortId: s.shortId || '',
+                    coverUrl: s.coverUrl || '',
+                    title: s.title,
+                    score: s.score?.toString() || '0.0',
+                    playCount: s.playCount || 0,
+                    url: s.id.toString(),
+                    type: s.category?.name || '未分类',
+                    contentType: s.category?.name || '',
+                    isSerial: (s.totalEpisodes && s.totalEpisodes > 1) || false,
+                    upStatus: s.upStatus || (s.statusOption?.name ? `${s.statusOption.name}` : '已完结'),
+                    upCount: upCountMap[s.id] ?? 0,
+                    likeCount: statMap[s.id]?.like ?? 0,
+                    dislikeCount: statMap[s.id]?.dislike ?? 0,
+                    favoriteCount: statMap[s.id]?.favorite ?? 0,
+                    author: s.starring || s.actor || '',
+                    description: s.description || '',
+                    cidMapper: s.category?.id?.toString() || '0',
+                    isRecommend: false,
+                    createdAt: s.createdAt ? date_util_1.DateUtil.formatDateTime(s.createdAt) : date_util_1.DateUtil.formatDateTime(new Date()),
+                    tags,
+                };
+            });
             const response = {
                 data: {
                     list: items,
@@ -440,25 +453,39 @@ let FilterService = class FilterService {
                 };
                 return response;
             }
-            const items = series.map(s => ({
-                id: s.id,
-                shortId: s.shortId || '',
-                coverUrl: s.coverUrl || '',
-                title: s.title,
-                score: s.score?.toString() || '0.0',
-                playCount: s.playCount || 0,
-                url: s.id.toString(),
-                type: s.category?.name || '未分类',
-                isSerial: (s.episodes && s.episodes.length > 1) || false,
-                upStatus: s.upStatus || (s.statusOption?.name ? `${s.statusOption.name}` : '已完结'),
-                upCount: 0,
-                author: s.starring || s.actor || '',
-                description: s.description || '',
-                cidMapper: s.category?.id?.toString() || '0',
-                isRecommend: false,
-                createdAt: s.createdAt ? date_util_1.DateUtil.formatDateTime(s.createdAt) : date_util_1.DateUtil.formatDateTime(new Date()),
-                channeid: s.categoryId || 0
-            }));
+            const seriesIds = series.map(s => s.id);
+            const seriesTagsMap = await this.getSeriesTagsBatch(seriesIds);
+            const items = series.map(s => {
+                const genreTags = seriesTagsMap.get(s.id) || [];
+                const optionTags = [
+                    s.regionOption?.name,
+                    s.languageOption?.name,
+                    s.yearOption?.name,
+                    s.statusOption?.name,
+                ].filter((name) => Boolean(name));
+                const tags = Array.from(new Set([...genreTags, ...optionTags])).slice(0, 10);
+                return {
+                    id: s.id,
+                    shortId: s.shortId || '',
+                    coverUrl: s.coverUrl || '',
+                    title: s.title,
+                    score: s.score?.toString() || '0.0',
+                    playCount: s.playCount || 0,
+                    url: s.id.toString(),
+                    type: s.category?.name || '未分类',
+                    contentType: s.category?.name || '',
+                    isSerial: (s.episodes && s.episodes.length > 1) || false,
+                    upStatus: s.upStatus || (s.statusOption?.name ? `${s.statusOption.name}` : '已完结'),
+                    upCount: 0,
+                    author: s.starring || s.actor || '',
+                    description: s.description || '',
+                    cidMapper: s.category?.id?.toString() || '0',
+                    isRecommend: false,
+                    createdAt: s.createdAt ? date_util_1.DateUtil.formatDateTime(s.createdAt) : date_util_1.DateUtil.formatDateTime(new Date()),
+                    channeid: s.categoryId || 0,
+                    tags,
+                };
+            });
             const response = {
                 code: 200,
                 data: {
@@ -498,6 +525,47 @@ let FilterService = class FilterService {
         const hours = String(beijingTime.getHours()).padStart(2, '0');
         const minutes = String(beijingTime.getMinutes()).padStart(2, '0');
         return `${year}-${month}-${day} ${hours}:${minutes}`;
+    }
+    async getSeriesTagsBatch(seriesIds) {
+        const tagsMap = new Map();
+        if (seriesIds.length === 0) {
+            return tagsMap;
+        }
+        try {
+            const genreTags = await this.seriesRepo
+                .createQueryBuilder('s')
+                .leftJoin('series_genre_options', 'sgo', 'sgo.series_id = s.id')
+                .leftJoin('filter_options', 'fo', 'fo.id = sgo.option_id')
+                .select('s.id', 'series_id')
+                .addSelect('fo.name', 'name')
+                .where('s.id IN (:...seriesIds)', { seriesIds })
+                .andWhere('fo.filter_type_id = 2')
+                .andWhere('fo.is_active = 1')
+                .orderBy('s.id', 'ASC')
+                .addOrderBy('fo.display_order', 'ASC')
+                .getRawMany();
+            genreTags.forEach((tag) => {
+                if (tag.name && tag.series_id) {
+                    const seriesId = tag.series_id;
+                    if (!tagsMap.has(seriesId)) {
+                        tagsMap.set(seriesId, []);
+                    }
+                    const tags = tagsMap.get(seriesId);
+                    if (!tags.includes(tag.name)) {
+                        tags.push(tag.name);
+                    }
+                }
+            });
+            tagsMap.forEach((tags, seriesId) => {
+                if (tags.length > 5) {
+                    tagsMap.set(seriesId, tags.slice(0, 5));
+                }
+            });
+        }
+        catch (error) {
+            console.error('批量获取系列标签失败:', error);
+        }
+        return tagsMap;
     }
 };
 exports.FilterService = FilterService;

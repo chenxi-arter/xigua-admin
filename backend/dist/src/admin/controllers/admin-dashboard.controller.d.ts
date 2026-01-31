@@ -8,6 +8,7 @@ import { Comment } from '../../video/entity/comment.entity';
 import { WatchProgress } from '../../video/entity/watch-progress.entity';
 import { BrowseHistory } from '../../video/entity/browse-history.entity';
 import { AnalyticsService } from '../services/analytics.service';
+import { WatchLogsCleanupService } from '../../video/services/watch-logs-cleanup.service';
 export declare class AdminDashboardController {
     private readonly userRepo;
     private readonly rtRepo;
@@ -18,7 +19,8 @@ export declare class AdminDashboardController {
     private readonly wpRepo;
     private readonly bhRepo;
     private readonly analyticsService;
-    constructor(userRepo: Repository<User>, rtRepo: Repository<RefreshToken>, seriesRepo: Repository<Series>, episodeRepo: Repository<Episode>, bannerRepo: Repository<Banner>, commentRepo: Repository<Comment>, wpRepo: Repository<WatchProgress>, bhRepo: Repository<BrowseHistory>, analyticsService: AnalyticsService);
+    private readonly watchLogsCleanupService;
+    constructor(userRepo: Repository<User>, rtRepo: Repository<RefreshToken>, seriesRepo: Repository<Series>, episodeRepo: Repository<Episode>, bannerRepo: Repository<Banner>, commentRepo: Repository<Comment>, wpRepo: Repository<WatchProgress>, bhRepo: Repository<BrowseHistory>, analyticsService: AnalyticsService, watchLogsCleanupService: WatchLogsCleanupService);
     overview(from?: string, to?: string): Promise<{
         users: {
             total: number;
@@ -201,6 +203,41 @@ export declare class AdminDashboardController {
             averageWatchProgress: number;
             averageWatchPercentage: number;
             totalWatchTime: number;
+        };
+        message: string;
+        timestamp: string;
+    } | {
+        code: number;
+        data: null;
+        message: string;
+        timestamp: string;
+    }>;
+    getWatchLogsStats(): Promise<{
+        code: number;
+        data: {
+            totalLogs: number;
+            logsOlderThan1Year: number;
+            logsOlderThan6Months: number;
+            logsOlderThan3Months: number;
+            oldestLogDate: Date | null;
+            newestLogDate: Date | null;
+        };
+        message: string;
+        timestamp: string;
+    } | {
+        code: number;
+        data: null;
+        message: string;
+        timestamp: string;
+    }>;
+    archiveWatchLogs(daysToKeep?: number, archiveBeforeDelete?: boolean): Promise<{
+        code: number;
+        data: {
+            success: boolean;
+            message: string;
+            archivedCount: number;
+            deletedCount: number;
+            duration: number;
         };
         message: string;
         timestamp: string;

@@ -15,7 +15,6 @@ var BrowseHistoryCleanupService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BrowseHistoryCleanupService = void 0;
 const common_1 = require("@nestjs/common");
-const schedule_1 = require("@nestjs/schedule");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const browse_history_entity_1 = require("../entity/browse-history.entity");
@@ -27,6 +26,7 @@ let BrowseHistoryCleanupService = BrowseHistoryCleanupService_1 = class BrowseHi
         this.browseHistoryRepo = browseHistoryRepo;
     }
     async cleanupExcessBrowseHistory() {
+        this.logger.warn('⚠️ 警告：browse_history 表已废弃，此清理任务仅供手动调用');
         this.logger.log('开始执行浏览记录清理任务...');
         try {
             const startTime = Date.now();
@@ -146,12 +146,6 @@ let BrowseHistoryCleanupService = BrowseHistoryCleanupService_1 = class BrowseHi
     }
 };
 exports.BrowseHistoryCleanupService = BrowseHistoryCleanupService;
-__decorate([
-    (0, schedule_1.Cron)(schedule_1.CronExpression.EVERY_DAY_AT_2AM),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", Promise)
-], BrowseHistoryCleanupService.prototype, "cleanupExcessBrowseHistory", null);
 exports.BrowseHistoryCleanupService = BrowseHistoryCleanupService = BrowseHistoryCleanupService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(browse_history_entity_1.BrowseHistory)),

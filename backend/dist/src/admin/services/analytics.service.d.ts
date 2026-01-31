@@ -1,14 +1,16 @@
 import { Repository } from 'typeorm';
 import { User } from '../../user/entity/user.entity';
 import { WatchProgress } from '../../video/entity/watch-progress.entity';
+import { WatchLog } from '../../video/entity/watch-log.entity';
 import { BrowseHistory } from '../../video/entity/browse-history.entity';
 import { Episode } from '../../video/entity/episode.entity';
 export declare class AnalyticsService {
     private readonly userRepo;
     private readonly wpRepo;
+    private readonly watchLogRepo;
     private readonly bhRepo;
     private readonly episodeRepo;
-    constructor(userRepo: Repository<User>, wpRepo: Repository<WatchProgress>, bhRepo: Repository<BrowseHistory>, episodeRepo: Repository<Episode>);
+    constructor(userRepo: Repository<User>, wpRepo: Repository<WatchProgress>, watchLogRepo: Repository<WatchLog>, bhRepo: Repository<BrowseHistory>, episodeRepo: Repository<Episode>);
     getDAU(date?: Date): Promise<number>;
     getWAU(endDate?: Date): Promise<number>;
     getMAU(endDate?: Date): Promise<number>;

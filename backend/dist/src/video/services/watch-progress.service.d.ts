@@ -1,10 +1,12 @@
 import { Repository } from 'typeorm';
 import { WatchProgress } from '../entity/watch-progress.entity';
 import { Episode } from '../entity/episode.entity';
+import { WatchLog } from '../entity/watch-log.entity';
 export declare class WatchProgressService {
     private readonly watchProgressRepo;
     private readonly episodeRepo;
-    constructor(watchProgressRepo: Repository<WatchProgress>, episodeRepo: Repository<Episode>);
+    private readonly watchLogRepo;
+    constructor(watchProgressRepo: Repository<WatchProgress>, episodeRepo: Repository<Episode>, watchLogRepo: Repository<WatchLog>);
     updateWatchProgress(userId: number, episodeId: number, stopAtSecond: number): Promise<{
         readonly ok: false;
         readonly reason: "episode_not_found";

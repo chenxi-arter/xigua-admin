@@ -18,6 +18,7 @@ const episode_url_entity_1 = require("../video/entity/episode-url.entity");
 const refresh_token_entity_1 = require("../auth/entity/refresh-token.entity");
 const comment_entity_1 = require("../video/entity/comment.entity");
 const watch_progress_entity_1 = require("../video/entity/watch-progress.entity");
+const watch_log_entity_1 = require("../video/entity/watch-log.entity");
 const browse_history_entity_1 = require("../video/entity/browse-history.entity");
 const episode_reaction_entity_1 = require("../video/entity/episode-reaction.entity");
 const favorite_entity_1 = require("../user/entity/favorite.entity");
@@ -35,6 +36,9 @@ const video_module_1 = require("../video/video.module");
 const core_module_1 = require("../core/core.module");
 const advertising_module_1 = require("../advertising/advertising.module");
 const analytics_service_1 = require("./services/analytics.service");
+const watch_log_service_1 = require("../video/services/watch-log.service");
+const watch_logs_cleanup_service_1 = require("../video/services/watch-logs-cleanup.service");
+const export_optimization_service_1 = require("./services/export-optimization.service");
 let AdminModule = class AdminModule {
 };
 exports.AdminModule = AdminModule;
@@ -53,6 +57,7 @@ exports.AdminModule = AdminModule = __decorate([
                 refresh_token_entity_1.RefreshToken,
                 comment_entity_1.Comment,
                 watch_progress_entity_1.WatchProgress,
+                watch_log_entity_1.WatchLog,
                 browse_history_entity_1.BrowseHistory,
                 category_entity_1.Category,
                 episode_reaction_entity_1.EpisodeReaction,
@@ -75,6 +80,9 @@ exports.AdminModule = AdminModule = __decorate([
         ],
         providers: [
             analytics_service_1.AnalyticsService,
+            watch_log_service_1.WatchLogService,
+            watch_logs_cleanup_service_1.WatchLogsCleanupService,
+            export_optimization_service_1.ExportOptimizationService,
         ],
     })
 ], AdminModule);

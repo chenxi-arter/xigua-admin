@@ -39,6 +39,8 @@ const filter_service_1 = require("../services/filter.service");
 const series_service_1 = require("../services/series.service");
 const episode_service_1 = require("../services/episode.service");
 const watch_progress_service_1 = require("../services/watch-progress.service");
+const watch_log_service_1 = require("../services/watch-log.service");
+const watch_logs_cleanup_service_1 = require("../services/watch-logs-cleanup.service");
 const banner_service_1 = require("../services/banner.service");
 const category_service_1 = require("../services/category.service");
 const ingest_service_1 = require("../services/ingest.service");
@@ -59,6 +61,7 @@ const episode_reaction_entity_1 = require("../entity/episode-reaction.entity");
 const comment_entity_1 = require("../entity/comment.entity");
 const comment_like_entity_1 = require("../entity/comment-like.entity");
 const watch_progress_entity_1 = require("../entity/watch-progress.entity");
+const watch_log_entity_1 = require("../entity/watch-log.entity");
 const category_entity_1 = require("../entity/category.entity");
 const short_video_entity_1 = require("../entity/short-video.entity");
 const banner_entity_1 = require("../entity/banner.entity");
@@ -77,7 +80,7 @@ exports.VideoApiModule = VideoApiModule = __decorate([
             episode_module_1.EpisodeModule,
             banner_module_1.BannerModule,
             typeorm_1.TypeOrmModule.forFeature([
-                series_entity_1.Series, episode_entity_1.Episode, episode_url_entity_1.EpisodeUrl, episode_reaction_entity_1.EpisodeReaction, comment_entity_1.Comment, comment_like_entity_1.CommentLike, watch_progress_entity_1.WatchProgress, category_entity_1.Category, short_video_entity_1.ShortVideo, banner_entity_1.Banner, filter_type_entity_1.FilterType, filter_option_entity_1.FilterOption,
+                series_entity_1.Series, episode_entity_1.Episode, episode_url_entity_1.EpisodeUrl, episode_reaction_entity_1.EpisodeReaction, comment_entity_1.Comment, comment_like_entity_1.CommentLike, watch_progress_entity_1.WatchProgress, watch_log_entity_1.WatchLog, category_entity_1.Category, short_video_entity_1.ShortVideo, banner_entity_1.Banner, filter_type_entity_1.FilterType, filter_option_entity_1.FilterOption,
                 series_genre_option_entity_1.SeriesGenreOption, user_entity_1.User
             ]),
             (0, common_1.forwardRef)(() => Promise.resolve().then(() => require('../../user/user.module')).then(m => m.UserModule)),
@@ -113,6 +116,8 @@ exports.VideoApiModule = VideoApiModule = __decorate([
             series_service_1.SeriesService,
             episode_service_1.EpisodeService,
             watch_progress_service_1.WatchProgressService,
+            watch_log_service_1.WatchLogService,
+            watch_logs_cleanup_service_1.WatchLogsCleanupService,
             banner_service_1.BannerService,
             category_service_1.CategoryService,
             category_validator_1.CategoryValidator,
