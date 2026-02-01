@@ -85,13 +85,18 @@ let HomeService = class HomeService {
                     list: []
                 });
             }
-            const videoList = await this.getVideoList(channeid, page, 20);
+            const videoListResult = await this.getVideoList(channeid, page, 20);
             contentBlocks.push({
                 type: 3,
                 name: "视频列表",
                 filters: [],
                 banners: [],
-                list: videoList
+                list: videoListResult.list,
+                total: videoListResult.total,
+                totalPage: videoListResult.totalPage,
+                page: videoListResult.page,
+                size: videoListResult.size,
+                hasMore: videoListResult.hasMore,
             });
             return {
                 code: 200,
@@ -153,8 +158,8 @@ let HomeService = class HomeService {
             if (categoryId && categoryId > 0) {
                 queryBuilder.andWhere('series.categoryId = :categoryId', { categoryId });
             }
-            const series = await queryBuilder.getMany();
-            return series.map(s => ({
+            const [series, total] = await queryBuilder.getManyAndCount();
+            const list = series.map(s => ({
                 id: s.id,
                 shortId: s.shortId,
                 coverUrl: s.coverUrl || '',
@@ -172,10 +177,27 @@ let HomeService = class HomeService {
                 isRecommend: s.score >= 8.0,
                 createdAt: date_util_1.DateUtil.formatDateTime(s.createdAt)
             }));
+            const totalPage = size > 0 ? Math.ceil(total / size) : 0;
+            const hasMore = page < totalPage;
+            return {
+                list,
+                total,
+                page,
+                size,
+                totalPage,
+                hasMore,
+            };
         }
         catch (error) {
             debug_util_1.DebugUtil.error('获取视频列表失败', error);
-            return [];
+            return {
+                list: [],
+                total: 0,
+                page,
+                size,
+                totalPage: 0,
+                hasMore: false,
+            };
         }
     }
     formatDateTime(date) {
