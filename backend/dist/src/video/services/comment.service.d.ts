@@ -10,6 +10,7 @@ export declare class CommentService {
     private readonly cacheManager;
     private readonly fakeCommentService;
     private readonly commentLikeService;
+    private static getPhotoUrl;
     constructor(commentRepo: Repository<Comment>, episodeRepo: Repository<Episode>, cacheManager: Cache, fakeCommentService: FakeCommentService, commentLikeService: CommentLikeService);
     addComment(userId: number, episodeShortId: string, content: string, appearSecond?: number): Promise<Comment>;
     getCommentsByEpisodeShortId(episodeShortId: string, page?: number, size?: number, replyPreviewCount?: number, userId?: number): Promise<{
@@ -41,7 +42,7 @@ export declare class CommentService {
         createdAt: Date;
         username: any;
         nickname: any;
-        photoUrl: string | null;
+        photoUrl: string;
         replyToUsername: any;
         replyToNickname: any;
     }>;
@@ -51,7 +52,7 @@ export declare class CommentService {
             content: string;
             username: any;
             nickname: any;
-            photoUrl: string | null;
+            photoUrl: string;
             replyCount: number;
             likeCount: number;
             liked: boolean | undefined;
@@ -67,7 +68,7 @@ export declare class CommentService {
             createdAt: Date;
             username: any;
             nickname: any;
-            photoUrl: string | null;
+            photoUrl: string;
             replyToUserId: number | null;
             replyToUsername: any;
             replyToNickname: any;
@@ -103,7 +104,7 @@ export declare class CommentService {
             fromUserId: number;
             fromUsername: any;
             fromNickname: any;
-            fromPhotoUrl: string | null;
+            fromPhotoUrl: string;
             myComment: any;
             floorNumber: number;
         }[];
@@ -126,7 +127,7 @@ export declare class CommentService {
             fromUserId: number;
             fromUsername: any;
             fromNickname: any;
-            fromPhotoUrl: string | null;
+            fromPhotoUrl: string;
             myComment: any;
             floorNumber: number;
         }[];

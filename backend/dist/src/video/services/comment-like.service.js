@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var CommentLikeService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CommentLikeService = void 0;
 const common_1 = require("@nestjs/common");
@@ -18,9 +19,19 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const comment_like_entity_1 = require("../entity/comment-like.entity");
 const comment_entity_1 = require("../entity/comment.entity");
-let CommentLikeService = class CommentLikeService {
+const default_avatar_util_1 = require("../../common/utils/default-avatar.util");
+let CommentLikeService = CommentLikeService_1 = class CommentLikeService {
     commentLikeRepo;
     commentRepo;
+    static getPhotoUrl(user) {
+        if (!user)
+            return default_avatar_util_1.DefaultAvatarUtil.getRandomAvatar();
+        if (user.photo_url && String(user.photo_url).trim())
+            return user.photo_url.trim();
+        if (user.id != null)
+            return default_avatar_util_1.DefaultAvatarUtil.getAvatarByUserId(user.id);
+        return default_avatar_util_1.DefaultAvatarUtil.getRandomAvatar();
+    }
     constructor(commentLikeRepo, commentRepo) {
         this.commentLikeRepo = commentLikeRepo;
         this.commentRepo = commentRepo;
@@ -131,7 +142,7 @@ let CommentLikeService = class CommentLikeService {
                 userId: like.userId,
                 username: like.user?.username,
                 nickname: like.user?.nickname,
-                photoUrl: like.user?.photo_url,
+                photoUrl: CommentLikeService_1.getPhotoUrl(like.user),
                 likedAt: like.createdAt,
             })),
             total,
@@ -181,7 +192,7 @@ let CommentLikeService = class CommentLikeService {
                 likerUserId: like.userId,
                 likerUsername: like.user?.nickname || like.user?.username || null,
                 likerNickname: like.user?.nickname || null,
-                likerPhotoUrl: like.user?.photo_url || null,
+                likerPhotoUrl: CommentLikeService_1.getPhotoUrl(like.user),
                 commentId: comment?.id || null,
                 commentContent: comment?.content || null,
                 episodeShortId: comment?.episodeShortId || null,
@@ -235,7 +246,7 @@ let CommentLikeService = class CommentLikeService {
     }
 };
 exports.CommentLikeService = CommentLikeService;
-exports.CommentLikeService = CommentLikeService = __decorate([
+exports.CommentLikeService = CommentLikeService = CommentLikeService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(comment_like_entity_1.CommentLike)),
     __param(1, (0, typeorm_1.InjectRepository)(comment_entity_1.Comment)),

@@ -23,6 +23,7 @@ const bind_email_dto_1 = require("./dto/bind-email.dto");
 const update_nickname_dto_1 = require("./dto/update-nickname.dto");
 const update_password_dto_1 = require("./dto/update-password.dto");
 const update_avatar_dto_1 = require("./dto/update-avatar.dto");
+const default_avatar_util_1 = require("../common/utils/default-avatar.util");
 let UserController = class UserController {
     userService;
     authService;
@@ -53,7 +54,7 @@ let UserController = class UserController {
             nickname: getDisplayNickname(),
             firstName: user.first_name,
             lastName: user.last_name,
-            photoUrl: user.photo_url,
+            photoUrl: (user.photo_url && user.photo_url.trim()) ? user.photo_url : default_avatar_util_1.DefaultAvatarUtil.getAvatarByUserId(user.id),
             hasTelegram: !!user.telegram_id,
             tgusername: user.telegram_id ? user.telegram_id : null,
             isActive: user.is_active,

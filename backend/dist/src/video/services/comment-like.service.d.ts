@@ -4,6 +4,7 @@ import { Comment } from '../entity/comment.entity';
 export declare class CommentLikeService {
     private readonly commentLikeRepo;
     private readonly commentRepo;
+    private static getPhotoUrl;
     constructor(commentLikeRepo: Repository<CommentLike>, commentRepo: Repository<Comment>);
     likeComment(userId: number, commentId: number): Promise<{
         success: boolean;
@@ -22,7 +23,7 @@ export declare class CommentLikeService {
             userId: number;
             username: string;
             nickname: string;
-            photoUrl: string | null;
+            photoUrl: string;
             likedAt: Date;
         }[];
         total: number;
@@ -38,7 +39,7 @@ export declare class CommentLikeService {
             likerUserId: number;
             likerUsername: string | null;
             likerNickname: string | null;
-            likerPhotoUrl: string | null;
+            likerPhotoUrl: string;
             commentId: number | null;
             commentContent: string | null;
             episodeShortId: string | null;

@@ -9,7 +9,7 @@ export declare class CommentLikeController extends BaseController {
             userId: number;
             username: string;
             nickname: string;
-            photoUrl: string | null;
+            photoUrl: string;
             likedAt: Date;
         }[];
         total: number;
@@ -25,7 +25,7 @@ export declare class CommentLikeController extends BaseController {
             likerUserId: number;
             likerUsername: string | null;
             likerNickname: string | null;
-            likerPhotoUrl: string | null;
+            likerPhotoUrl: string;
             commentId: number | null;
             commentContent: string | null;
             episodeShortId: string | null;

@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
+var CommentService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CommentService = void 0;
 const common_1 = require("@nestjs/common");
@@ -21,12 +22,22 @@ const comment_entity_1 = require("../entity/comment.entity");
 const episode_entity_1 = require("../entity/episode.entity");
 const fake_comment_service_1 = require("./fake-comment.service");
 const comment_like_service_1 = require("./comment-like.service");
-let CommentService = class CommentService {
+const default_avatar_util_1 = require("../../common/utils/default-avatar.util");
+let CommentService = CommentService_1 = class CommentService {
     commentRepo;
     episodeRepo;
     cacheManager;
     fakeCommentService;
     commentLikeService;
+    static getPhotoUrl(user) {
+        if (!user)
+            return default_avatar_util_1.DefaultAvatarUtil.getRandomAvatar();
+        if (user.photo_url && String(user.photo_url).trim())
+            return user.photo_url.trim();
+        if (user.id != null)
+            return default_avatar_util_1.DefaultAvatarUtil.getAvatarByUserId(user.id);
+        return default_avatar_util_1.DefaultAvatarUtil.getRandomAvatar();
+    }
     constructor(commentRepo, episodeRepo, cacheManager, fakeCommentService, commentLikeService) {
         this.commentRepo = commentRepo;
         this.episodeRepo = episodeRepo;
@@ -88,7 +99,7 @@ let CommentService = class CommentService {
             replyToUsers.forEach((user) => {
                 replyToUsersMap.set(user.id, {
                     nickname: user.nickname,
-                    photoUrl: user.photo_url,
+                    photoUrl: CommentService_1.getPhotoUrl(user),
                 });
             });
         }
@@ -124,7 +135,7 @@ let CommentService = class CommentService {
                 createdAt: comment.createdAt,
                 username: getDisplayNickname(comment.user),
                 nickname: getDisplayNickname(comment.user),
-                photoUrl: comment.user?.photo_url || null,
+                photoUrl: CommentService_1.getPhotoUrl(comment.user),
                 recentReplies: recentReplies.map(reply => {
                     const replyToUser = reply.replyToUserId ? replyToUsersMap.get(reply.replyToUserId) : null;
                     return {
@@ -136,11 +147,11 @@ let CommentService = class CommentService {
                         createdAt: reply.createdAt,
                         username: getDisplayNickname(reply.user),
                         nickname: getDisplayNickname(reply.user),
-                        photoUrl: reply.user?.photo_url || null,
+                        photoUrl: CommentService_1.getPhotoUrl(reply.user),
                         replyToUserId: reply.replyToUserId || null,
                         replyToUsername: getDisplayNickname(replyToUser),
                         replyToNickname: getDisplayNickname(replyToUser),
-                        replyToPhotoUrl: replyToUser?.photoUrl || null,
+                        replyToPhotoUrl: replyToUser?.photoUrl ?? CommentService_1.getPhotoUrl(null),
                     };
                 }),
             };
@@ -202,7 +213,7 @@ let CommentService = class CommentService {
             createdAt: savedWithUser.createdAt,
             username: getDisplayNickname(savedWithUser.user),
             nickname: getDisplayNickname(savedWithUser.user),
-            photoUrl: savedWithUser.user?.photo_url || null,
+            photoUrl: CommentService_1.getPhotoUrl(savedWithUser.user),
             replyToUsername: getDisplayNickname(parentComment.user),
             replyToNickname: getDisplayNickname(parentComment.user),
         };
@@ -234,7 +245,7 @@ let CommentService = class CommentService {
             replyToUsers.forEach((user) => {
                 replyToUsersMap.set(user.id, {
                     nickname: user.nickname,
-                    photoUrl: user.photo_url,
+                    photoUrl: CommentService_1.getPhotoUrl(user),
                 });
             });
         }
@@ -259,7 +270,7 @@ let CommentService = class CommentService {
                 content: rootComment.content,
                 username: getDisplayNickname(rootComment.user),
                 nickname: getDisplayNickname(rootComment.user),
-                photoUrl: rootComment.user?.photo_url || null,
+                photoUrl: CommentService_1.getPhotoUrl(rootComment.user),
                 replyCount: rootComment.replyCount,
                 likeCount: rootComment.likeCount || 0,
                 liked: userId ? (likedMap.get(commentId) || false) : undefined,
@@ -277,11 +288,11 @@ let CommentService = class CommentService {
                     createdAt: reply.createdAt,
                     username: getDisplayNickname(reply.user),
                     nickname: getDisplayNickname(reply.user),
-                    photoUrl: reply.user?.photo_url || null,
+                    photoUrl: CommentService_1.getPhotoUrl(reply.user),
                     replyToUserId: reply.replyToUserId || null,
                     replyToUsername: getDisplayNickname(replyToUser),
                     replyToNickname: getDisplayNickname(replyToUser),
-                    replyToPhotoUrl: replyToUser?.photoUrl || null,
+                    replyToPhotoUrl: replyToUser?.photoUrl ?? CommentService_1.getPhotoUrl(null),
                 };
             }),
             total,
@@ -405,7 +416,7 @@ let CommentService = class CommentService {
                 fromUserId: reply.userId,
                 fromUsername: getDisplayNickname(reply.user),
                 fromNickname: getDisplayNickname(reply.user),
-                fromPhotoUrl: reply.user?.photo_url || null,
+                fromPhotoUrl: CommentService_1.getPhotoUrl(reply.user),
                 myComment: parentComment?.content || null,
                 floorNumber: reply.floorNumber,
             };
@@ -491,7 +502,7 @@ let CommentService = class CommentService {
                 fromUserId: reply.userId,
                 fromUsername: getDisplayNickname(reply.user),
                 fromNickname: getDisplayNickname(reply.user),
-                fromPhotoUrl: reply.user?.photo_url || null,
+                fromPhotoUrl: CommentService_1.getPhotoUrl(reply.user),
                 myComment: parentComment?.content || null,
                 floorNumber: reply.floorNumber,
             };
@@ -607,7 +618,7 @@ let CommentService = class CommentService {
     }
 };
 exports.CommentService = CommentService;
-exports.CommentService = CommentService = __decorate([
+exports.CommentService = CommentService = CommentService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(comment_entity_1.Comment)),
     __param(1, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),

@@ -24,7 +24,7 @@ export declare class NotificationController extends BaseController {
             fromUserId: number;
             fromUsername: any;
             fromNickname: any;
-            fromPhotoUrl: string | null;
+            fromPhotoUrl: string;
             myComment: any;
             floorNumber: number;
         } | {
@@ -36,7 +36,7 @@ export declare class NotificationController extends BaseController {
             likerUserId: number;
             likerUsername: string | null;
             likerNickname: string | null;
-            likerPhotoUrl: string | null;
+            likerPhotoUrl: string;
             commentId: number | null;
             commentContent: string | null;
             episodeShortId: string | null;

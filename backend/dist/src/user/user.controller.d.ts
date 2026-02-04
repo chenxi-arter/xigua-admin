@@ -34,7 +34,7 @@ export declare class UserController {
         nickname: string;
         firstName: string;
         lastName: string;
-        photoUrl: string | null;
+        photoUrl: string;
         hasTelegram: boolean;
         tgusername: number | null;
         isActive: boolean;

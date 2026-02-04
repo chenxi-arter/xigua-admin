@@ -62,7 +62,7 @@ export declare class InteractionController extends BaseController {
         createdAt: Date;
         username: any;
         nickname: any;
-        photoUrl: string | null;
+        photoUrl: string;
         replyToUsername: any;
         replyToNickname: any;
     }>>;
@@ -72,7 +72,7 @@ export declare class InteractionController extends BaseController {
             content: string;
             username: any;
             nickname: any;
-            photoUrl: string | null;
+            photoUrl: string;
             replyCount: number;
             likeCount: number;
             liked: boolean | undefined;
@@ -88,7 +88,7 @@ export declare class InteractionController extends BaseController {
             createdAt: Date;
             username: any;
             nickname: any;
-            photoUrl: string | null;
+            photoUrl: string;
             replyToUserId: number | null;
             replyToUsername: any;
             replyToNickname: any;
@@ -116,7 +116,7 @@ export declare class InteractionController extends BaseController {
             fromUserId: number;
             fromUsername: any;
             fromNickname: any;
-            fromPhotoUrl: string | null;
+            fromPhotoUrl: string;
             myComment: any;
             floorNumber: number;
         }[];
@@ -144,7 +144,7 @@ export declare class InteractionController extends BaseController {
             fromUserId: number;
             fromUsername: any;
             fromNickname: any;
-            fromPhotoUrl: string | null;
+            fromPhotoUrl: string;
             myComment: any;
             floorNumber: number;
         }[];
