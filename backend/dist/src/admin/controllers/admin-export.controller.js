@@ -177,10 +177,9 @@ let AdminExportController = class AdminExportController {
             const retentionMap = new Map();
             for (const item of newUserStats) {
                 const cohortDate = new Date(item.date);
-                const nextDay = new Date(cohortDate);
-                nextDay.setDate(nextDay.getDate() + 1);
-                const nextDayEnd = new Date(nextDay);
-                nextDayEnd.setHours(23, 59, 59, 999);
+                const nextDayDate = new Date(cohortDate);
+                nextDayDate.setDate(nextDayDate.getDate() + 1);
+                const nextDayStr = nextDayDate.toISOString().split('T')[0];
                 const cohortUsers = await this.userRepo
                     .createQueryBuilder('u')
                     .select('u.id')
@@ -191,16 +190,14 @@ let AdminExportController = class AdminExportController {
                     continue;
                 }
                 const userIds = cohortUsers.map(u => u.id);
-                const retainedCount = await this.wpRepo
+                const wpRetained = await this.wpRepo
                     .createQueryBuilder('wp')
+                    .select('DISTINCT wp.user_id', 'userId')
                     .where('wp.user_id IN (:...userIds)', { userIds })
-                    .andWhere('wp.updated_at BETWEEN :start AND :end', {
-                    start: nextDay,
-                    end: nextDayEnd
-                })
-                    .select('COUNT(DISTINCT wp.user_id)', 'count')
-                    .getRawOne();
-                const retention = parseInt(retainedCount?.count || '0') / cohortUsers.length;
+                    .andWhere('DATE(wp.updated_at) = :nextDay', { nextDay: nextDayStr })
+                    .getRawMany();
+                const retainedIds = new Set(wpRetained.map(r => r.userId));
+                const retention = retainedIds.size / cohortUsers.length;
                 retentionMap.set(item.date, parseFloat(retention.toFixed(4)));
             }
             const statsMap = new Map();
