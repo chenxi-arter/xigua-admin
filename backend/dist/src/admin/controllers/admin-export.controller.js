@@ -182,7 +182,7 @@ let AdminExportController = class AdminExportController {
                 const nextDayStr = nextDayDate.toISOString().split('T')[0];
                 const cohortUsers = await this.userRepo
                     .createQueryBuilder('u')
-                    .select('u.id')
+                    .select('u.id', 'id')
                     .where('DATE(u.created_at) = :date', { date: item.date })
                     .getRawMany();
                 if (cohortUsers.length === 0) {
