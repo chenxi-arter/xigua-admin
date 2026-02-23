@@ -36,17 +36,11 @@ let AnalyticsService = class AnalyticsService {
     }
     async getDAU(date) {
         const targetDate = date || new Date();
-        const startOfDay = new Date(targetDate);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(targetDate);
-        endOfDay.setHours(23, 59, 59, 999);
+        const dateStr = targetDate.toISOString().split('T')[0];
         const result = await this.wpRepo
             .createQueryBuilder('wp')
             .select('COUNT(DISTINCT wp.user_id)', 'count')
-            .where('wp.updated_at BETWEEN :start AND :end', {
-            start: startOfDay,
-            end: endOfDay,
-        })
+            .where('DATE(wp.updated_at) = :date', { date: dateStr })
             .getRawOne();
         return parseInt(result?.count || '0', 10);
     }
@@ -54,12 +48,14 @@ let AnalyticsService = class AnalyticsService {
         const end = endDate || new Date();
         const start = new Date(end);
         start.setDate(start.getDate() - 7);
+        const startStr = start.toISOString().split('T')[0];
+        const endStr = end.toISOString().split('T')[0];
         const result = await this.wpRepo
             .createQueryBuilder('wp')
             .select('COUNT(DISTINCT wp.user_id)', 'count')
-            .where('wp.updated_at BETWEEN :start AND :end', {
-            start,
-            end,
+            .where('DATE(wp.updated_at) BETWEEN :start AND :end', {
+            start: startStr,
+            end: endStr,
         })
             .getRawOne();
         return parseInt(result?.count || '0', 10);
@@ -68,50 +64,52 @@ let AnalyticsService = class AnalyticsService {
         const end = endDate || new Date();
         const start = new Date(end);
         start.setDate(start.getDate() - 30);
+        const startStr = start.toISOString().split('T')[0];
+        const endStr = end.toISOString().split('T')[0];
         const result = await this.wpRepo
             .createQueryBuilder('wp')
             .select('COUNT(DISTINCT wp.user_id)', 'count')
-            .where('wp.updated_at BETWEEN :start AND :end', {
-            start,
-            end,
+            .where('DATE(wp.updated_at) BETWEEN :start AND :end', {
+            start: startStr,
+            end: endStr,
         })
             .getRawOne();
         return parseInt(result?.count || '0', 10);
     }
-    async getRetentionRate(retentionDays = 1, cohortDate) {
+    async getRetentionRate(retentionDays = 1, cohortDate, includeBrowseHistory = true) {
         const cohort = cohortDate || new Date();
-        const startOfDay = new Date(cohort);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(cohort);
-        endOfDay.setHours(23, 59, 59, 999);
+        const cohortDateStr = cohort.toISOString().split('T')[0];
         const cohortUsers = await this.userRepo
             .createQueryBuilder('u')
             .select('u.id')
-            .where('u.created_at BETWEEN :start AND :end', {
-            start: startOfDay,
-            end: endOfDay,
-        })
+            .where('DATE(u.created_at) = :cohortDate', { cohortDate: cohortDateStr })
             .getMany();
         const totalUsers = cohortUsers.length;
         if (totalUsers === 0) {
             return { totalUsers: 0, retainedUsers: 0, retentionRate: 0 };
         }
         const userIds = cohortUsers.map(u => u.id);
-        const retentionStart = new Date(endOfDay);
-        retentionStart.setDate(retentionStart.getDate() + retentionDays);
-        retentionStart.setHours(0, 0, 0, 0);
-        const retentionEnd = new Date(retentionStart);
-        retentionEnd.setHours(23, 59, 59, 999);
-        const retainedResult = await this.wpRepo
+        const retentionDate = new Date(cohort);
+        retentionDate.setDate(retentionDate.getDate() + retentionDays);
+        const retentionDateStr = retentionDate.toISOString().split('T')[0];
+        const retainedUserIds = new Set();
+        const wpRows = await this.wpRepo
             .createQueryBuilder('wp')
-            .select('COUNT(DISTINCT wp.user_id)', 'count')
+            .select('DISTINCT wp.user_id', 'userId')
             .where('wp.user_id IN (:...userIds)', { userIds })
-            .andWhere('wp.updated_at BETWEEN :start AND :end', {
-            start: retentionStart,
-            end: retentionEnd,
-        })
-            .getRawOne();
-        const retainedUsers = parseInt(retainedResult?.count || '0', 10);
+            .andWhere('DATE(wp.updated_at) = :retentionDate', { retentionDate: retentionDateStr })
+            .getRawMany();
+        wpRows.forEach(r => retainedUserIds.add(r.userId));
+        if (includeBrowseHistory) {
+            const bhRows = await this.bhRepo
+                .createQueryBuilder('bh')
+                .select('DISTINCT bh.user_id', 'userId')
+                .where('bh.user_id IN (:...userIds)', { userIds })
+                .andWhere('DATE(bh.updated_at) = :retentionDate', { retentionDate: retentionDateStr })
+                .getRawMany();
+            bhRows.forEach(r => retainedUserIds.add(r.userId));
+        }
+        const retainedUsers = retainedUserIds.size;
         const retentionRate = totalUsers > 0 ? (retainedUsers / totalUsers) * 100 : 0;
         return {
             totalUsers,
@@ -122,6 +120,7 @@ let AnalyticsService = class AnalyticsService {
     async getRetentionTrend(days = 7, retentionDays = 1) {
         const results = [];
         const today = new Date();
+        today.setHours(0, 0, 0, 0);
         for (let i = days - 1; i >= 0; i--) {
             const cohortDate = new Date(today);
             cohortDate.setDate(cohortDate.getDate() - i - retentionDays);
@@ -272,35 +271,30 @@ let AnalyticsService = class AnalyticsService {
     }
     async getComprehensiveStats() {
         const today = new Date();
+        today.setHours(0, 0, 0, 0);
         const yesterday = new Date(today);
         yesterday.setDate(yesterday.getDate() - 1);
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         const [activeUsers, retention1Day, retention7Day, contentStats, watchDuration, completionRate,] = await Promise.all([
             this.getActiveUsersStats(),
             this.getRetentionRate(1, yesterday),
-            this.getRetentionRate(7, new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)),
+            this.getRetentionRate(7, sevenDaysAgo),
             this.getContentPlayStats(),
             this.getAverageWatchDuration(),
             this.getCompletionRate(),
         ]);
-        const todayStart = new Date(today);
-        todayStart.setHours(0, 0, 0, 0);
-        const todayEnd = new Date(today);
-        todayEnd.setHours(23, 59, 59, 999);
-        const yesterdayStart = new Date(yesterday);
-        yesterdayStart.setHours(0, 0, 0, 0);
-        const yesterdayEnd = new Date(yesterday);
-        yesterdayEnd.setHours(23, 59, 59, 999);
+        const todayStr = today.toISOString().split('T')[0];
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
         const [todayRegistrations, yesterdayRegistrations, last7DaysReg, last30DaysReg] = await Promise.all([
-            this.userRepo.count({
-                where: {
-                    created_at: (0, typeorm_2.Between)(todayStart, todayEnd),
-                },
-            }),
-            this.userRepo.count({
-                where: {
-                    created_at: (0, typeorm_2.Between)(yesterdayStart, yesterdayEnd),
-                },
-            }),
+            this.userRepo
+                .createQueryBuilder('u')
+                .where('DATE(u.created_at) = :date', { date: todayStr })
+                .getCount(),
+            this.userRepo
+                .createQueryBuilder('u')
+                .where('DATE(u.created_at) = :date', { date: yesterdayStr })
+                .getCount(),
             this.userRepo.count({
                 where: {
                     created_at: (0, typeorm_2.MoreThan)(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)),

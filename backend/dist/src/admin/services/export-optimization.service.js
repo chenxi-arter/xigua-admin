@@ -115,13 +115,12 @@ let ExportOptimizationService = class ExportOptimizationService {
         const start = new Date(startDate);
         const end = new Date(endDate);
         end.setHours(23, 59, 59, 999);
-        const query = `
+        const baseQuery = `
       SELECT 
         DATE_FORMAT(date_val, '%Y-%m-%d') as date,
         COALESCE(new_users, 0) as newUsers,
         COALESCE(dau, 0) as dau,
-        COALESCE(avg_duration, 0) as avgWatchDuration,
-        0 as nextDayRetention
+        COALESCE(avg_duration, 0) as avgWatchDuration
       FROM (
         SELECT DATE_ADD(?, INTERVAL seq DAY) as date_val
         FROM (
@@ -157,15 +156,38 @@ let ExportOptimizationService = class ExportOptimizationService {
       ) wp_stats ON dates.date_val = wp_stats.wp_date
       ORDER BY date ASC
     `;
-        const results = await this.userRepo.query(query, [
+        const baseResults = await this.userRepo.query(baseQuery, [
             start, start, end,
             start, end,
-            start, end
+            start, end,
         ]);
-        return results.map((row) => ({
+        const retentionMap = new Map();
+        for (const row of baseResults) {
+            if (!row.date || parseInt(row.newUsers) === 0) {
+                retentionMap.set(row.date, 0);
+                continue;
+            }
+            const nextDayDate = new Date(row.date);
+            nextDayDate.setDate(nextDayDate.getDate() + 1);
+            const nextDayStr = nextDayDate.toISOString().split('T')[0];
+            const cohortUsers = await this.userRepo.query(`SELECT id FROM users WHERE DATE(created_at) = ?`, [row.date]);
+            if (cohortUsers.length === 0) {
+                retentionMap.set(row.date, 0);
+                continue;
+            }
+            const ids = cohortUsers.map(u => u.id);
+            const placeholders = ids.map(() => '?').join(',');
+            const retainedResult = await this.userRepo.query(`SELECT COUNT(DISTINCT user_id) as cnt
+         FROM watch_progress
+         WHERE user_id IN (${placeholders})
+           AND DATE(updated_at) = ?`, [...ids, nextDayStr]);
+            const retained = parseInt(retainedResult[0]?.cnt || '0');
+            retentionMap.set(row.date, parseFloat((retained / cohortUsers.length).toFixed(4)));
+        }
+        return baseResults.map((row) => ({
             date: this.formatDate(row.date),
             newUsers: parseInt(row.newUsers) || 0,
-            nextDayRetention: 0,
+            nextDayRetention: retentionMap.get(row.date) ?? 0,
             dau: parseInt(row.dau) || 0,
             avgWatchDuration: Math.round(parseFloat(row.avgWatchDuration) || 0),
             newUserSource: '自然增长',

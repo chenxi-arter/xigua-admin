@@ -14,7 +14,7 @@ export declare class AnalyticsService {
     getDAU(date?: Date): Promise<number>;
     getWAU(endDate?: Date): Promise<number>;
     getMAU(endDate?: Date): Promise<number>;
-    getRetentionRate(retentionDays?: number, cohortDate?: Date): Promise<{
+    getRetentionRate(retentionDays?: number, cohortDate?: Date, includeBrowseHistory?: boolean): Promise<{
         totalUsers: number;
         retainedUsers: number;
         retentionRate: number;
