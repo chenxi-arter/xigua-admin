@@ -2,11 +2,15 @@ import { Repository } from 'typeorm';
 import { WatchProgress } from '../entity/watch-progress.entity';
 import { Episode } from '../entity/episode.entity';
 import { WatchLog } from '../entity/watch-log.entity';
+import { RedisClientType } from 'redis';
 export declare class WatchProgressService {
     private readonly watchProgressRepo;
     private readonly episodeRepo;
     private readonly watchLogRepo;
-    constructor(watchProgressRepo: Repository<WatchProgress>, episodeRepo: Repository<Episode>, watchLogRepo: Repository<WatchLog>);
+    private readonly redisClient;
+    private readonly DAU_TTL;
+    constructor(watchProgressRepo: Repository<WatchProgress>, episodeRepo: Repository<Episode>, watchLogRepo: Repository<WatchLog>, redisClient: RedisClientType | null);
+    private trackDau;
     updateWatchProgress(userId: number, episodeId: number, stopAtSecond: number): Promise<{
         readonly ok: false;
         readonly reason: "episode_not_found";

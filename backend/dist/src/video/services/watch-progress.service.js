@@ -19,14 +19,32 @@ const typeorm_2 = require("typeorm");
 const watch_progress_entity_1 = require("../entity/watch-progress.entity");
 const episode_entity_1 = require("../entity/episode.entity");
 const watch_log_entity_1 = require("../entity/watch-log.entity");
+const redis_module_1 = require("../../core/redis/redis.module");
 let WatchProgressService = class WatchProgressService {
     watchProgressRepo;
     episodeRepo;
     watchLogRepo;
-    constructor(watchProgressRepo, episodeRepo, watchLogRepo) {
+    redisClient;
+    DAU_TTL = 35 * 24 * 60 * 60;
+    constructor(watchProgressRepo, episodeRepo, watchLogRepo, redisClient) {
         this.watchProgressRepo = watchProgressRepo;
         this.episodeRepo = episodeRepo;
         this.watchLogRepo = watchLogRepo;
+        this.redisClient = redisClient;
+    }
+    async trackDau(userId) {
+        if (!this.redisClient || !userId)
+            return;
+        try {
+            const d = new Date(Date.now() + 8 * 60 * 60 * 1000);
+            const key = `dau:${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}${String(d.getUTCDate()).padStart(2, '0')}`;
+            await this.redisClient.multi()
+                .pfAdd(key, String(userId))
+                .expire(key, this.DAU_TTL)
+                .exec();
+        }
+        catch (e) {
+        }
     }
     async updateWatchProgress(userId, episodeId, stopAtSecond) {
         const episode = await this.episodeRepo.findOne({
@@ -57,6 +75,7 @@ let WatchProgressService = class WatchProgressService {
             });
         }
         await this.watchProgressRepo.save(watchProgress);
+        void this.trackDau(userId);
         if (stopAtSecond > startPosition) {
             try {
                 const watchDuration = stopAtSecond - startPosition;
@@ -175,8 +194,9 @@ exports.WatchProgressService = WatchProgressService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(watch_progress_entity_1.WatchProgress)),
     __param(1, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),
     __param(2, (0, typeorm_1.InjectRepository)(watch_log_entity_1.WatchLog)),
+    __param(3, (0, common_1.Inject)(redis_module_1.REDIS_CLIENT)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository, Object])
 ], WatchProgressService);
 //# sourceMappingURL=watch-progress.service.js.map

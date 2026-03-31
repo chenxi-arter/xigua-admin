@@ -10,6 +10,7 @@ exports.DatabaseModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const database_config_1 = require("../config/database.config");
+const typeorm_2 = require("typeorm");
 let DatabaseModule = class DatabaseModule {
 };
 exports.DatabaseModule = DatabaseModule;
@@ -22,6 +23,14 @@ exports.DatabaseModule = DatabaseModule = __decorate([
                     return databaseConfig.getTypeOrmConfig();
                 },
                 inject: [database_config_1.DatabaseConfig],
+                dataSourceFactory: async (options) => {
+                    const logger = new common_1.Logger('DatabaseModule');
+                    const dataSource = new typeorm_2.DataSource(options);
+                    await dataSource.initialize();
+                    const dbOpts = options;
+                    logger.log(`\x1b[36m🗄️  MySQL connected ✔  ${dbOpts.host}:${dbOpts.port}  db=${dbOpts.database}\x1b[0m`);
+                    return dataSource;
+                },
             }),
         ],
         exports: [typeorm_1.TypeOrmModule],

@@ -39,6 +39,7 @@ const analytics_service_1 = require("./services/analytics.service");
 const watch_log_service_1 = require("../video/services/watch-log.service");
 const watch_logs_cleanup_service_1 = require("../video/services/watch-logs-cleanup.service");
 const export_optimization_service_1 = require("./services/export-optimization.service");
+const dau_service_1 = require("./services/dau.service");
 let AdminModule = class AdminModule {
 };
 exports.AdminModule = AdminModule;
@@ -83,6 +84,7 @@ exports.AdminModule = AdminModule = __decorate([
             watch_log_service_1.WatchLogService,
             watch_logs_cleanup_service_1.WatchLogsCleanupService,
             export_optimization_service_1.ExportOptimizationService,
+            dau_service_1.DauService,
         ],
     })
 ], AdminModule);

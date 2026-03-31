@@ -9,6 +9,7 @@ import { Series } from '../../video/entity/series.entity';
 import { Comment } from '../../video/entity/comment.entity';
 import { ExportSeriesDetailsDto, SeriesDetailData } from '../dto/export-series-details.dto';
 import { WatchLogService } from '../../video/services/watch-log.service';
+import { DauService } from '../services/dau.service';
 export declare class AdminExportController {
     private readonly wpRepo;
     private readonly watchLogRepo;
@@ -19,7 +20,8 @@ export declare class AdminExportController {
     private readonly seriesRepo;
     private readonly commentRepo;
     private readonly watchLogService;
-    constructor(wpRepo: Repository<WatchProgress>, watchLogRepo: Repository<WatchLog>, userRepo: Repository<User>, reactionRepo: Repository<EpisodeReaction>, favoriteRepo: Repository<Favorite>, episodeRepo: Repository<Episode>, seriesRepo: Repository<Series>, commentRepo: Repository<Comment>, watchLogService: WatchLogService);
+    private readonly dauService;
+    constructor(wpRepo: Repository<WatchProgress>, watchLogRepo: Repository<WatchLog>, userRepo: Repository<User>, reactionRepo: Repository<EpisodeReaction>, favoriteRepo: Repository<Favorite>, episodeRepo: Repository<Episode>, seriesRepo: Repository<Series>, commentRepo: Repository<Comment>, watchLogService: WatchLogService, dauService: DauService);
     getPlayStats(startDate: string, endDate: string): Promise<{
         code: number;
         data: any[];
@@ -47,6 +49,26 @@ export declare class AdminExportController {
         message: string;
         timestamp: string;
         data: SeriesDetailData[];
+    }>;
+    getOverviewStats(startDate: string, endDate: string): Promise<{
+        code: number;
+        data: {
+            date: string;
+            new_users: number;
+            active_users: number;
+            launches: number;
+            total_users: number;
+            new_user_ratio: number;
+            retention_next_day: number | null;
+            avg_session_duration: number;
+            avg_daily_duration: number | null;
+            avg_daily_launches: number | null;
+        }[];
+        message?: undefined;
+    } | {
+        code: number;
+        data: null;
+        message: string;
     }>;
     private formatDate;
 }

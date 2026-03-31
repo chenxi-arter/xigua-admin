@@ -26,6 +26,7 @@ const series_entity_1 = require("../../video/entity/series.entity");
 const comment_entity_1 = require("../../video/entity/comment.entity");
 const export_series_details_dto_1 = require("../dto/export-series-details.dto");
 const watch_log_service_1 = require("../../video/services/watch-log.service");
+const dau_service_1 = require("../services/dau.service");
 let AdminExportController = class AdminExportController {
     wpRepo;
     watchLogRepo;
@@ -36,7 +37,8 @@ let AdminExportController = class AdminExportController {
     seriesRepo;
     commentRepo;
     watchLogService;
-    constructor(wpRepo, watchLogRepo, userRepo, reactionRepo, favoriteRepo, episodeRepo, seriesRepo, commentRepo, watchLogService) {
+    dauService;
+    constructor(wpRepo, watchLogRepo, userRepo, reactionRepo, favoriteRepo, episodeRepo, seriesRepo, commentRepo, watchLogService, dauService) {
         this.wpRepo = wpRepo;
         this.watchLogRepo = watchLogRepo;
         this.userRepo = userRepo;
@@ -46,6 +48,7 @@ let AdminExportController = class AdminExportController {
         this.seriesRepo = seriesRepo;
         this.commentRepo = commentRepo;
         this.watchLogService = watchLogService;
+        this.dauService = dauService;
     }
     async getPlayStats(startDate, endDate) {
         try {
@@ -180,21 +183,31 @@ let AdminExportController = class AdminExportController {
                 const nextDayDate = new Date(cohortDate);
                 nextDayDate.setDate(nextDayDate.getDate() + 1);
                 const nextDayStr = nextDayDate.toISOString().split('T')[0];
+                const cohortStart = new Date(item.date);
+                cohortStart.setHours(0, 0, 0, 0);
+                const cohortEnd = new Date(item.date);
+                cohortEnd.setHours(23, 59, 59, 999);
                 const cohortUsers = await this.userRepo
                     .createQueryBuilder('u')
                     .select('u.id', 'id')
-                    .where('DATE(u.created_at) = :date', { date: item.date })
+                    .where('u.created_at >= :cohortStart', { cohortStart })
+                    .andWhere('u.created_at <= :cohortEnd', { cohortEnd })
                     .getRawMany();
                 if (cohortUsers.length === 0) {
                     retentionMap.set(item.date, 0);
                     continue;
                 }
                 const userIds = cohortUsers.map(u => u.id);
+                const nextDayStart = new Date(nextDayStr);
+                nextDayStart.setHours(0, 0, 0, 0);
+                const nextDayEnd = new Date(nextDayStr);
+                nextDayEnd.setHours(23, 59, 59, 999);
                 const wpRetained = await this.wpRepo
                     .createQueryBuilder('wp')
                     .select('DISTINCT wp.user_id', 'userId')
                     .where('wp.user_id IN (:...userIds)', { userIds })
-                    .andWhere('DATE(wp.updated_at) = :nextDay', { nextDay: nextDayStr })
+                    .andWhere('wp.updated_at >= :nextDayStart', { nextDayStart })
+                    .andWhere('wp.updated_at <= :nextDayEnd', { nextDayEnd })
                     .getRawMany();
                 const retainedIds = new Set(wpRetained.map(r => r.userId));
                 const retention = retainedIds.size / cohortUsers.length;
@@ -418,6 +431,195 @@ let AdminExportController = class AdminExportController {
             };
         }
     }
+    async getOverviewStats(startDate, endDate) {
+        try {
+            const start = new Date(startDate);
+            start.setHours(0, 0, 0, 0);
+            const end = new Date(endDate);
+            end.setHours(23, 59, 59, 999);
+            const toLocalDateStr = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const dates = [];
+            const cur = new Date(start);
+            while (cur <= end) {
+                dates.push(toLocalDateStr(cur));
+                cur.setDate(cur.getDate() + 1);
+            }
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const todayStr = toLocalDateStr(today);
+            const newUserRows = await this.userRepo
+                .createQueryBuilder('u')
+                .select("DATE_FORMAT(u.created_at, '%Y-%m-%d')", 'date')
+                .addSelect('COUNT(*)', 'cnt')
+                .where('u.created_at >= :start', { start })
+                .andWhere('u.created_at <= :end', { end })
+                .groupBy('date')
+                .getRawMany();
+            const newUserMap = new Map(newUserRows.map(r => [r.date, parseInt(r.cnt)]));
+            const cumulativeRows = await this.userRepo
+                .createQueryBuilder('u')
+                .select("DATE_FORMAT(u.created_at, '%Y-%m-%d')", 'date')
+                .addSelect('COUNT(*)', 'daily')
+                .where('u.created_at <= :end', { end })
+                .groupBy('date')
+                .orderBy('date', 'ASC')
+                .getRawMany();
+            const cumulativeMap = new Map();
+            let runningTotal = 0;
+            for (const row of cumulativeRows) {
+                runningTotal += parseInt(row.daily);
+                cumulativeMap.set(row.date, runningTotal);
+            }
+            let lastKnownTotal = 0;
+            const sortedCumulativeDates = Array.from(cumulativeMap.keys()).sort();
+            for (const d of sortedCumulativeDates) {
+                if (d < dates[0])
+                    lastKnownTotal = cumulativeMap.get(d);
+            }
+            const totalUsersMap = new Map();
+            let rolling = lastKnownTotal;
+            for (const d of dates) {
+                rolling += newUserMap.get(d) ?? 0;
+                totalUsersMap.set(d, rolling);
+            }
+            const dauRedisMap = await this.dauService.getDAUBatch(dates);
+            const dauMysqlRows = await this.wpRepo.manager.query(`
+        SELECT date, COUNT(DISTINCT user_id) AS dau FROM (
+          SELECT DATE_FORMAT(wp.updated_at, '%Y-%m-%d') AS date, wp.user_id
+          FROM watch_progress wp
+          WHERE wp.updated_at >= ? AND wp.updated_at <= ?
+          UNION
+          SELECT DATE_FORMAT(u.created_at, '%Y-%m-%d') AS date, u.id AS user_id
+          FROM users u
+          WHERE u.created_at >= ? AND u.created_at <= ?
+        ) t
+        GROUP BY date
+      `, [start, end, start, end]);
+            const dauMysqlMap = new Map(dauMysqlRows.map(r => [r.date, parseInt(r.dau)]));
+            const launchRows = await this.wpRepo
+                .createQueryBuilder('wp')
+                .select("DATE_FORMAT(wp.updated_at, '%Y-%m-%d')", 'date')
+                .addSelect('COUNT(*)', 'cnt')
+                .where('wp.updated_at >= :start', { start })
+                .andWhere('wp.updated_at <= :end', { end })
+                .groupBy('date')
+                .getRawMany();
+            const launchMap = new Map(launchRows.map(r => [r.date, parseInt(r.cnt)]));
+            const sessionRows = await this.watchLogRepo
+                .createQueryBuilder('wl')
+                .select('DATE(wl.watch_date)', 'date')
+                .addSelect('AVG(wl.watch_duration)', 'avgSession')
+                .where('wl.watch_date >= :startD', { startD: dates[0] })
+                .andWhere('wl.watch_date <= :endD', { endD: dates[dates.length - 1] })
+                .groupBy('date')
+                .getRawMany();
+            const sessionMap = new Map(sessionRows.map(r => [r.date, Math.round(parseFloat(r.avgSession) || 0)]));
+            const sessionFallbackRows = await this.wpRepo
+                .createQueryBuilder('wp')
+                .select("DATE_FORMAT(wp.updated_at, '%Y-%m-%d')", 'date')
+                .addSelect('AVG(wp.stop_at_second)', 'avgSession')
+                .where('wp.updated_at >= :start', { start })
+                .andWhere('wp.updated_at <= :end', { end })
+                .groupBy('date')
+                .getRawMany();
+            const sessionFallbackMap = new Map(sessionFallbackRows.map(r => [r.date, Math.round(parseFloat(r.avgSession) || 0)]));
+            const dailyDurationRows = await this.watchLogRepo
+                .createQueryBuilder('wl')
+                .select('DATE(wl.watch_date)', 'date')
+                .addSelect('SUM(wl.watch_duration)', 'totalDur')
+                .addSelect('COUNT(DISTINCT wl.user_id)', 'uniqueUsers')
+                .addSelect('COUNT(*)', 'totalSessions')
+                .where('wl.watch_date >= :startD', { startD: dates[0] })
+                .andWhere('wl.watch_date <= :endD', { endD: dates[dates.length - 1] })
+                .groupBy('date')
+                .getRawMany();
+            const dailyDurMap = new Map(dailyDurationRows.map(r => [
+                r.date,
+                {
+                    avgDailyDuration: parseInt(r.uniqueUsers) > 0
+                        ? Math.round(parseInt(r.totalDur) / parseInt(r.uniqueUsers))
+                        : null,
+                    avgDailyLaunches: parseInt(r.uniqueUsers) > 0
+                        ? parseFloat((parseInt(r.totalSessions) / parseInt(r.uniqueUsers)).toFixed(2))
+                        : null,
+                },
+            ]));
+            const retentionMap = new Map();
+            const retentionDates = dates.filter(d => d < todayStr);
+            dates.filter(d => d >= todayStr).forEach(d => retentionMap.set(d, null));
+            if (retentionDates.length > 0) {
+                const retStart = new Date(retentionDates[0]);
+                retStart.setHours(0, 0, 0, 0);
+                const retEnd = new Date(retentionDates[retentionDates.length - 1]);
+                retEnd.setHours(23, 59, 59, 999);
+                const cohortRows = await this.userRepo
+                    .createQueryBuilder('u')
+                    .select("DATE_FORMAT(u.created_at, '%Y-%m-%d')", 'date')
+                    .addSelect('COUNT(*)', 'cnt')
+                    .where('u.created_at >= :retStart', { retStart })
+                    .andWhere('u.created_at <= :retEnd', { retEnd })
+                    .groupBy('date')
+                    .getRawMany();
+                const cohortMap = new Map(cohortRows.map(r => [r.date, parseInt(r.cnt)]));
+                const retentionRows = await this.userRepo
+                    .createQueryBuilder('u')
+                    .select("DATE_FORMAT(u.created_at, '%Y-%m-%d')", 'cohortDate')
+                    .addSelect('COUNT(DISTINCT u.id)', 'retained')
+                    .innerJoin('watch_progress', 'wp', "wp.user_id = u.id AND DATE(wp.updated_at) = DATE(DATE_ADD(u.created_at, INTERVAL 1 DAY))")
+                    .where('u.created_at >= :retStart', { retStart })
+                    .andWhere('u.created_at <= :retEnd', { retEnd })
+                    .groupBy('cohortDate')
+                    .getRawMany();
+                const retainedMap = new Map(retentionRows.map(r => [r.cohortDate, parseInt(r.retained)]));
+                for (const d of retentionDates) {
+                    const cohortSize = cohortMap.get(d) ?? 0;
+                    if (cohortSize === 0) {
+                        retentionMap.set(d, 0);
+                        continue;
+                    }
+                    const retained = retainedMap.get(d) ?? 0;
+                    retentionMap.set(d, parseFloat((retained / cohortSize).toFixed(4)));
+                }
+            }
+            const result = dates
+                .map(d => {
+                const newUsers = newUserMap.get(d) ?? 0;
+                const totalUsers = totalUsersMap.get(d) ?? 0;
+                const redisDau = dauRedisMap.get(d) ?? 0;
+                const mysqlDau = dauMysqlMap.get(d) ?? 0;
+                const activeUsers = Math.max(redisDau, mysqlDau);
+                const launches = launchMap.get(d) ?? 0;
+                const newUserRatio = activeUsers > 0
+                    ? parseFloat(Math.min(newUsers / activeUsers, 1).toFixed(4))
+                    : 0;
+                const avgSessionDuration = sessionMap.get(d) ?? sessionFallbackMap.get(d) ?? 0;
+                const daily = dailyDurMap.get(d);
+                const avgDailyDuration = d >= todayStr ? null : (daily?.avgDailyDuration ?? null);
+                const avgDailyLaunches = d >= todayStr ? null : (daily?.avgDailyLaunches ?? null);
+                return {
+                    date: d,
+                    new_users: newUsers,
+                    active_users: activeUsers,
+                    launches: launches,
+                    total_users: totalUsers,
+                    new_user_ratio: newUserRatio,
+                    retention_next_day: retentionMap.get(d) ?? null,
+                    avg_session_duration: avgSessionDuration,
+                    avg_daily_duration: avgDailyDuration,
+                    avg_daily_launches: avgDailyLaunches,
+                };
+            })
+                .reverse();
+            return { code: 200, data: result };
+        }
+        catch (error) {
+            return {
+                code: 500,
+                data: null,
+                message: `获取运营指标失败: ${error instanceof Error ? error.message : String(error)}`,
+            };
+        }
+    }
     formatDate(dateStr) {
         const date = new Date(dateStr);
         const month = date.getMonth() + 1;
@@ -449,6 +651,14 @@ __decorate([
     __metadata("design:paramtypes", [export_series_details_dto_1.ExportSeriesDetailsDto]),
     __metadata("design:returntype", Promise)
 ], AdminExportController.prototype, "getSeriesDetails", null);
+__decorate([
+    (0, common_1.Get)('overview-stats'),
+    __param(0, (0, common_1.Query)('startDate')),
+    __param(1, (0, common_1.Query)('endDate')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:returntype", Promise)
+], AdminExportController.prototype, "getOverviewStats", null);
 exports.AdminExportController = AdminExportController = __decorate([
     (0, common_1.Controller)('admin/export'),
     __param(0, (0, typeorm_1.InjectRepository)(watch_progress_entity_1.WatchProgress)),
@@ -467,6 +677,7 @@ exports.AdminExportController = AdminExportController = __decorate([
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        watch_log_service_1.WatchLogService])
+        watch_log_service_1.WatchLogService,
+        dau_service_1.DauService])
 ], AdminExportController);
 //# sourceMappingURL=admin-export.controller.js.map

@@ -37,10 +37,15 @@ let AnalyticsService = class AnalyticsService {
     async getDAU(date) {
         const targetDate = date || new Date();
         const dateStr = targetDate.toISOString().split('T')[0];
+        const startDate = new Date(dateStr);
+        startDate.setHours(0, 0, 0, 0);
+        const endDate = new Date(dateStr);
+        endDate.setHours(23, 59, 59, 999);
         const result = await this.wpRepo
             .createQueryBuilder('wp')
             .select('COUNT(DISTINCT wp.user_id)', 'count')
-            .where('DATE(wp.updated_at) = :date', { date: dateStr })
+            .where('wp.updated_at >= :startDate', { startDate })
+            .andWhere('wp.updated_at <= :endDate', { endDate })
             .getRawOne();
         return parseInt(result?.count || '0', 10);
     }
@@ -79,10 +84,15 @@ let AnalyticsService = class AnalyticsService {
     async getRetentionRate(retentionDays = 1, cohortDate, includeBrowseHistory = true) {
         const cohort = cohortDate || new Date();
         const cohortDateStr = cohort.toISOString().split('T')[0];
+        const cohortStart = new Date(cohortDateStr);
+        cohortStart.setHours(0, 0, 0, 0);
+        const cohortEnd = new Date(cohortDateStr);
+        cohortEnd.setHours(23, 59, 59, 999);
         const cohortUsers = await this.userRepo
             .createQueryBuilder('u')
             .select('u.id')
-            .where('DATE(u.created_at) = :cohortDate', { cohortDate: cohortDateStr })
+            .where('u.created_at >= :cohortStart', { cohortStart })
+            .andWhere('u.created_at <= :cohortEnd', { cohortEnd })
             .getMany();
         const totalUsers = cohortUsers.length;
         if (totalUsers === 0) {
@@ -93,11 +103,16 @@ let AnalyticsService = class AnalyticsService {
         retentionDate.setDate(retentionDate.getDate() + retentionDays);
         const retentionDateStr = retentionDate.toISOString().split('T')[0];
         const retainedUserIds = new Set();
+        const retentionStart = new Date(retentionDateStr);
+        retentionStart.setHours(0, 0, 0, 0);
+        const retentionEnd = new Date(retentionDateStr);
+        retentionEnd.setHours(23, 59, 59, 999);
         const wpRows = await this.wpRepo
             .createQueryBuilder('wp')
             .select('DISTINCT wp.user_id', 'userId')
             .where('wp.user_id IN (:...userIds)', { userIds })
-            .andWhere('DATE(wp.updated_at) = :retentionDate', { retentionDate: retentionDateStr })
+            .andWhere('wp.updated_at >= :retentionStart', { retentionStart })
+            .andWhere('wp.updated_at <= :retentionEnd', { retentionEnd })
             .getRawMany();
         wpRows.forEach(r => retainedUserIds.add(r.userId));
         if (includeBrowseHistory) {
@@ -105,7 +120,8 @@ let AnalyticsService = class AnalyticsService {
                 .createQueryBuilder('bh')
                 .select('DISTINCT bh.user_id', 'userId')
                 .where('bh.user_id IN (:...userIds)', { userIds })
-                .andWhere('DATE(bh.updated_at) = :retentionDate', { retentionDate: retentionDateStr })
+                .andWhere('bh.updated_at >= :retentionStart', { retentionStart })
+                .andWhere('bh.updated_at <= :retentionEnd', { retentionEnd })
                 .getRawMany();
             bhRows.forEach(r => retainedUserIds.add(r.userId));
         }
@@ -286,14 +302,24 @@ let AnalyticsService = class AnalyticsService {
         ]);
         const todayStr = today.toISOString().split('T')[0];
         const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const todayStart = new Date(todayStr);
+        todayStart.setHours(0, 0, 0, 0);
+        const todayEnd = new Date(todayStr);
+        todayEnd.setHours(23, 59, 59, 999);
+        const yesterdayStart = new Date(yesterdayStr);
+        yesterdayStart.setHours(0, 0, 0, 0);
+        const yesterdayEnd = new Date(yesterdayStr);
+        yesterdayEnd.setHours(23, 59, 59, 999);
         const [todayRegistrations, yesterdayRegistrations, last7DaysReg, last30DaysReg] = await Promise.all([
             this.userRepo
                 .createQueryBuilder('u')
-                .where('DATE(u.created_at) = :date', { date: todayStr })
+                .where('u.created_at >= :todayStart', { todayStart })
+                .andWhere('u.created_at <= :todayEnd', { todayEnd })
                 .getCount(),
             this.userRepo
                 .createQueryBuilder('u')
-                .where('DATE(u.created_at) = :date', { date: yesterdayStr })
+                .where('u.created_at >= :yesterdayStart', { yesterdayStart })
+                .andWhere('u.created_at <= :yesterdayEnd', { yesterdayEnd })
                 .getCount(),
             this.userRepo.count({
                 where: {

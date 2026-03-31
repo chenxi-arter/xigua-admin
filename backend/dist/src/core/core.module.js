@@ -20,6 +20,7 @@ const redis_config_1 = require("./config/redis.config");
 const cache_manager_1 = require("@nestjs/cache-manager");
 const cache_manager_redis_store_1 = require("cache-manager-redis-store");
 const r2_storage_service_1 = require("./storage/r2-storage.service");
+const redis_module_1 = require("./redis/redis.module");
 let CoreModule = class CoreModule {
     constructor() {
         console.log('🚀 Core infrastructure modules initialized');
@@ -59,6 +60,7 @@ exports.CoreModule = CoreModule = __decorate([
                 inject: [app_config_1.AppConfig],
             }),
             health_module_1.HealthModule,
+            redis_module_1.RedisModule,
         ],
         providers: [r2_storage_service_1.R2StorageService],
         exports: [
@@ -68,6 +70,7 @@ exports.CoreModule = CoreModule = __decorate([
             throttler_1.ThrottlerModule,
             health_module_1.HealthModule,
             r2_storage_service_1.R2StorageService,
+            redis_module_1.RedisModule,
         ],
     }),
     __metadata("design:paramtypes", [])
