@@ -4,16 +4,24 @@ import { WatchProgress } from '../../video/entity/watch-progress.entity';
 import { WatchLog } from '../../video/entity/watch-log.entity';
 import { BrowseHistory } from '../../video/entity/browse-history.entity';
 import { Episode } from '../../video/entity/episode.entity';
+import { DauService } from './dau.service';
 export declare class AnalyticsService {
     private readonly userRepo;
     private readonly wpRepo;
     private readonly watchLogRepo;
     private readonly bhRepo;
     private readonly episodeRepo;
-    constructor(userRepo: Repository<User>, wpRepo: Repository<WatchProgress>, watchLogRepo: Repository<WatchLog>, bhRepo: Repository<BrowseHistory>, episodeRepo: Repository<Episode>);
+    private readonly dauService;
+    private readonly toLocalDateStr;
+    constructor(userRepo: Repository<User>, wpRepo: Repository<WatchProgress>, watchLogRepo: Repository<WatchLog>, bhRepo: Repository<BrowseHistory>, episodeRepo: Repository<Episode>, dauService: DauService);
     getDAU(date?: Date): Promise<number>;
     getWAU(endDate?: Date): Promise<number>;
     getMAU(endDate?: Date): Promise<number>;
+    getActiveUsersForDay(date: Date): Promise<number>;
+    getActiveUsersForDates(dates: string[]): Promise<Map<string, number>>;
+    getLocalDateStr(date: Date): string;
+    enumerateLocalDates(startDate: Date, endDate: Date): string[];
+    getUniqueActiveUsersInRange(startDate: Date, endDate: Date): Promise<number>;
     getRetentionRate(retentionDays?: number, cohortDate?: Date, includeBrowseHistory?: boolean): Promise<{
         totalUsers: number;
         retainedUsers: number;

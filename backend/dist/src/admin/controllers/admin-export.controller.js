@@ -26,7 +26,7 @@ const series_entity_1 = require("../../video/entity/series.entity");
 const comment_entity_1 = require("../../video/entity/comment.entity");
 const export_series_details_dto_1 = require("../dto/export-series-details.dto");
 const watch_log_service_1 = require("../../video/services/watch-log.service");
-const dau_service_1 = require("../services/dau.service");
+const analytics_service_1 = require("../services/analytics.service");
 let AdminExportController = class AdminExportController {
     wpRepo;
     watchLogRepo;
@@ -37,8 +37,8 @@ let AdminExportController = class AdminExportController {
     seriesRepo;
     commentRepo;
     watchLogService;
-    dauService;
-    constructor(wpRepo, watchLogRepo, userRepo, reactionRepo, favoriteRepo, episodeRepo, seriesRepo, commentRepo, watchLogService, dauService) {
+    analyticsService;
+    constructor(wpRepo, watchLogRepo, userRepo, reactionRepo, favoriteRepo, episodeRepo, seriesRepo, commentRepo, watchLogService, analyticsService) {
         this.wpRepo = wpRepo;
         this.watchLogRepo = watchLogRepo;
         this.userRepo = userRepo;
@@ -48,7 +48,7 @@ let AdminExportController = class AdminExportController {
         this.seriesRepo = seriesRepo;
         this.commentRepo = commentRepo;
         this.watchLogService = watchLogService;
-        this.dauService = dauService;
+        this.analyticsService = analyticsService;
     }
     async getPlayStats(startDate, endDate) {
         try {
@@ -437,16 +437,10 @@ let AdminExportController = class AdminExportController {
             start.setHours(0, 0, 0, 0);
             const end = new Date(endDate);
             end.setHours(23, 59, 59, 999);
-            const toLocalDateStr = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-            const dates = [];
-            const cur = new Date(start);
-            while (cur <= end) {
-                dates.push(toLocalDateStr(cur));
-                cur.setDate(cur.getDate() + 1);
-            }
+            const dates = this.analyticsService.enumerateLocalDates(start, end);
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            const todayStr = toLocalDateStr(today);
+            const todayStr = this.analyticsService.getLocalDateStr(today);
             const newUserRows = await this.userRepo
                 .createQueryBuilder('u')
                 .select("DATE_FORMAT(u.created_at, '%Y-%m-%d')", 'date')
@@ -482,20 +476,7 @@ let AdminExportController = class AdminExportController {
                 rolling += newUserMap.get(d) ?? 0;
                 totalUsersMap.set(d, rolling);
             }
-            const dauRedisMap = await this.dauService.getDAUBatch(dates);
-            const dauMysqlRows = await this.wpRepo.manager.query(`
-        SELECT date, COUNT(DISTINCT user_id) AS dau FROM (
-          SELECT DATE_FORMAT(wp.updated_at, '%Y-%m-%d') AS date, wp.user_id
-          FROM watch_progress wp
-          WHERE wp.updated_at >= ? AND wp.updated_at <= ?
-          UNION
-          SELECT DATE_FORMAT(u.created_at, '%Y-%m-%d') AS date, u.id AS user_id
-          FROM users u
-          WHERE u.created_at >= ? AND u.created_at <= ?
-        ) t
-        GROUP BY date
-      `, [start, end, start, end]);
-            const dauMysqlMap = new Map(dauMysqlRows.map(r => [r.date, parseInt(r.dau)]));
+            const activeUsersMap = await this.analyticsService.getActiveUsersForDates(dates);
             const launchRows = await this.wpRepo
                 .createQueryBuilder('wp')
                 .select("DATE_FORMAT(wp.updated_at, '%Y-%m-%d')", 'date')
@@ -585,9 +566,7 @@ let AdminExportController = class AdminExportController {
                 .map(d => {
                 const newUsers = newUserMap.get(d) ?? 0;
                 const totalUsers = totalUsersMap.get(d) ?? 0;
-                const redisDau = dauRedisMap.get(d) ?? 0;
-                const mysqlDau = dauMysqlMap.get(d) ?? 0;
-                const activeUsers = Math.max(redisDau, mysqlDau);
+                const activeUsers = activeUsersMap.get(d) ?? 0;
                 const launches = launchMap.get(d) ?? 0;
                 const newUserRatio = activeUsers > 0
                     ? parseFloat(Math.min(newUsers / activeUsers, 1).toFixed(4))
@@ -678,6 +657,6 @@ exports.AdminExportController = AdminExportController = __decorate([
         typeorm_2.Repository,
         typeorm_2.Repository,
         watch_log_service_1.WatchLogService,
-        dau_service_1.DauService])
+        analytics_service_1.AnalyticsService])
 ], AdminExportController);
 //# sourceMappingURL=admin-export.controller.js.map

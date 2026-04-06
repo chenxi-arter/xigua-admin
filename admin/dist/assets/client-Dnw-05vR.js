@@ -1,0 +1,1 @@
+import{a as s}from"./utils-vendor-NIGUFBhG.js";const a=s.create({timeout:6e4,timeoutErrorMessage:"请求超时,请检查网络连接或稍后重试"});a.interceptors.request.use(e=>{const t=e.method?.toLowerCase(),r=e.url||"";return!t||!["put","patch","delete"].includes(t)||!r.startsWith("/api")||(e.headers=e.headers||{},e.headers["X-HTTP-Method-Override"]=t.toUpperCase(),e.method="post"),e});export{a};
