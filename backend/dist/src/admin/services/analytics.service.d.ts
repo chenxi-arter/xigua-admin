@@ -12,7 +12,11 @@ export declare class AnalyticsService {
     private readonly bhRepo;
     private readonly episodeRepo;
     private readonly dauService;
-    private readonly toLocalDateStr;
+    private readonly TZ_OFFSET_MS;
+    private toBusinessDateStr;
+    private getBusinessDayRangeByDateStr;
+    private getBusinessDayRange;
+    private shiftBusinessDate;
     constructor(userRepo: Repository<User>, wpRepo: Repository<WatchProgress>, watchLogRepo: Repository<WatchLog>, bhRepo: Repository<BrowseHistory>, episodeRepo: Repository<Episode>, dauService: DauService);
     getDAU(date?: Date): Promise<number>;
     getWAU(endDate?: Date): Promise<number>;

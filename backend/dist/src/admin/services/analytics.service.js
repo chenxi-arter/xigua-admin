@@ -29,7 +29,30 @@ let AnalyticsService = class AnalyticsService {
     bhRepo;
     episodeRepo;
     dauService;
-    toLocalDateStr = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    TZ_OFFSET_MS = 8 * 60 * 60 * 1000;
+    toBusinessDateStr(date) {
+        const businessDate = new Date(date.getTime() + this.TZ_OFFSET_MS);
+        const y = businessDate.getUTCFullYear();
+        const m = String(businessDate.getUTCMonth() + 1).padStart(2, '0');
+        const d = String(businessDate.getUTCDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+    getBusinessDayRangeByDateStr(dateStr) {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const startDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0) - this.TZ_OFFSET_MS);
+        const endDate = new Date(startDate.getTime() + 24 * 60 * 60 * 1000 - 1);
+        return { startDate, endDate };
+    }
+    getBusinessDayRange(date) {
+        const dateStr = this.toBusinessDateStr(date);
+        const { startDate, endDate } = this.getBusinessDayRangeByDateStr(dateStr);
+        return { dateStr, startDate, endDate };
+    }
+    shiftBusinessDate(dateStr, deltaDays) {
+        const { startDate } = this.getBusinessDayRangeByDateStr(dateStr);
+        const shifted = new Date(startDate.getTime() + deltaDays * 24 * 60 * 60 * 1000);
+        return this.toBusinessDateStr(shifted);
+    }
     constructor(userRepo, wpRepo, watchLogRepo, bhRepo, episodeRepo, dauService) {
         this.userRepo = userRepo;
         this.wpRepo = wpRepo;
@@ -39,37 +62,20 @@ let AnalyticsService = class AnalyticsService {
         this.dauService = dauService;
     }
     async getDAU(date) {
-        const targetDate = date || new Date();
-        const startDate = new Date(targetDate);
-        startDate.setHours(0, 0, 0, 0);
-        const endDate = new Date(targetDate);
-        endDate.setHours(23, 59, 59, 999);
-        return this.getActiveUsersForDay(startDate);
+        return this.getActiveUsersForDay(date || new Date());
     }
     async getWAU(endDate) {
-        const end = endDate || new Date();
-        const rangeEnd = new Date(end);
-        rangeEnd.setHours(23, 59, 59, 999);
-        const rangeStart = new Date(end);
-        rangeStart.setDate(rangeStart.getDate() - 6);
-        rangeStart.setHours(0, 0, 0, 0);
+        const { dateStr, endDate: rangeEnd } = this.getBusinessDayRange(endDate || new Date());
+        const { startDate: rangeStart } = this.getBusinessDayRangeByDateStr(this.shiftBusinessDate(dateStr, -6));
         return this.getUniqueActiveUsersInRange(rangeStart, rangeEnd);
     }
     async getMAU(endDate) {
-        const end = endDate || new Date();
-        const rangeEnd = new Date(end);
-        rangeEnd.setHours(23, 59, 59, 999);
-        const rangeStart = new Date(end);
-        rangeStart.setDate(rangeStart.getDate() - 29);
-        rangeStart.setHours(0, 0, 0, 0);
+        const { dateStr, endDate: rangeEnd } = this.getBusinessDayRange(endDate || new Date());
+        const { startDate: rangeStart } = this.getBusinessDayRangeByDateStr(this.shiftBusinessDate(dateStr, -29));
         return this.getUniqueActiveUsersInRange(rangeStart, rangeEnd);
     }
     async getActiveUsersForDay(date) {
-        const startDate = new Date(date);
-        startDate.setHours(0, 0, 0, 0);
-        const endDate = new Date(date);
-        endDate.setHours(23, 59, 59, 999);
-        const dateStr = this.toLocalDateStr(startDate);
+        const { dateStr, startDate, endDate } = this.getBusinessDayRange(date);
         const redisCount = (await this.dauService.getDAU(dateStr)) ?? 0;
         const mysqlCount = await this.getUniqueActiveUsersInRange(startDate, endDate);
         return Math.max(redisCount, mysqlCount);
@@ -79,17 +85,15 @@ let AnalyticsService = class AnalyticsService {
         if (dates.length === 0)
             return result;
         const dauRedisMap = await this.dauService.getDAUBatch(dates);
-        const startDate = new Date(dates[0]);
-        startDate.setHours(0, 0, 0, 0);
-        const endDate = new Date(dates[dates.length - 1]);
-        endDate.setHours(23, 59, 59, 999);
+        const { startDate } = this.getBusinessDayRangeByDateStr(dates[0]);
+        const { endDate } = this.getBusinessDayRangeByDateStr(dates[dates.length - 1]);
         const rows = await this.wpRepo.manager.query(`
         SELECT date, COUNT(DISTINCT user_id) AS count FROM (
-          SELECT DATE_FORMAT(wp.updated_at, '%Y-%m-%d') AS date, wp.user_id
+          SELECT DATE_FORMAT(DATE_ADD(wp.updated_at, INTERVAL 8 HOUR), '%Y-%m-%d') AS date, wp.user_id
           FROM watch_progress wp
           WHERE wp.updated_at >= ? AND wp.updated_at <= ?
           UNION
-          SELECT DATE_FORMAT(u.created_at, '%Y-%m-%d') AS date, u.id AS user_id
+          SELECT DATE_FORMAT(DATE_ADD(u.created_at, INTERVAL 8 HOUR), '%Y-%m-%d') AS date, u.id AS user_id
           FROM users u
           WHERE u.created_at >= ? AND u.created_at <= ?
         ) t
@@ -107,17 +111,15 @@ let AnalyticsService = class AnalyticsService {
         return result;
     }
     getLocalDateStr(date) {
-        return this.toLocalDateStr(date);
+        return this.toBusinessDateStr(date);
     }
     enumerateLocalDates(startDate, endDate) {
         const dates = [];
-        const cursor = new Date(startDate);
-        cursor.setHours(0, 0, 0, 0);
-        const lastDate = new Date(endDate);
-        lastDate.setHours(0, 0, 0, 0);
-        while (cursor <= lastDate) {
-            dates.push(this.toLocalDateStr(cursor));
-            cursor.setDate(cursor.getDate() + 1);
+        let current = this.toBusinessDateStr(startDate);
+        const last = this.toBusinessDateStr(endDate);
+        while (current <= last) {
+            dates.push(current);
+            current = this.shiftBusinessDate(current, 1);
         }
         return dates;
     }
