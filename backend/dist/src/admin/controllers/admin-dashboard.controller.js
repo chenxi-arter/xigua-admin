@@ -71,7 +71,8 @@ let AdminDashboardController = class AdminDashboardController {
         const start = toDateStart(from);
         const end = toDateEnd(to);
         const now = new Date();
-        const dayAgo = new Date(Date.now() - 24 * 3600 * 1000);
+        const todayDateStr = this.analyticsService.getLocalDateStr(now);
+        const { startDate: todayStart, endDate: todayEnd } = this.analyticsService.getLocalDateRange(todayDateStr);
         const [usersTotal, seriesTotal, episodesTotal, bannersTotal, commentsTotal] = await Promise.all([
             this.userRepo.count(),
             this.seriesRepo.count(),
@@ -90,15 +91,18 @@ let AdminDashboardController = class AdminDashboardController {
             .getCount();
         const newUsers24h = await this.userRepo
             .createQueryBuilder('u')
-            .where('u.created_at > :dayAgo', { dayAgo })
+            .where('u.created_at >= :todayStart', { todayStart })
+            .andWhere('u.created_at <= :todayEnd', { todayEnd })
             .getCount();
         const comments24h = await this.commentRepo
             .createQueryBuilder('c')
-            .where('c.created_at > :dayAgo', { dayAgo })
+            .where('c.created_at >= :todayStart', { todayStart })
+            .andWhere('c.created_at <= :todayEnd', { todayEnd })
             .getCount();
         const visits24h = await this.bhRepo
             .createQueryBuilder('bh')
-            .where('bh.updated_at > :dayAgo', { dayAgo })
+            .where('bh.updated_at >= :todayStart', { todayStart })
+            .andWhere('bh.updated_at <= :todayEnd', { todayEnd })
             .getCount();
         const playSumRaw = await this.episodeRepo
             .createQueryBuilder('ep')
