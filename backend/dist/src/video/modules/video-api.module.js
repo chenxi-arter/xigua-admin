@@ -69,6 +69,7 @@ const filter_type_entity_1 = require("../entity/filter-type.entity");
 const filter_option_entity_1 = require("../entity/filter-option.entity");
 const series_genre_option_entity_1 = require("../entity/series-genre-option.entity");
 const user_entity_1 = require("../../user/entity/user.entity");
+const dau_service_1 = require("../../admin/services/dau.service");
 let VideoApiModule = class VideoApiModule {
 };
 exports.VideoApiModule = VideoApiModule;
@@ -127,6 +128,7 @@ exports.VideoApiModule = VideoApiModule = __decorate([
             comment_like_service_1.CommentLikeService,
             notification_service_1.NotificationService,
             recommend_service_1.RecommendService,
+            dau_service_1.DauService,
             app_logger_service_1.AppLoggerService,
             app_config_service_1.AppConfigService,
         ],

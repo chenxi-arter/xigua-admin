@@ -19,6 +19,8 @@ const banner_metric_daily_entity_1 = require("../entity/banner-metric-daily.enti
 const browse_history_entity_1 = require("../entity/browse-history.entity");
 const comment_entity_1 = require("../entity/comment.entity");
 const comment_like_entity_1 = require("../entity/comment-like.entity");
+const watch_progress_entity_1 = require("../entity/watch-progress.entity");
+const watch_log_entity_1 = require("../entity/watch-log.entity");
 const series_service_1 = require("../services/series.service");
 const episode_service_1 = require("../services/episode.service");
 const browse_history_service_1 = require("../services/browse-history.service");
@@ -28,6 +30,7 @@ const comment_service_1 = require("../services/comment.service");
 const comment_like_service_1 = require("../services/comment-like.service");
 const fake_comment_service_1 = require("../services/fake-comment.service");
 const catalog_module_1 = require("./catalog.module");
+const dau_service_1 = require("../../admin/services/dau.service");
 let SeriesModule = class SeriesModule {
 };
 exports.SeriesModule = SeriesModule;
@@ -35,13 +38,14 @@ exports.SeriesModule = SeriesModule = __decorate([
     (0, common_1.Module)({
         imports: [
             catalog_module_1.CatalogModule,
-            typeorm_1.TypeOrmModule.forFeature([series_entity_1.Series, episode_entity_1.Episode, episode_url_entity_1.EpisodeUrl, category_entity_1.Category, filter_option_entity_1.FilterOption, browse_history_entity_1.BrowseHistory, banner_entity_1.Banner, banner_metric_daily_entity_1.BannerMetricDaily, comment_entity_1.Comment, comment_like_entity_1.CommentLike])
+            typeorm_1.TypeOrmModule.forFeature([series_entity_1.Series, episode_entity_1.Episode, episode_url_entity_1.EpisodeUrl, category_entity_1.Category, filter_option_entity_1.FilterOption, browse_history_entity_1.BrowseHistory, banner_entity_1.Banner, banner_metric_daily_entity_1.BannerMetricDaily, comment_entity_1.Comment, comment_like_entity_1.CommentLike, watch_progress_entity_1.WatchProgress, watch_log_entity_1.WatchLog])
         ],
         providers: [
             series_service_1.SeriesService,
             episode_service_1.EpisodeService,
             browse_history_service_1.BrowseHistoryService,
             watch_progress_service_1.WatchProgressService,
+            dau_service_1.DauService,
             banner_service_1.BannerService,
             fake_comment_service_1.FakeCommentService,
             comment_service_1.CommentService,

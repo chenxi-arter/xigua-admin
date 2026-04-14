@@ -56,6 +56,7 @@ const episode_interaction_service_1 = require("./services/episode-interaction.se
 const category_validator_1 = require("../common/validators/category-validator");
 const search_suggestions_service_1 = require("./services/search-suggestions.service");
 const search_controller_1 = require("./controllers/search.controller");
+const dau_service_1 = require("../admin/services/dau.service");
 let VideoModule = class VideoModule {
 };
 exports.VideoModule = VideoModule;
@@ -108,6 +109,7 @@ exports.VideoModule = VideoModule = __decorate([
             browse_history_service_1.BrowseHistoryService,
             browse_history_cleanup_service_1.BrowseHistoryCleanupService,
             search_suggestions_service_1.SearchSuggestionsService,
+            dau_service_1.DauService,
             app_logger_service_1.AppLoggerService,
             app_config_service_1.AppConfigService,
             channel_exists_validator_1.IsValidChannelExistsConstraint,

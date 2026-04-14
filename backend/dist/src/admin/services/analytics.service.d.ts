@@ -24,6 +24,11 @@ export declare class AnalyticsService {
     getActiveUsersForDay(date: Date): Promise<number>;
     getActiveUsersForDates(dates: string[]): Promise<Map<string, number>>;
     getLocalDateStr(date: Date): string;
+    getLocalDateRange(dateStr: string): {
+        startDate: Date;
+        endDate: Date;
+    };
+    enumerateLocalDateStrings(startDateStr: string, endDateStr: string): string[];
     enumerateLocalDates(startDate: Date, endDate: Date): string[];
     getUniqueActiveUsersInRange(startDate: Date, endDate: Date): Promise<number>;
     getRetentionRate(retentionDays?: number, cohortDate?: Date, includeBrowseHistory?: boolean): Promise<{

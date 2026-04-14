@@ -12,15 +12,18 @@ const typeorm_1 = require("@nestjs/typeorm");
 const episode_entity_1 = require("../entity/episode.entity");
 const episode_url_entity_1 = require("../entity/episode-url.entity");
 const series_entity_1 = require("../entity/series.entity");
+const watch_progress_entity_1 = require("../entity/watch-progress.entity");
+const watch_log_entity_1 = require("../entity/watch-log.entity");
 const episode_service_1 = require("../services/episode.service");
 const watch_progress_service_1 = require("../services/watch-progress.service");
+const dau_service_1 = require("../../admin/services/dau.service");
 let EpisodeModule = class EpisodeModule {
 };
 exports.EpisodeModule = EpisodeModule;
 exports.EpisodeModule = EpisodeModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([episode_entity_1.Episode, episode_url_entity_1.EpisodeUrl, series_entity_1.Series])],
-        providers: [episode_service_1.EpisodeService, watch_progress_service_1.WatchProgressService],
+        imports: [typeorm_1.TypeOrmModule.forFeature([episode_entity_1.Episode, episode_url_entity_1.EpisodeUrl, series_entity_1.Series, watch_progress_entity_1.WatchProgress, watch_log_entity_1.WatchLog])],
+        providers: [episode_service_1.EpisodeService, watch_progress_service_1.WatchProgressService, dau_service_1.DauService],
         exports: [episode_service_1.EpisodeService, watch_progress_service_1.WatchProgressService, typeorm_1.TypeOrmModule],
     })
 ], EpisodeModule);

@@ -113,6 +113,18 @@ let AnalyticsService = class AnalyticsService {
     getLocalDateStr(date) {
         return this.toBusinessDateStr(date);
     }
+    getLocalDateRange(dateStr) {
+        return this.getBusinessDayRangeByDateStr(dateStr);
+    }
+    enumerateLocalDateStrings(startDateStr, endDateStr) {
+        const dates = [];
+        let current = startDateStr;
+        while (current <= endDateStr) {
+            dates.push(current);
+            current = this.shiftBusinessDate(current, 1);
+        }
+        return dates;
+    }
     enumerateLocalDates(startDate, endDate) {
         const dates = [];
         let current = this.toBusinessDateStr(startDate);
