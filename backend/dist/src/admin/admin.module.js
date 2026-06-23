@@ -22,6 +22,7 @@ const watch_log_entity_1 = require("../video/entity/watch-log.entity");
 const browse_history_entity_1 = require("../video/entity/browse-history.entity");
 const episode_reaction_entity_1 = require("../video/entity/episode-reaction.entity");
 const favorite_entity_1 = require("../user/entity/favorite.entity");
+const user_online_daily_entity_1 = require("../user/entity/user-online-daily.entity");
 const filter_option_entity_1 = require("../video/entity/filter-option.entity");
 const controllers_1 = require("./controllers");
 const admin_categories_controller_1 = require("./controllers/admin-categories.controller");
@@ -32,9 +33,11 @@ const admin_series_controller_1 = require("./controllers/admin-series.controller
 const admin_dashboard_controller_1 = require("./controllers/admin-dashboard.controller");
 const series_validation_controller_1 = require("./controllers/series-validation.controller");
 const admin_export_controller_1 = require("./controllers/admin-export.controller");
+const admin_auth_controller_1 = require("./controllers/admin-auth.controller");
 const video_module_1 = require("../video/video.module");
 const core_module_1 = require("../core/core.module");
 const advertising_module_1 = require("../advertising/advertising.module");
+const admin_auth_module_1 = require("./admin-auth.module");
 const analytics_service_1 = require("./services/analytics.service");
 const watch_log_service_1 = require("../video/services/watch-log.service");
 const watch_logs_cleanup_service_1 = require("../video/services/watch-logs-cleanup.service");
@@ -49,6 +52,7 @@ exports.AdminModule = AdminModule = __decorate([
             video_module_1.VideoModule,
             core_module_1.CoreModule,
             advertising_module_1.AdvertisingModule,
+            admin_auth_module_1.AdminAuthModule,
             typeorm_1.TypeOrmModule.forFeature([
                 user_entity_1.User,
                 banner_entity_1.Banner,
@@ -63,10 +67,12 @@ exports.AdminModule = AdminModule = __decorate([
                 category_entity_1.Category,
                 episode_reaction_entity_1.EpisodeReaction,
                 favorite_entity_1.Favorite,
+                user_online_daily_entity_1.UserOnlineDaily,
                 filter_option_entity_1.FilterOption,
             ])
         ],
         controllers: [
+            admin_auth_controller_1.AdminAuthController,
             controllers_1.AdminUsersController,
             controllers_1.AdminBannersController,
             admin_categories_controller_1.AdminCategoriesController,

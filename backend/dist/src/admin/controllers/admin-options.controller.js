@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const filter_option_entity_1 = require("../../video/entity/filter-option.entity");
+const admin_jwt_auth_guard_1 = require("../guards/admin-jwt-auth.guard");
 let AdminOptionsController = class AdminOptionsController {
     filterOptionRepo;
     constructor(filterOptionRepo) {
@@ -104,6 +105,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AdminOptionsController.prototype, "getOptions", null);
 exports.AdminOptionsController = AdminOptionsController = __decorate([
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
     (0, common_1.Controller)('admin/options'),
     __param(0, (0, typeorm_1.InjectRepository)(filter_option_entity_1.FilterOption)),
     __metadata("design:paramtypes", [typeorm_2.Repository])

@@ -16,6 +16,7 @@ exports.AdminPlatformController = void 0;
 const common_1 = require("@nestjs/common");
 const services_1 = require("../services");
 const dto_1 = require("../dto");
+const admin_jwt_auth_guard_1 = require("../../admin/guards/admin-jwt-auth.guard");
 let AdminPlatformController = class AdminPlatformController {
     platformService;
     constructor(platformService) {
@@ -190,6 +191,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AdminPlatformController.prototype, "remove", null);
 exports.AdminPlatformController = AdminPlatformController = __decorate([
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
     (0, common_1.Controller)('admin/advertising/platforms'),
     __metadata("design:paramtypes", [services_1.PlatformService])
 ], AdminPlatformController);

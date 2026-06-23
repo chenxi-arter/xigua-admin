@@ -9,6 +9,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AdvertisingModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
+const auth_module_1 = require("../auth/auth.module");
+const admin_auth_module_1 = require("../admin/admin-auth.module");
 const entity_1 = require("./entity");
 const services_1 = require("./services");
 const controllers_1 = require("./controllers");
@@ -18,6 +20,8 @@ exports.AdvertisingModule = AdvertisingModule;
 exports.AdvertisingModule = AdvertisingModule = __decorate([
     (0, common_1.Module)({
         imports: [
+            auth_module_1.AuthModule,
+            admin_auth_module_1.AdminAuthModule,
             typeorm_1.TypeOrmModule.forFeature([
                 entity_1.AdvertisingPlatform,
                 entity_1.AdvertisingCampaign,

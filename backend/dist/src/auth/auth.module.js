@@ -21,12 +21,17 @@ const account_merge_service_1 = require("./account-merge.service");
 const auth_controller_1 = require("./auth.controller");
 const refresh_token_entity_1 = require("./entity/refresh-token.entity");
 const user_entity_1 = require("../user/entity/user.entity");
+const user_online_daily_entity_1 = require("../user/entity/user-online-daily.entity");
 const watch_progress_entity_1 = require("../video/entity/watch-progress.entity");
 const favorite_entity_1 = require("../user/entity/favorite.entity");
 const episode_reaction_entity_1 = require("../video/entity/episode-reaction.entity");
 const comment_entity_1 = require("../video/entity/comment.entity");
 const comment_like_entity_1 = require("../video/entity/comment-like.entity");
 const user_module_1 = require("../user/user.module");
+const core_module_1 = require("../core/core.module");
+const dau_service_1 = require("../admin/services/dau.service");
+const jwt_auth_guard_1 = require("./guards/jwt-auth.guard");
+const optional_jwt_auth_guard_1 = require("./guards/optional-jwt-auth.guard");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -38,6 +43,7 @@ exports.AuthModule = AuthModule = __decorate([
             typeorm_1.TypeOrmModule.forFeature([
                 refresh_token_entity_1.RefreshToken,
                 user_entity_1.User,
+                user_online_daily_entity_1.UserOnlineDaily,
                 watch_progress_entity_1.WatchProgress,
                 favorite_entity_1.Favorite,
                 episode_reaction_entity_1.EpisodeReaction,
@@ -45,6 +51,7 @@ exports.AuthModule = AuthModule = __decorate([
                 comment_like_entity_1.CommentLike,
             ]),
             (0, common_1.forwardRef)(() => user_module_1.UserModule),
+            core_module_1.CoreModule,
             jwt_1.JwtModule.registerAsync({
                 useFactory: (configService) => ({
                     secret: configService.get('JWT_SECRET'),
@@ -63,6 +70,9 @@ exports.AuthModule = AuthModule = __decorate([
             telegram_auth_service_1.TelegramAuthService,
             guest_service_1.GuestService,
             account_merge_service_1.AccountMergeService,
+            dau_service_1.DauService,
+            jwt_auth_guard_1.JwtAuthGuard,
+            optional_jwt_auth_guard_1.OptionalJwtAuthGuard,
         ],
         exports: [
             passport_1.PassportModule,
@@ -71,6 +81,8 @@ exports.AuthModule = AuthModule = __decorate([
             telegram_auth_service_1.TelegramAuthService,
             guest_service_1.GuestService,
             account_merge_service_1.AccountMergeService,
+            jwt_auth_guard_1.JwtAuthGuard,
+            optional_jwt_auth_guard_1.OptionalJwtAuthGuard,
         ],
     })
 ], AuthModule);

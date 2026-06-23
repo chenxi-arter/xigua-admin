@@ -24,12 +24,23 @@ const update_nickname_dto_1 = require("./dto/update-nickname.dto");
 const update_password_dto_1 = require("./dto/update-password.dto");
 const update_avatar_dto_1 = require("./dto/update-avatar.dto");
 const default_avatar_util_1 = require("../common/utils/default-avatar.util");
+const typeorm_1 = require("@nestjs/typeorm");
+const typeorm_2 = require("typeorm");
+const user_online_daily_entity_1 = require("./entity/user-online-daily.entity");
 let UserController = class UserController {
     userService;
     authService;
-    constructor(userService, authService) {
+    onlineDailyRepo;
+    constructor(userService, authService, onlineDailyRepo) {
         this.userService = userService;
         this.authService = authService;
+        this.onlineDailyRepo = onlineDailyRepo;
+    }
+    async heartbeat(req) {
+        const userId = req.user.userId;
+        const today = new Date().toISOString().slice(0, 10);
+        await this.userService.recordHeartbeat(userId, today);
+        return { ok: true };
     }
     async getMe(req) {
         const user = await this.userService.findUserById(req.user.userId);
@@ -80,6 +91,14 @@ let UserController = class UserController {
     }
 };
 exports.UserController = UserController;
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Post)('heartbeat'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UserController.prototype, "heartbeat", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Get)('me'),
@@ -158,7 +177,9 @@ __decorate([
 exports.UserController = UserController = __decorate([
     (0, swagger_1.ApiTags)('用户'),
     (0, common_1.Controller)('user'),
+    __param(2, (0, typeorm_1.InjectRepository)(user_online_daily_entity_1.UserOnlineDaily)),
     __metadata("design:paramtypes", [user_service_1.UserService,
-        auth_service_1.AuthService])
+        auth_service_1.AuthService,
+        typeorm_2.Repository])
 ], UserController);
 //# sourceMappingURL=user.controller.js.map

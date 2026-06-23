@@ -106,25 +106,37 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
-    (0, class_transformer_1.Transform)(({ value }) => parseInt(value) || 5000),
+    (0, class_transformer_1.Transform)(({ value }) => {
+        const parsed = parseInt(value);
+        return !isNaN(parsed) && parsed > 0 ? parsed : 5000;
+    }),
     __metadata("design:type", Number)
 ], RedisConfig.prototype, "connectTimeout", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
-    (0, class_transformer_1.Transform)(({ value }) => parseInt(value) || 3000),
+    (0, class_transformer_1.Transform)(({ value }) => {
+        const parsed = parseInt(value);
+        return !isNaN(parsed) && parsed > 0 ? parsed : 3000;
+    }),
     __metadata("design:type", Number)
 ], RedisConfig.prototype, "lazyConnect", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
-    (0, class_transformer_1.Transform)(({ value }) => parseInt(value) || 3),
+    (0, class_transformer_1.Transform)(({ value }) => {
+        const parsed = parseInt(value);
+        return !isNaN(parsed) && parsed > 0 ? parsed : 3;
+    }),
     __metadata("design:type", Number)
 ], RedisConfig.prototype, "retryAttempts", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
-    (0, class_transformer_1.Transform)(({ value }) => parseInt(value) || 3000),
+    (0, class_transformer_1.Transform)(({ value }) => {
+        const parsed = parseInt(value);
+        return !isNaN(parsed) && parsed > 0 ? parsed : 3000;
+    }),
     __metadata("design:type", Number)
 ], RedisConfig.prototype, "retryDelay", void 0);
 __decorate([

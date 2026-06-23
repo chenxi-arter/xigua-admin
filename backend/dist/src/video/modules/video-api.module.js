@@ -9,11 +9,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.VideoApiModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
-const video_controller_1 = require("../video.controller");
-const public_video_controller_1 = require("../public-video.controller");
-const home_controller_1 = require("../home.controller");
-const list_controller_1 = require("../list.controller");
-const category_controller_1 = require("../category.controller");
+const video_controller_1 = require("../controllers/video.controller");
+const public_video_controller_1 = require("../controllers/public-video.controller");
+const home_controller_1 = require("../controllers/home.controller");
+const list_controller_1 = require("../controllers/list.controller");
+const category_controller_1 = require("../controllers/category.controller");
 const banner_controller_1 = require("../controllers/banner.controller");
 const progress_controller_1 = require("../controllers/progress.controller");
 const comment_controller_1 = require("../controllers/comment.controller");
@@ -54,6 +54,7 @@ const catalog_module_1 = require("./catalog.module");
 const series_module_1 = require("./series.module");
 const episode_module_1 = require("./episode.module");
 const banner_module_1 = require("./banner.module");
+const auth_module_1 = require("../../auth/auth.module");
 const series_entity_1 = require("../entity/series.entity");
 const episode_entity_1 = require("../entity/episode.entity");
 const episode_url_entity_1 = require("../entity/episode-url.entity");
@@ -80,6 +81,7 @@ exports.VideoApiModule = VideoApiModule = __decorate([
             series_module_1.SeriesModule,
             episode_module_1.EpisodeModule,
             banner_module_1.BannerModule,
+            (0, common_1.forwardRef)(() => auth_module_1.AuthModule),
             typeorm_1.TypeOrmModule.forFeature([
                 series_entity_1.Series, episode_entity_1.Episode, episode_url_entity_1.EpisodeUrl, episode_reaction_entity_1.EpisodeReaction, comment_entity_1.Comment, comment_like_entity_1.CommentLike, watch_progress_entity_1.WatchProgress, watch_log_entity_1.WatchLog, category_entity_1.Category, short_video_entity_1.ShortVideo, banner_entity_1.Banner, filter_type_entity_1.FilterType, filter_option_entity_1.FilterOption,
                 series_genre_option_entity_1.SeriesGenreOption, user_entity_1.User

@@ -24,7 +24,7 @@ export declare class AdminDashboardController {
     overview(from?: string, to?: string): Promise<{
         users: {
             total: number;
-            new24h: number;
+            newToday: number;
             activeLogins: number;
             lastLoginAtLatest: Date | null;
         };
@@ -42,11 +42,11 @@ export declare class AdminDashboardController {
         };
         comments: {
             total: number;
-            new24h: number;
+            newToday: number;
         };
         plays: {
             totalPlayCount: number;
-            last24hVisits: number;
+            todayVisits: number;
         };
         range: {
             usersInRange: number;

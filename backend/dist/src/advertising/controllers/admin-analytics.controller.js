@@ -16,6 +16,7 @@ exports.AdminAnalyticsController = void 0;
 const common_1 = require("@nestjs/common");
 const services_1 = require("../services");
 const dto_1 = require("../dto");
+const admin_jwt_auth_guard_1 = require("../../admin/guards/admin-jwt-auth.guard");
 let AdminAnalyticsController = class AdminAnalyticsController {
     analyticsService;
     constructor(analyticsService) {
@@ -54,6 +55,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AdminAnalyticsController.prototype, "getPlatformComparison", null);
 exports.AdminAnalyticsController = AdminAnalyticsController = __decorate([
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
     (0, common_1.Controller)('admin/advertising'),
     __metadata("design:paramtypes", [services_1.AnalyticsService])
 ], AdminAnalyticsController);

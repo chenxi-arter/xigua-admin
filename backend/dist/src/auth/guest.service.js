@@ -18,14 +18,17 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const user_entity_1 = require("../user/entity/user.entity");
+const user_online_daily_entity_1 = require("../user/entity/user-online-daily.entity");
 const auth_service_1 = require("./auth.service");
 const crypto_1 = require("crypto");
 let GuestService = GuestService_1 = class GuestService {
     userRepo;
+    onlineDailyRepo;
     authService;
     logger = new common_1.Logger(GuestService_1.name);
-    constructor(userRepo, authService) {
+    constructor(userRepo, onlineDailyRepo, authService) {
         this.userRepo = userRepo;
+        this.onlineDailyRepo = onlineDailyRepo;
         this.authService = authService;
     }
     async guestLogin(guestToken, deviceInfo) {
@@ -41,6 +44,14 @@ let GuestService = GuestService_1 = class GuestService {
             isNewGuest = true;
         }
         const tokens = await this.authService.generateTokens(user, deviceInfo || 'Guest User');
+        const today = new Date().toISOString().slice(0, 10);
+        try {
+            await this.onlineDailyRepo.query(`INSERT INTO user_online_daily (user_id, date, duration) VALUES (?, ?, 0)
+         ON DUPLICATE KEY UPDATE user_id = user_id`, [user.id, today]);
+        }
+        catch (e) {
+            this.logger.warn(`recordUserActive failed for guest user ${user.id}`);
+        }
         return {
             ...tokens,
             guestToken: user.guestToken,
@@ -62,7 +73,7 @@ let GuestService = GuestService_1 = class GuestService {
             last_name: '',
             photo_url: defaultAvatar,
             is_active: true,
-            username: `guest_${guestToken}`,
+            username: `guest_${guestNumber.toString().padStart(6, '0')}`,
         });
         return await this.userRepo.save(user);
     }
@@ -196,7 +207,9 @@ exports.GuestService = GuestService;
 exports.GuestService = GuestService = GuestService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
+    __param(1, (0, typeorm_1.InjectRepository)(user_online_daily_entity_1.UserOnlineDaily)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         auth_service_1.AuthService])
 ], GuestService);
 //# sourceMappingURL=guest.service.js.map

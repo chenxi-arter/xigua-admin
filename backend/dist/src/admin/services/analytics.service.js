@@ -21,6 +21,7 @@ const watch_progress_entity_1 = require("../../video/entity/watch-progress.entit
 const watch_log_entity_1 = require("../../video/entity/watch-log.entity");
 const browse_history_entity_1 = require("../../video/entity/browse-history.entity");
 const episode_entity_1 = require("../../video/entity/episode.entity");
+const user_online_daily_entity_1 = require("../../user/entity/user-online-daily.entity");
 const dau_service_1 = require("./dau.service");
 let AnalyticsService = class AnalyticsService {
     userRepo;
@@ -28,6 +29,7 @@ let AnalyticsService = class AnalyticsService {
     watchLogRepo;
     bhRepo;
     episodeRepo;
+    onlineDailyRepo;
     dauService;
     TZ_OFFSET_MS = 8 * 60 * 60 * 1000;
     toBusinessDateStr(date) {
@@ -53,61 +55,38 @@ let AnalyticsService = class AnalyticsService {
         const shifted = new Date(startDate.getTime() + deltaDays * 24 * 60 * 60 * 1000);
         return this.toBusinessDateStr(shifted);
     }
-    constructor(userRepo, wpRepo, watchLogRepo, bhRepo, episodeRepo, dauService) {
+    constructor(userRepo, wpRepo, watchLogRepo, bhRepo, episodeRepo, onlineDailyRepo, dauService) {
         this.userRepo = userRepo;
         this.wpRepo = wpRepo;
         this.watchLogRepo = watchLogRepo;
         this.bhRepo = bhRepo;
         this.episodeRepo = episodeRepo;
+        this.onlineDailyRepo = onlineDailyRepo;
         this.dauService = dauService;
     }
     async getDAU(date) {
         return this.getActiveUsersForDay(date || new Date());
     }
     async getWAU(endDate) {
-        const { dateStr, endDate: rangeEnd } = this.getBusinessDayRange(endDate || new Date());
-        const { startDate: rangeStart } = this.getBusinessDayRangeByDateStr(this.shiftBusinessDate(dateStr, -6));
-        return this.getUniqueActiveUsersInRange(rangeStart, rangeEnd);
+        const dates = this.enumerateLocalDates(new Date((this.getBusinessDayRange(endDate || new Date()).startDate).getTime() - 6 * 24 * 60 * 60 * 1000), endDate || new Date());
+        const dailyMap = await this.getActiveUsersForDates(dates);
+        return dates.reduce((sum, date) => sum + (dailyMap.get(date) ?? 0), 0);
     }
     async getMAU(endDate) {
-        const { dateStr, endDate: rangeEnd } = this.getBusinessDayRange(endDate || new Date());
-        const { startDate: rangeStart } = this.getBusinessDayRangeByDateStr(this.shiftBusinessDate(dateStr, -29));
-        return this.getUniqueActiveUsersInRange(rangeStart, rangeEnd);
+        const dates = this.enumerateLocalDates(new Date((this.getBusinessDayRange(endDate || new Date()).startDate).getTime() - 29 * 24 * 60 * 60 * 1000), endDate || new Date());
+        const dailyMap = await this.getActiveUsersForDates(dates);
+        return dates.reduce((sum, date) => sum + (dailyMap.get(date) ?? 0), 0);
     }
     async getActiveUsersForDay(date) {
-        const { dateStr, startDate, endDate } = this.getBusinessDayRange(date);
-        const redisCount = (await this.dauService.getDAU(dateStr)) ?? 0;
-        const mysqlCount = await this.getUniqueActiveUsersInRange(startDate, endDate);
-        return Math.max(redisCount, mysqlCount);
+        const { dateStr } = this.getBusinessDayRange(date);
+        return (await this.dauService.getDAU(dateStr)) ?? 0;
     }
     async getActiveUsersForDates(dates) {
         const result = new Map();
         if (dates.length === 0)
             return result;
-        const dauRedisMap = await this.dauService.getDAUBatch(dates);
-        const { startDate } = this.getBusinessDayRangeByDateStr(dates[0]);
-        const { endDate } = this.getBusinessDayRangeByDateStr(dates[dates.length - 1]);
-        const rows = await this.wpRepo.manager.query(`
-        SELECT date, COUNT(DISTINCT user_id) AS count FROM (
-          SELECT DATE_FORMAT(DATE_ADD(wp.updated_at, INTERVAL 8 HOUR), '%Y-%m-%d') AS date, wp.user_id
-          FROM watch_progress wp
-          WHERE wp.updated_at >= ? AND wp.updated_at <= ?
-          UNION
-          SELECT DATE_FORMAT(DATE_ADD(u.created_at, INTERVAL 8 HOUR), '%Y-%m-%d') AS date, u.id AS user_id
-          FROM users u
-          WHERE u.created_at >= ? AND u.created_at <= ?
-        ) t
-        GROUP BY date
-      `, [startDate, endDate, startDate, endDate]);
-        const mysqlMap = new Map(rows.map(row => [
-            row.date,
-            typeof row.count === 'number' ? row.count : parseInt(row.count, 10) || 0,
-        ]));
-        dates.forEach(date => {
-            const redisCount = dauRedisMap.get(date) ?? 0;
-            const mysqlCount = mysqlMap.get(date) ?? 0;
-            result.set(date, Math.max(redisCount, mysqlCount));
-        });
+        const redisPairs = await Promise.all(dates.map(async (date) => [date, (await this.dauService.getDAU(date)) ?? 0]));
+        redisPairs.forEach(([date, count]) => result.set(date, count));
         return result;
     }
     getLocalDateStr(date) {
@@ -147,7 +126,8 @@ let AnalyticsService = class AnalyticsService {
           WHERE u.created_at >= ? AND u.created_at <= ?
         ) t
       `, [startDate, endDate, startDate, endDate]);
-        const count = rows?.[0]?.count ?? 0;
+        const firstRow = rows[0];
+        const count = firstRow?.count ?? 0;
         return typeof count === 'number' ? count : parseInt(count, 10) || 0;
     }
     async getRetentionRate(retentionDays = 1, cohortDate, includeBrowseHistory = true) {
@@ -303,28 +283,53 @@ let AnalyticsService = class AnalyticsService {
         };
     }
     async getActiveUsersStats() {
-        const today = new Date();
-        const [dau, wau, mau] = await Promise.all([
-            this.getDAU(today),
-            this.getWAU(today),
-            this.getMAU(today),
+        const today = new Date().toISOString().slice(0, 10);
+        const d7 = new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10);
+        const d30 = new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10);
+        const [dauResult, wauResult, mauResult, dau7Avg] = await Promise.all([
+            this.onlineDailyRepo
+                .createQueryBuilder('od')
+                .select('COUNT(DISTINCT od.user_id)', 'cnt')
+                .where('od.date = :today', { today })
+                .getRawOne(),
+            this.onlineDailyRepo
+                .createQueryBuilder('od')
+                .select('COUNT(DISTINCT od.user_id)', 'cnt')
+                .where('od.date >= :d7', { d7 })
+                .andWhere('od.date <= :today', { today })
+                .getRawOne(),
+            this.onlineDailyRepo
+                .createQueryBuilder('od')
+                .select('COUNT(DISTINCT od.user_id)', 'cnt')
+                .where('od.date >= :d30', { d30 })
+                .andWhere('od.date <= :today', { today })
+                .getRawOne(),
+            this.onlineDailyRepo
+                .createQueryBuilder('od')
+                .select('od.date', 'date')
+                .addSelect('COUNT(DISTINCT od.user_id)', 'cnt')
+                .where('od.date >= :d7', { d7 })
+                .andWhere('od.date <= :today', { today })
+                .groupBy('od.date')
+                .getRawMany(),
         ]);
-        const last7DaysDAU = [];
-        for (let i = 0; i < 7; i++) {
-            const date = new Date(today);
-            date.setDate(date.getDate() - i);
-            const dauValue = await this.getDAU(date);
-            last7DaysDAU.push(dauValue);
+        const dau = Number(dauResult?.cnt || 0);
+        const wau = Number(wauResult?.cnt || 0);
+        const mau = Number(mauResult?.cnt || 0);
+        if (dau === 0 && wau === 0 && mau === 0) {
+            const [fallbackDau, fallbackWau, fallbackMau] = await Promise.all([
+                this.getDAU(new Date()),
+                this.getWAU(new Date()),
+                this.getMAU(new Date()),
+            ]);
+            const sticky = fallbackMau > 0 ? Math.round((fallbackDau / fallbackMau) * 10000) / 100 : 0;
+            return { dau: fallbackDau, wau: fallbackWau, mau: fallbackMau, dau7DayAvg: fallbackDau, sticky };
         }
-        const dau7DayAvg = Math.round(last7DaysDAU.reduce((a, b) => a + b, 0) / 7);
-        const sticky = mau > 0 ? Math.round((dau / mau) * 100 * 100) / 100 : 0;
-        return {
-            dau,
-            wau,
-            mau,
-            dau7DayAvg,
-            sticky,
-        };
+        const dau7DayAvg = dau7Avg.length > 0
+            ? Math.round(dau7Avg.reduce((sum, r) => sum + Number(r.cnt || 0), 0) / dau7Avg.length)
+            : dau;
+        const sticky = mau > 0 ? Math.round((dau / mau) * 10000) / 100 : 0;
+        return { dau, wau, mau, dau7DayAvg, sticky };
     }
     async getContentPlayStats() {
         const playCountResult = await this.episodeRepo
@@ -602,7 +607,9 @@ exports.AnalyticsService = AnalyticsService = __decorate([
     __param(2, (0, typeorm_1.InjectRepository)(watch_log_entity_1.WatchLog)),
     __param(3, (0, typeorm_1.InjectRepository)(browse_history_entity_1.BrowseHistory)),
     __param(4, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),
+    __param(5, (0, typeorm_1.InjectRepository)(user_online_daily_entity_1.UserOnlineDaily)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

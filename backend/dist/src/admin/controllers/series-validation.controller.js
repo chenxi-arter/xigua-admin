@@ -18,6 +18,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const series_entity_1 = require("../../video/entity/series.entity");
 const episode_entity_1 = require("../../video/entity/episode.entity");
+const admin_jwt_auth_guard_1 = require("../guards/admin-jwt-auth.guard");
 let SeriesValidationController = class SeriesValidationController {
     seriesRepo;
     episodeRepo;
@@ -477,6 +478,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], SeriesValidationController.prototype, "getValidationStats", null);
 exports.SeriesValidationController = SeriesValidationController = __decorate([
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
     (0, common_1.Controller)('admin/series/validation'),
     __param(0, (0, typeorm_1.InjectRepository)(series_entity_1.Series)),
     __param(1, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),

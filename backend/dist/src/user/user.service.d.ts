@@ -1,5 +1,7 @@
 import { Repository } from 'typeorm';
 import { User } from './entity/user.entity';
+import { UserOnlineDaily } from './entity/user-online-daily.entity';
+import { RedisClientType } from 'redis';
 import { TelegramUserDto } from './dto/telegram-user.dto';
 import { RegisterDto, RegisterResponseDto } from './dto/register.dto';
 import { EmailLoginDto, EmailLoginResponseDto } from './dto/email-login.dto';
@@ -20,11 +22,17 @@ export interface TokenResult {
 }
 export declare class UserService {
     private readonly userRepo;
+    private readonly onlineDailyRepo;
+    private readonly redisClient;
     private readonly authService;
     private readonly telegramAuthService;
     private readonly accountMergeService;
     private readonly logger;
-    constructor(userRepo: Repository<User>, authService: AuthService, telegramAuthService: TelegramAuthService, accountMergeService: AccountMergeService);
+    constructor(userRepo: Repository<User>, onlineDailyRepo: Repository<UserOnlineDaily>, redisClient: RedisClientType | null, authService: AuthService, telegramAuthService: TelegramAuthService, accountMergeService: AccountMergeService);
+    recordHeartbeat(userId: number, date: string): Promise<void>;
+    flushOnlineDataToDb(): Promise<void>;
+    private flushHeartbeatToDb;
+    recordUserActive(userId: number): Promise<void>;
     telegramLogin(dto: TelegramUserDto): Promise<TokenResult>;
     private validateBotToken;
     bindEmail(userId: number, dto: BindEmailDto): Promise<{

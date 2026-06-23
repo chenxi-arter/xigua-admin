@@ -5,11 +5,20 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.JwtAuthGuard = void 0;
 const common_1 = require("@nestjs/common");
 const passport_1 = require("@nestjs/passport");
+const dau_service_1 = require("../../admin/services/dau.service");
 let JwtAuthGuard = class JwtAuthGuard extends (0, passport_1.AuthGuard)('jwt') {
+    dauService;
+    constructor(dauService) {
+        super();
+        this.dauService = dauService;
+    }
     handleRequest(err, user, info, context) {
         if (err || !user) {
             throw new common_1.UnauthorizedException(info?.name === 'TokenExpiredError'
@@ -17,16 +26,21 @@ let JwtAuthGuard = class JwtAuthGuard extends (0, passport_1.AuthGuard)('jwt') {
                 : '登录信息无效或已过期');
         }
         const req = context.switchToHttp().getRequest();
-        const ua = req.get('user-agent') || '';
+        const ua = req?.get('user-agent') || '';
         const banned = /bot|crawler|spider|scrapy/i;
         if (banned.test(ua)) {
             throw new common_1.UnauthorizedException('拒绝访问');
+        }
+        const userId = typeof user.id === 'number' ? user.id : Number(user.id);
+        if (Number.isFinite(userId) && userId > 0) {
+            void this.dauService.trackUser(userId);
         }
         return user;
     }
 };
 exports.JwtAuthGuard = JwtAuthGuard;
 exports.JwtAuthGuard = JwtAuthGuard = __decorate([
-    (0, common_1.Injectable)()
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [dau_service_1.DauService])
 ], JwtAuthGuard);
 //# sourceMappingURL=jwt-auth.guard.js.map

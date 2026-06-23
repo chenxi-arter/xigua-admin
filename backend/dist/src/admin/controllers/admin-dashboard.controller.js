@@ -26,6 +26,7 @@ const watch_progress_entity_1 = require("../../video/entity/watch-progress.entit
 const browse_history_entity_1 = require("../../video/entity/browse-history.entity");
 const analytics_service_1 = require("../services/analytics.service");
 const watch_logs_cleanup_service_1 = require("../../video/services/watch-logs-cleanup.service");
+const admin_jwt_auth_guard_1 = require("../guards/admin-jwt-auth.guard");
 function toDateStart(d) {
     if (!d)
         return undefined;
@@ -137,7 +138,7 @@ let AdminDashboardController = class AdminDashboardController {
         return {
             users: {
                 total: usersTotal,
-                new24h: newUsers24h,
+                newToday: newUsers24h,
                 activeLogins,
                 lastLoginAtLatest: latestRt?.createdAt ?? null,
             },
@@ -149,8 +150,8 @@ let AdminDashboardController = class AdminDashboardController {
                 totalImpressions,
                 ctr: totalImpressions > 0 ? totalClicks / totalImpressions : 0,
             },
-            comments: { total: commentsTotal, new24h: comments24h },
-            plays: { totalPlayCount, last24hVisits: visits24h },
+            comments: { total: commentsTotal, newToday: comments24h },
+            plays: { totalPlayCount, todayVisits: visits24h },
             range,
         };
     }
@@ -496,6 +497,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AdminDashboardController.prototype, "archiveWatchLogs", null);
 exports.AdminDashboardController = AdminDashboardController = __decorate([
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
     (0, common_1.Controller)('admin/dashboard'),
     __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
     __param(1, (0, typeorm_1.InjectRepository)(refresh_token_entity_1.RefreshToken)),

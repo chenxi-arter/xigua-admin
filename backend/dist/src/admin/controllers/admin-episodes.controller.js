@@ -21,6 +21,7 @@ const episode_url_entity_1 = require("../../video/entity/episode-url.entity");
 const r2_storage_service_1 = require("../../core/storage/r2-storage.service");
 const episode_service_1 = require("../../video/services/episode.service");
 const presigned_upload_dto_1 = require("../dto/presigned-upload.dto");
+const admin_jwt_auth_guard_1 = require("../guards/admin-jwt-auth.guard");
 let AdminEpisodesController = class AdminEpisodesController {
     episodeRepo;
     episodeUrlRepo;
@@ -304,6 +305,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AdminEpisodesController.prototype, "get", null);
 exports.AdminEpisodesController = AdminEpisodesController = __decorate([
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
     (0, common_1.Controller)('admin/episodes'),
     __param(0, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),
     __param(1, (0, typeorm_1.InjectRepository)(episode_url_entity_1.EpisodeUrl)),

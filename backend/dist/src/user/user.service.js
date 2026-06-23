@@ -17,7 +17,10 @@ exports.UserService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
+const schedule_1 = require("@nestjs/schedule");
 const user_entity_1 = require("./entity/user.entity");
+const user_online_daily_entity_1 = require("./entity/user-online-daily.entity");
+const redis_module_1 = require("../core/redis/redis.module");
 const telegram_user_dto_1 = require("./dto/telegram-user.dto");
 const telegram_validator_1 = require("./telegram.validator");
 const auth_service_1 = require("../auth/auth.service");
@@ -26,15 +29,78 @@ const account_merge_service_1 = require("../auth/account-merge.service");
 const password_util_1 = require("../common/utils/password.util");
 let UserService = UserService_1 = class UserService {
     userRepo;
+    onlineDailyRepo;
+    redisClient;
     authService;
     telegramAuthService;
     accountMergeService;
     logger = new common_1.Logger(UserService_1.name);
-    constructor(userRepo, authService, telegramAuthService, accountMergeService) {
+    constructor(userRepo, onlineDailyRepo, redisClient, authService, telegramAuthService, accountMergeService) {
         this.userRepo = userRepo;
+        this.onlineDailyRepo = onlineDailyRepo;
+        this.redisClient = redisClient;
         this.authService = authService;
         this.telegramAuthService = telegramAuthService;
         this.accountMergeService = accountMergeService;
+    }
+    async recordHeartbeat(userId, date) {
+        if (this.redisClient) {
+            try {
+                const key = `online:${date}`;
+                const lastKey = `online:last:${userId}`;
+                const now = new Date().toISOString();
+                await this.redisClient.multi()
+                    .hIncrBy(key, String(userId), 60)
+                    .expire(key, 2 * 86400)
+                    .set(lastKey, now, { EX: 5 * 60 })
+                    .exec();
+                return;
+            }
+            catch (e) {
+                this.logger.warn(`Redis heartbeat failed, fallback to MySQL: ${e?.message}`);
+            }
+        }
+        await this.flushHeartbeatToDb(userId, date, 60);
+    }
+    async flushOnlineDataToDb() {
+        if (!this.redisClient)
+            return;
+        const today = new Date().toISOString().slice(0, 10);
+        const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+        for (const date of [yesterday, today]) {
+            try {
+                const key = `online:${date}`;
+                const data = await this.redisClient.hGetAll(key);
+                if (!data || Object.keys(data).length === 0)
+                    continue;
+                const entries = Object.entries(data);
+                for (let i = 0; i < entries.length; i += 100) {
+                    const batch = entries.slice(i, i + 100);
+                    const values = batch.map(([uid, dur]) => `(${Number(uid)}, '${date}', ${Number(dur)})`).join(',');
+                    await this.onlineDailyRepo.query(`INSERT INTO user_online_daily (user_id, date, duration) VALUES ${values}
+             ON DUPLICATE KEY UPDATE duration = duration + VALUES(duration)`);
+                }
+                await this.redisClient.del(key);
+                this.logger.log(`Flushed ${entries.length} online records for ${date} to MySQL`);
+            }
+            catch (e) {
+                this.logger.error(`flushOnlineDataToDb error for ${date}: ${e?.message}`);
+            }
+        }
+    }
+    async flushHeartbeatToDb(userId, date, duration) {
+        await this.onlineDailyRepo.query(`INSERT INTO user_online_daily (user_id, date, duration) VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE duration = duration + ?`, [userId, date, duration, duration]);
+    }
+    async recordUserActive(userId) {
+        const today = new Date().toISOString().slice(0, 10);
+        try {
+            await this.onlineDailyRepo.query(`INSERT INTO user_online_daily (user_id, date, duration) VALUES (?, ?, 0)
+         ON DUPLICATE KEY UPDATE user_id = user_id`, [userId, today]);
+        }
+        catch (e) {
+            this.logger.warn(`recordUserActive failed for user ${userId}: ${e?.message}`);
+        }
     }
     async telegramLogin(dto) {
         this.validateBotToken();
@@ -221,8 +287,10 @@ let UserService = UserService_1 = class UserService {
         }
         return await this.userRepo.save(user);
     }
-    generateUserTokens(user, deviceInfo) {
-        return this.authService.generateTokens(user, deviceInfo || user.username || 'Telegram User');
+    async generateUserTokens(user, deviceInfo) {
+        const tokens = await this.authService.generateTokens(user, deviceInfo || user.username || 'Telegram User');
+        await this.recordUserActive(user.id).catch(() => { });
+        return tokens;
     }
     async findUserById(id) {
         return this.userRepo.findOneBy({ id });
@@ -306,6 +374,7 @@ let UserService = UserService_1 = class UserService {
             }
         }
         const tokens = await this.authService.generateTokens(user, dto.deviceInfo || 'Email Login');
+        await this.recordUserActive(user.id).catch(() => { });
         return {
             ...tokens,
         };
@@ -428,6 +497,7 @@ let UserService = UserService_1 = class UserService {
             const mergeStats = await this.accountMergeService.mergeGuestToUser(userId, existingUser.id);
             this.logger.log(`数据合并完成: ${JSON.stringify(mergeStats)}`);
             const tokens = await this.authService.generateTokens(existingUser, 'Email Login After Merge');
+            await this.recordUserActive(existingUser.id).catch(() => { });
             return {
                 success: true,
                 message: '检测到该邮箱已注册，已将您的游客数据合并到现有账号',
@@ -455,6 +525,7 @@ let UserService = UserService_1 = class UserService {
         }
         await this.userRepo.save(guestUser);
         const tokens = await this.authService.generateTokens(guestUser, 'Email Registration');
+        await this.recordUserActive(guestUser.id).catch(() => { });
         return {
             success: true,
             message: '游客账号已成功转为正式用户，所有历史数据已保留',
@@ -494,11 +565,19 @@ let UserService = UserService_1 = class UserService {
     }
 };
 exports.UserService = UserService;
+__decorate([
+    (0, schedule_1.Cron)('0 */5 * * * *'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], UserService.prototype, "flushOnlineDataToDb", null);
 exports.UserService = UserService = UserService_1 = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
+    __param(1, (0, typeorm_1.InjectRepository)(user_online_daily_entity_1.UserOnlineDaily)),
+    __param(2, (0, common_1.Inject)(redis_module_1.REDIS_CLIENT)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
-        auth_service_1.AuthService,
+        typeorm_2.Repository, Object, auth_service_1.AuthService,
         telegram_auth_service_1.TelegramAuthService,
         account_merge_service_1.AccountMergeService])
 ], UserService);

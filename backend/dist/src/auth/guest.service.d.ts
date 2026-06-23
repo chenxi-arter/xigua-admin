@@ -1,11 +1,13 @@
 import { Repository } from 'typeorm';
 import { User } from '../user/entity/user.entity';
+import { UserOnlineDaily } from '../user/entity/user-online-daily.entity';
 import { AuthService } from './auth.service';
 export declare class GuestService {
     private readonly userRepo;
+    private readonly onlineDailyRepo;
     private readonly authService;
     private readonly logger;
-    constructor(userRepo: Repository<User>, authService: AuthService);
+    constructor(userRepo: Repository<User>, onlineDailyRepo: Repository<UserOnlineDaily>, authService: AuthService);
     guestLogin(guestToken?: string, deviceInfo?: string): Promise<{
         guestToken: string;
         isNewGuest: boolean;

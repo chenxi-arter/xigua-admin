@@ -4,6 +4,7 @@ import { WatchProgress } from '../../video/entity/watch-progress.entity';
 import { WatchLog } from '../../video/entity/watch-log.entity';
 import { BrowseHistory } from '../../video/entity/browse-history.entity';
 import { Episode } from '../../video/entity/episode.entity';
+import { UserOnlineDaily } from '../../user/entity/user-online-daily.entity';
 import { DauService } from './dau.service';
 export declare class AnalyticsService {
     private readonly userRepo;
@@ -11,13 +12,14 @@ export declare class AnalyticsService {
     private readonly watchLogRepo;
     private readonly bhRepo;
     private readonly episodeRepo;
+    private readonly onlineDailyRepo;
     private readonly dauService;
     private readonly TZ_OFFSET_MS;
     private toBusinessDateStr;
     private getBusinessDayRangeByDateStr;
     private getBusinessDayRange;
     private shiftBusinessDate;
-    constructor(userRepo: Repository<User>, wpRepo: Repository<WatchProgress>, watchLogRepo: Repository<WatchLog>, bhRepo: Repository<BrowseHistory>, episodeRepo: Repository<Episode>, dauService: DauService);
+    constructor(userRepo: Repository<User>, wpRepo: Repository<WatchProgress>, watchLogRepo: Repository<WatchLog>, bhRepo: Repository<BrowseHistory>, episodeRepo: Repository<Episode>, onlineDailyRepo: Repository<UserOnlineDaily>, dauService: DauService);
     getDAU(date?: Date): Promise<number>;
     getWAU(endDate?: Date): Promise<number>;
     getMAU(endDate?: Date): Promise<number>;

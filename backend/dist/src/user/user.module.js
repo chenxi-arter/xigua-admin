@@ -12,6 +12,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const passport_1 = require("@nestjs/passport");
 const user_entity_1 = require("./entity/user.entity");
 const favorite_entity_1 = require("./entity/favorite.entity");
+const user_online_daily_entity_1 = require("./entity/user-online-daily.entity");
 const episode_entity_1 = require("../video/entity/episode.entity");
 const episode_reaction_entity_1 = require("../video/entity/episode-reaction.entity");
 const user_service_1 = require("./user.service");
@@ -30,7 +31,7 @@ exports.UserModule = UserModule;
 exports.UserModule = UserModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([user_entity_1.User, favorite_entity_1.Favorite, episode_entity_1.Episode, episode_reaction_entity_1.EpisodeReaction]),
+            typeorm_1.TypeOrmModule.forFeature([user_entity_1.User, favorite_entity_1.Favorite, user_online_daily_entity_1.UserOnlineDaily, episode_entity_1.Episode, episode_reaction_entity_1.EpisodeReaction]),
             passport_1.PassportModule,
             (0, common_1.forwardRef)(() => auth_module_1.AuthModule),
             (0, common_1.forwardRef)(() => video_module_1.VideoModule),

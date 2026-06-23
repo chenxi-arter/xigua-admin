@@ -25,6 +25,7 @@ const presigned_upload_dto_1 = require("../dto/presigned-upload.dto");
 const crypto_1 = require("crypto");
 const axios_1 = require("axios");
 const https = require("https");
+const admin_jwt_auth_guard_1 = require("../guards/admin-jwt-auth.guard");
 let AdminSeriesController = class AdminSeriesController {
     seriesRepo;
     filterOptionRepo;
@@ -464,6 +465,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AdminSeriesController.prototype, "uploadCoverFromUrl", null);
 exports.AdminSeriesController = AdminSeriesController = __decorate([
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
     (0, common_1.Controller)('admin/series'),
     __param(0, (0, typeorm_1.InjectRepository)(series_entity_1.Series)),
     __param(1, (0, typeorm_1.InjectRepository)(filter_option_entity_1.FilterOption)),

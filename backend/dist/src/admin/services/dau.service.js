@@ -61,8 +61,18 @@ let DauService = DauService_1 = class DauService {
             dates.forEach(d => pipeline.pfCount(this.buildKey(new Date(d))));
             const values = await pipeline.exec();
             dates.forEach((d, i) => {
-                const v = values[i];
-                result.set(d, typeof v === 'number' ? v : null);
+                const raw = values[i];
+                let normalized = null;
+                if (typeof raw === 'number') {
+                    normalized = raw;
+                }
+                else if (Array.isArray(raw) && raw.length >= 2 && typeof raw[1] === 'number') {
+                    normalized = raw[1];
+                }
+                else if (Array.isArray(raw) && raw.length >= 1 && typeof raw[0] === 'number') {
+                    normalized = raw[0];
+                }
+                result.set(d, normalized);
             });
         }
         catch (e) {

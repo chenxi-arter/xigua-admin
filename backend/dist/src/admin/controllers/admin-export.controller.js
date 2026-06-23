@@ -24,9 +24,11 @@ const favorite_entity_1 = require("../../user/entity/favorite.entity");
 const episode_entity_1 = require("../../video/entity/episode.entity");
 const series_entity_1 = require("../../video/entity/series.entity");
 const comment_entity_1 = require("../../video/entity/comment.entity");
+const user_online_daily_entity_1 = require("../../user/entity/user-online-daily.entity");
 const export_series_details_dto_1 = require("../dto/export-series-details.dto");
 const watch_log_service_1 = require("../../video/services/watch-log.service");
 const analytics_service_1 = require("../services/analytics.service");
+const admin_jwt_auth_guard_1 = require("../guards/admin-jwt-auth.guard");
 let AdminExportController = class AdminExportController {
     wpRepo;
     watchLogRepo;
@@ -36,9 +38,10 @@ let AdminExportController = class AdminExportController {
     episodeRepo;
     seriesRepo;
     commentRepo;
+    onlineDailyRepo;
     watchLogService;
     analyticsService;
-    constructor(wpRepo, watchLogRepo, userRepo, reactionRepo, favoriteRepo, episodeRepo, seriesRepo, commentRepo, watchLogService, analyticsService) {
+    constructor(wpRepo, watchLogRepo, userRepo, reactionRepo, favoriteRepo, episodeRepo, seriesRepo, commentRepo, onlineDailyRepo, watchLogService, analyticsService) {
         this.wpRepo = wpRepo;
         this.watchLogRepo = watchLogRepo;
         this.userRepo = userRepo;
@@ -47,6 +50,7 @@ let AdminExportController = class AdminExportController {
         this.episodeRepo = episodeRepo;
         this.seriesRepo = seriesRepo;
         this.commentRepo = commentRepo;
+        this.onlineDailyRepo = onlineDailyRepo;
         this.watchLogService = watchLogService;
         this.analyticsService = analyticsService;
     }
@@ -151,13 +155,23 @@ let AdminExportController = class AdminExportController {
                 .groupBy('date')
                 .orderBy('date', 'ASC')
                 .getRawMany();
-            const dauStats = await this.wpRepo
-                .createQueryBuilder('wp')
-                .select("DATE_FORMAT(wp.updated_at, '%Y-%m-%d')", 'date')
-                .addSelect('COUNT(DISTINCT wp.user_id)', 'dau')
-                .where('wp.updated_at BETWEEN :start AND :end', { start, end })
-                .groupBy('date')
+            const onlineDauStats = await this.onlineDailyRepo
+                .createQueryBuilder('od')
+                .select('od.date', 'date')
+                .addSelect('COUNT(DISTINCT od.user_id)', 'dau')
+                .where('od.date >= :startD', { startD: start.toISOString().split('T')[0] })
+                .andWhere('od.date <= :endD', { endD: end.toISOString().split('T')[0] })
+                .groupBy('od.date')
                 .getRawMany();
+            const dauStats = onlineDauStats.length > 0
+                ? onlineDauStats
+                : await this.wpRepo
+                    .createQueryBuilder('wp')
+                    .select("DATE_FORMAT(wp.updated_at, '%Y-%m-%d')", 'date')
+                    .addSelect('COUNT(DISTINCT wp.user_id)', 'dau')
+                    .where('wp.updated_at BETWEEN :start AND :end', { start, end })
+                    .groupBy('date')
+                    .getRawMany();
             const watchLogStats = await this.watchLogRepo
                 .createQueryBuilder('wl')
                 .select("DATE(wl.watch_date)", 'date')
@@ -444,7 +458,7 @@ let AdminExportController = class AdminExportController {
             const todayStr = this.analyticsService.getLocalDateStr(today);
             const newUserRows = await this.userRepo
                 .createQueryBuilder('u')
-                .select("DATE_FORMAT(u.created_at, '%Y-%m-%d')", 'date')
+                .select("DATE_FORMAT(DATE_ADD(u.created_at, INTERVAL 8 HOUR), '%Y-%m-%d')", 'date')
                 .addSelect('COUNT(*)', 'cnt')
                 .where('u.created_at >= :start', { start })
                 .andWhere('u.created_at <= :end', { end })
@@ -453,7 +467,7 @@ let AdminExportController = class AdminExportController {
             const newUserMap = new Map(newUserRows.map(r => [r.date, parseInt(r.cnt)]));
             const cumulativeRows = await this.userRepo
                 .createQueryBuilder('u')
-                .select("DATE_FORMAT(u.created_at, '%Y-%m-%d')", 'date')
+                .select("DATE_FORMAT(DATE_ADD(u.created_at, INTERVAL 8 HOUR), '%Y-%m-%d')", 'date')
                 .addSelect('COUNT(*)', 'daily')
                 .where('u.created_at <= :end', { end })
                 .groupBy('date')
@@ -480,7 +494,7 @@ let AdminExportController = class AdminExportController {
             const activeUsersMap = await this.analyticsService.getActiveUsersForDates(dates);
             const launchRows = await this.wpRepo
                 .createQueryBuilder('wp')
-                .select("DATE_FORMAT(wp.updated_at, '%Y-%m-%d')", 'date')
+                .select("DATE_FORMAT(DATE_ADD(wp.updated_at, INTERVAL 8 HOUR), '%Y-%m-%d')", 'date')
                 .addSelect('COUNT(*)', 'cnt')
                 .where('wp.updated_at >= :start', { start })
                 .andWhere('wp.updated_at <= :end', { end })
@@ -498,7 +512,7 @@ let AdminExportController = class AdminExportController {
             const sessionMap = new Map(sessionRows.map(r => [r.date, Math.round(parseFloat(r.avgSession) || 0)]));
             const sessionFallbackRows = await this.wpRepo
                 .createQueryBuilder('wp')
-                .select("DATE_FORMAT(wp.updated_at, '%Y-%m-%d')", 'date')
+                .select("DATE_FORMAT(DATE_ADD(wp.updated_at, INTERVAL 8 HOUR), '%Y-%m-%d')", 'date')
                 .addSelect('AVG(wp.stop_at_second)', 'avgSession')
                 .where('wp.updated_at >= :start', { start })
                 .andWhere('wp.updated_at <= :end', { end })
@@ -530,13 +544,11 @@ let AdminExportController = class AdminExportController {
             const retentionDates = dates.filter(d => d < todayStr);
             dates.filter(d => d >= todayStr).forEach(d => retentionMap.set(d, null));
             if (retentionDates.length > 0) {
-                const retStart = new Date(retentionDates[0]);
-                retStart.setHours(0, 0, 0, 0);
-                const retEnd = new Date(retentionDates[retentionDates.length - 1]);
-                retEnd.setHours(23, 59, 59, 999);
+                const { startDate: retStart } = this.analyticsService.getLocalDateRange(retentionDates[0]);
+                const { endDate: retEnd } = this.analyticsService.getLocalDateRange(retentionDates[retentionDates.length - 1]);
                 const cohortRows = await this.userRepo
                     .createQueryBuilder('u')
-                    .select("DATE_FORMAT(u.created_at, '%Y-%m-%d')", 'date')
+                    .select("DATE_FORMAT(DATE_ADD(u.created_at, INTERVAL 8 HOUR), '%Y-%m-%d')", 'date')
                     .addSelect('COUNT(*)', 'cnt')
                     .where('u.created_at >= :retStart', { retStart })
                     .andWhere('u.created_at <= :retEnd', { retEnd })
@@ -545,9 +557,9 @@ let AdminExportController = class AdminExportController {
                 const cohortMap = new Map(cohortRows.map(r => [r.date, parseInt(r.cnt)]));
                 const retentionRows = await this.userRepo
                     .createQueryBuilder('u')
-                    .select("DATE_FORMAT(u.created_at, '%Y-%m-%d')", 'cohortDate')
+                    .select("DATE_FORMAT(DATE_ADD(u.created_at, INTERVAL 8 HOUR), '%Y-%m-%d')", 'cohortDate')
                     .addSelect('COUNT(DISTINCT u.id)', 'retained')
-                    .innerJoin('watch_progress', 'wp', "wp.user_id = u.id AND DATE(wp.updated_at) = DATE(DATE_ADD(u.created_at, INTERVAL 1 DAY))")
+                    .innerJoin('watch_progress', 'wp', "wp.user_id = u.id AND DATE_FORMAT(DATE_ADD(wp.updated_at, INTERVAL 8 HOUR), '%Y-%m-%d') = DATE_FORMAT(DATE_ADD(DATE_ADD(u.created_at, INTERVAL 8 HOUR), INTERVAL 1 DAY), '%Y-%m-%d')")
                     .where('u.created_at >= :retStart', { retStart })
                     .andWhere('u.created_at <= :retEnd', { retEnd })
                     .groupBy('cohortDate')
@@ -579,14 +591,14 @@ let AdminExportController = class AdminExportController {
                 return {
                     date: d,
                     new_users: newUsers,
-                    active_users: activeUsers,
-                    launches: launches,
+                    content_active_users: activeUsers,
+                    watch_progress_updates: launches,
                     total_users: totalUsers,
                     new_user_ratio: newUserRatio,
-                    retention_next_day: retentionMap.get(d) ?? null,
+                    next_day_content_retention: retentionMap.get(d) ?? null,
                     avg_session_duration: avgSessionDuration,
                     avg_daily_duration: avgDailyDuration,
-                    avg_daily_launches: avgDailyLaunches,
+                    avg_daily_watch_sessions: avgDailyLaunches,
                 };
             })
                 .reverse();
@@ -640,6 +652,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AdminExportController.prototype, "getOverviewStats", null);
 exports.AdminExportController = AdminExportController = __decorate([
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
     (0, common_1.Controller)('admin/export'),
     __param(0, (0, typeorm_1.InjectRepository)(watch_progress_entity_1.WatchProgress)),
     __param(1, (0, typeorm_1.InjectRepository)(watch_log_entity_1.WatchLog)),
@@ -649,7 +662,9 @@ exports.AdminExportController = AdminExportController = __decorate([
     __param(5, (0, typeorm_1.InjectRepository)(episode_entity_1.Episode)),
     __param(6, (0, typeorm_1.InjectRepository)(series_entity_1.Series)),
     __param(7, (0, typeorm_1.InjectRepository)(comment_entity_1.Comment)),
+    __param(8, (0, typeorm_1.InjectRepository)(user_online_daily_entity_1.UserOnlineDaily)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,

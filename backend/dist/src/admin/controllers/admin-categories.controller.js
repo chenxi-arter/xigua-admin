@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const category_entity_1 = require("../../video/entity/category.entity");
+const admin_jwt_auth_guard_1 = require("../guards/admin-jwt-auth.guard");
 let AdminCategoriesController = class AdminCategoriesController {
     categoryRepo;
     constructor(categoryRepo) {
@@ -74,6 +75,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AdminCategoriesController.prototype, "remove", null);
 exports.AdminCategoriesController = AdminCategoriesController = __decorate([
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
     (0, common_1.Controller)('admin/categories'),
     __param(0, (0, typeorm_1.InjectRepository)(category_entity_1.Category)),
     __metadata("design:paramtypes", [typeorm_2.Repository])

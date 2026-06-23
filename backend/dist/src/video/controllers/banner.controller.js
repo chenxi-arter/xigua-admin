@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BannerController = void 0;
 const common_1 = require("@nestjs/common");
 const banner_service_1 = require("../services/banner.service");
-const admin_response_util_1 = require("../../common/utils/admin-response.util");
+const response_util_1 = require("../../common/utils/response.util");
 const banner_dto_1 = require("../dto/banner.dto");
 let BannerController = class BannerController {
     bannerService;
@@ -24,47 +24,47 @@ let BannerController = class BannerController {
     }
     async createBanner(createBannerDto) {
         const banner = await this.bannerService.createBanner(createBannerDto);
-        const resp = admin_response_util_1.AdminResponseUtil.success(banner, '创建成功');
+        const resp = response_util_1.ResponseUtil.success(banner, '创建成功');
         return { code: resp.code, msg: '创建成功', data: resp.data, success: resp.success, timestamp: resp.timestamp };
     }
     async updateBanner(id, updateBannerDto) {
         const banner = await this.bannerService.updateBanner(id, updateBannerDto);
-        const resp = admin_response_util_1.AdminResponseUtil.success(banner, '更新成功');
+        const resp = response_util_1.ResponseUtil.success(banner, '更新成功');
         return { code: resp.code, msg: '更新成功', data: resp.data, success: resp.success, timestamp: resp.timestamp };
     }
     async deleteBanner(id) {
         await this.bannerService.deleteBanner(id);
-        const resp = admin_response_util_1.AdminResponseUtil.success(null, '删除成功');
+        const resp = response_util_1.ResponseUtil.success(null, '删除成功');
         return { code: resp.code, msg: '删除成功', success: resp.success, timestamp: resp.timestamp };
     }
     async getBannerById(id) {
         const banner = await this.bannerService.getBannerById(id);
-        const resp = admin_response_util_1.AdminResponseUtil.success(banner, '获取成功');
+        const resp = response_util_1.ResponseUtil.success(banner, '获取成功');
         return { code: resp.code, msg: '获取成功', data: resp.data, success: resp.success, timestamp: resp.timestamp };
     }
     async getBanners(queryDto) {
         const result = await this.bannerService.getBanners(queryDto);
-        const resp = admin_response_util_1.AdminResponseUtil.success(result, '获取成功');
+        const resp = response_util_1.ResponseUtil.success(result, '获取成功');
         return { code: resp.code, msg: '获取成功', data: resp.data, success: resp.success, timestamp: resp.timestamp };
     }
     async toggleBannerStatus(id, isActive) {
         const banner = await this.bannerService.toggleBannerStatus(id, isActive);
-        const resp = admin_response_util_1.AdminResponseUtil.success(banner, '操作成功');
+        const resp = response_util_1.ResponseUtil.success(banner, '操作成功');
         return { code: resp.code, msg: '操作成功', data: resp.data, success: resp.success, timestamp: resp.timestamp };
     }
     async updateBannerWeights(updates) {
         await this.bannerService.updateBannerWeights(updates);
-        const resp = admin_response_util_1.AdminResponseUtil.success(null, '更新成功');
+        const resp = response_util_1.ResponseUtil.success(null, '更新成功');
         return { code: resp.code, msg: '更新成功', success: resp.success, timestamp: resp.timestamp };
     }
     async getActiveBanners(categoryId, limit = 5) {
         const banners = await this.bannerService.getActiveBanners(categoryId, limit);
-        const resp = admin_response_util_1.AdminResponseUtil.success(banners, '获取成功');
+        const resp = response_util_1.ResponseUtil.success(banners, '获取成功');
         return { code: resp.code, msg: '获取成功', data: resp.data, success: resp.success, timestamp: resp.timestamp };
     }
     async impression(id) {
         await this.bannerService.incrementImpression(id);
-        const resp = admin_response_util_1.AdminResponseUtil.success(null, 'ok');
+        const resp = response_util_1.ResponseUtil.success(null, 'ok');
         return { code: resp.code, msg: 'ok', success: resp.success, timestamp: resp.timestamp };
     }
     async track(body) {
@@ -75,17 +75,17 @@ let BannerController = class BannerController {
         else if (type === 'impression') {
             await this.bannerService.incrementImpression(id);
         }
-        const resp = admin_response_util_1.AdminResponseUtil.success(null, 'ok');
+        const resp = response_util_1.ResponseUtil.success(null, 'ok');
         return { code: resp.code, msg: 'ok', success: resp.success, timestamp: resp.timestamp };
     }
     async click(id) {
         await this.bannerService.incrementClick(id);
-        const resp = admin_response_util_1.AdminResponseUtil.success(null, 'ok');
+        const resp = response_util_1.ResponseUtil.success(null, 'ok');
         return { code: resp.code, msg: 'ok', success: resp.success, timestamp: resp.timestamp };
     }
     async stats(id, from, to) {
         const data = await this.bannerService.getBannerDailyStats(id, from, to);
-        const resp = admin_response_util_1.AdminResponseUtil.success(data, 'ok');
+        const resp = response_util_1.ResponseUtil.success(data, 'ok');
         return { code: resp.code, msg: 'ok', data: resp.data, success: resp.success, timestamp: resp.timestamp };
     }
 };

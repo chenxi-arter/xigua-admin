@@ -5,6 +5,8 @@ import { BindEmailDto } from './dto/bind-email.dto';
 import { UpdateNicknameDto, UpdateNicknameResponseDto } from './dto/update-nickname.dto';
 import { UpdatePasswordDto, UpdatePasswordResponseDto } from './dto/update-password.dto';
 import { UpdateAvatarDto, UpdateAvatarResponseDto } from './dto/update-avatar.dto';
+import { Repository } from 'typeorm';
+import { UserOnlineDaily } from './entity/user-online-daily.entity';
 interface AuthenticatedRequest extends Request {
     user: {
         userId: number;
@@ -13,7 +15,11 @@ interface AuthenticatedRequest extends Request {
 export declare class UserController {
     private readonly userService;
     private readonly authService;
-    constructor(userService: UserService, authService: AuthService);
+    private readonly onlineDailyRepo;
+    constructor(userService: UserService, authService: AuthService, onlineDailyRepo: Repository<UserOnlineDaily>);
+    heartbeat(req: AuthenticatedRequest): Promise<{
+        ok: boolean;
+    }>;
     getMe(req: AuthenticatedRequest): Promise<{
         message: string;
         email?: undefined;

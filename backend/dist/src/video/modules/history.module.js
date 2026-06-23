@@ -16,12 +16,13 @@ const watch_progress_entity_1 = require("../entity/watch-progress.entity");
 const episode_entity_1 = require("../entity/episode.entity");
 const browse_history_service_1 = require("../services/browse-history.service");
 const browse_history_cleanup_service_1 = require("../services/browse-history-cleanup.service");
-const browse_history_controller_1 = require("../browse-history.controller");
+const browse_history_controller_1 = require("../controllers/browse-history.controller");
 const category_validator_1 = require("../../common/validators/category-validator");
 const category_service_1 = require("../services/category.service");
 const category_entity_1 = require("../entity/category.entity");
 const app_logger_service_1 = require("../../common/logger/app-logger.service");
 const app_config_service_1 = require("../../common/config/app-config.service");
+const dau_service_1 = require("../../admin/services/dau.service");
 let HistoryModule = class HistoryModule {
 };
 exports.HistoryModule = HistoryModule;
@@ -38,6 +39,7 @@ exports.HistoryModule = HistoryModule = __decorate([
             category_validator_1.CategoryValidator,
             app_logger_service_1.AppLoggerService,
             app_config_service_1.AppConfigService,
+            dau_service_1.DauService,
         ],
         exports: [browse_history_service_1.BrowseHistoryService, browse_history_cleanup_service_1.BrowseHistoryCleanupService, typeorm_1.TypeOrmModule],
     })

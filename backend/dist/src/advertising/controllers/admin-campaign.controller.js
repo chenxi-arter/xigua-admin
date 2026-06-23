@@ -16,6 +16,7 @@ exports.AdminCampaignController = void 0;
 const common_1 = require("@nestjs/common");
 const services_1 = require("../services");
 const dto_1 = require("../dto");
+const admin_jwt_auth_guard_1 = require("../../admin/guards/admin-jwt-auth.guard");
 let AdminCampaignController = class AdminCampaignController {
     campaignService;
     analyticsService;
@@ -133,6 +134,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AdminCampaignController.prototype, "getStats", null);
 exports.AdminCampaignController = AdminCampaignController = __decorate([
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
     (0, common_1.Controller)('admin/advertising/campaigns'),
     __metadata("design:paramtypes", [services_1.CampaignService,
         services_1.AnalyticsService])
