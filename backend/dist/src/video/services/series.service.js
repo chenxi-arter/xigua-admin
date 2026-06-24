@@ -119,9 +119,9 @@ let SeriesService = class SeriesService {
                 .createQueryBuilder('series')
                 .leftJoinAndSelect('series.category', 'category')
                 .leftJoinAndSelect('series.episodes', 'episodes')
-                .orderBy('series.updatedAt', 'DESC')
-                .addOrderBy('series.createdAt', 'DESC')
+                .orderBy('series.createdAt', 'DESC')
                 .addOrderBy('series.id', 'DESC')
+                .addOrderBy('series.updatedAt', 'DESC')
                 .limit(limit);
             if (categoryId) {
                 queryBuilder.where('series.categoryId = :categoryId', { categoryId });
@@ -161,8 +161,8 @@ let SeriesService = class SeriesService {
     }
     async getRecommendedSeries(userId, limit = 10) {
         const cacheKey = userId
-            ? `recommended_series_${userId}_${limit}`
-            : `recommended_series_${limit}`;
+            ? `recommended_series_v2_${userId}_${limit}`
+            : `recommended_series_v2_${limit}`;
         const cached = await this.cacheManager.get(cacheKey);
         if (cached) {
             return cached;
@@ -172,9 +172,13 @@ let SeriesService = class SeriesService {
                 .createQueryBuilder('series')
                 .leftJoinAndSelect('series.category', 'category')
                 .leftJoinAndSelect('series.episodes', 'episodes')
-                .where('series.score >= :minScore', { minScore: 7.0 })
-                .orderBy('series.score', 'DESC')
+                .where('series.isActive = :isActive', { isActive: 1 })
+                .andWhere('series.score >= :minScore', { minScore: 7.0 })
+                .orderBy('series.createdAt', 'DESC')
+                .addOrderBy('series.id', 'DESC')
+                .addOrderBy('series.score', 'DESC')
                 .addOrderBy('series.playCount', 'DESC')
+                .addOrderBy('series.updatedAt', 'DESC')
                 .limit(limit)
                 .getMany();
             await this.cacheManager.set(cacheKey, series, cache_keys_util_1.CacheKeys.TTL.MEDIUM);

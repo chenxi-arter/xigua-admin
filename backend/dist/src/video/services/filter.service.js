@@ -401,59 +401,77 @@ let FilterService = class FilterService {
             };
         }
         try {
-            const offset = (page - 1) * size;
-            console.log('查询参数:', { offset, size });
+            const pageNum = Math.max(Number(page) || 1, 1);
+            const pageSize = Math.min(Math.max(Number(size) || 20, 1), 50);
+            const offset = (pageNum - 1) * pageSize;
             const trimmedKeyword = keyword.trim();
-            const queryBuilder = this.seriesRepo.createQueryBuilder('series')
+            const likeKeyword = `%${trimmedKeyword}%`;
+            const parsedCategoryId = categoryId && categoryId.trim() !== '' ? parseInt(categoryId, 10) : undefined;
+            const hasCategoryFilter = Number.isFinite(parsedCategoryId) && Number(parsedCategoryId) > 0;
+            const baseWhere = (qb) => {
+                qb.where('series.title LIKE :likeKeyword', { likeKeyword })
+                    .andWhere('series.isActive = :isActive', { isActive: 1 });
+                if (hasCategoryFilter) {
+                    qb.andWhere('series.category_id = :categoryId', { categoryId: parsedCategoryId });
+                }
+            };
+            const countQuery = this.seriesRepo.createQueryBuilder('series');
+            baseWhere(countQuery);
+            const total = await countQuery.getCount();
+            if (total === 0) {
+                console.log('未找到相关结果');
+                return {
+                    code: 200,
+                    data: { list: [], total: 0, page: pageNum, size: pageSize, hasMore: false },
+                    msg: '未找到相关结果'
+                };
+            }
+            const idQuery = this.seriesRepo.createQueryBuilder('series')
+                .select('series.id', 'id')
+                .addSelect(`
+          CASE 
+            WHEN series.title = :exactKeyword THEN 1
+            WHEN series.title LIKE :prefixKeyword THEN 2
+            WHEN series.title LIKE :likeKeyword THEN 3
+            ELSE 4
+          END
+        `, 'matchPriority')
+                .addSelect('LOCATE(:exactKeyword, series.title)', 'matchPosition')
+                .addSelect('CHAR_LENGTH(series.title)', 'titleLength')
+                .setParameters({
+                exactKeyword: trimmedKeyword,
+                prefixKeyword: `${trimmedKeyword}%`,
+                likeKeyword,
+            });
+            baseWhere(idQuery);
+            const idRows = await idQuery
+                .orderBy('matchPriority', 'ASC')
+                .addOrderBy('matchPosition', 'ASC')
+                .addOrderBy('titleLength', 'ASC')
+                .addOrderBy('series.createdAt', 'DESC')
+                .addOrderBy('series.id', 'DESC')
+                .offset(offset)
+                .limit(pageSize)
+                .getRawMany();
+            const seriesIds = idRows.map(row => Number(row.id)).filter(Boolean);
+            if (seriesIds.length === 0) {
+                return {
+                    code: 200,
+                    data: { list: [], total, page: pageNum, size: pageSize, hasMore: total > pageNum * pageSize },
+                    msg: null
+                };
+            }
+            const series = await this.seriesRepo.createQueryBuilder('series')
                 .leftJoinAndSelect('series.category', 'category')
-                .leftJoinAndSelect('series.episodes', 'episodes')
                 .leftJoinAndSelect('series.regionOption', 'regionOption')
                 .leftJoinAndSelect('series.languageOption', 'languageOption')
                 .leftJoinAndSelect('series.statusOption', 'statusOption')
                 .leftJoinAndSelect('series.yearOption', 'yearOption')
-                .where('series.title LIKE :keyword', { keyword: `%${trimmedKeyword}%` })
-                .andWhere('series.isActive = :isActive', { isActive: 1 });
-            if (categoryId && categoryId.trim() !== '') {
-                queryBuilder.andWhere('series.category_id = :categoryId', { categoryId: parseInt(categoryId) });
-            }
-            queryBuilder
-                .addSelect(`
-          CASE 
-            WHEN series.title = :keyword THEN 1
-            WHEN series.title LIKE CONCAT(:keyword, '%') THEN 2
-            WHEN series.title LIKE CONCAT('%', :keyword, '%') THEN 3
-            ELSE 4
-          END
-        `, 'matchPriority')
-                .addSelect('LOCATE(:keyword, series.title)', 'matchPosition')
-                .addSelect('CHAR_LENGTH(series.title)', 'titleLength')
-                .orderBy('matchPriority', 'ASC')
-                .addOrderBy('matchPosition', 'ASC')
-                .addOrderBy('titleLength', 'ASC')
-                .addOrderBy('series.createdAt', 'DESC');
-            console.log('SQL查询:', queryBuilder.getSql());
-            console.log('查询参数:', queryBuilder.getParameters());
-            const [series, total] = await queryBuilder
-                .skip(offset)
-                .take(size)
-                .getManyAndCount();
-            console.log('查询结果:', { count: series?.length || 0, total });
-            if (!series || series.length === 0) {
-                console.log('未找到相关结果');
-                const response = {
-                    code: 200,
-                    data: {
-                        list: [],
-                        total: 0,
-                        page,
-                        size,
-                        hasMore: false
-                    },
-                    msg: '未找到相关结果'
-                };
-                return response;
-            }
-            const seriesIds = series.map(s => s.id);
+                .where('series.id IN (:...seriesIds)', { seriesIds })
+                .getMany();
+            const orderMap = new Map(seriesIds.map((id, index) => [id, index]));
+            series.sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0));
+            console.log('查询结果:', { count: series.length, total });
             const seriesTagsMap = await this.getSeriesTagsBatch(seriesIds);
             const items = series.map(s => {
                 const genreTags = seriesTagsMap.get(s.id) || [];
@@ -474,7 +492,7 @@ let FilterService = class FilterService {
                     url: s.id.toString(),
                     type: s.category?.name || '未分类',
                     contentType: s.category?.name || '',
-                    isSerial: (s.episodes && s.episodes.length > 1) || false,
+                    isSerial: (s.totalEpisodes && s.totalEpisodes > 1) || false,
                     upStatus: s.upStatus || (s.statusOption?.name ? `${s.statusOption.name}` : '已完结'),
                     upCount: 0,
                     author: s.starring || s.actor || '',
@@ -491,9 +509,9 @@ let FilterService = class FilterService {
                 data: {
                     list: items,
                     total,
-                    page,
-                    size,
-                    hasMore: total > page * size
+                    page: pageNum,
+                    size: pageSize,
+                    hasMore: total > pageNum * pageSize
                 },
                 msg: null
             };

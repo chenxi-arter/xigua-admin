@@ -56,8 +56,8 @@ class DatabaseConfig {
                 queueLimit: 0,
                 enableKeepAlive: true,
                 keepAliveInitialDelay: 0,
-                idleTimeoutMillis: 28800000,
-                maxLifetime: 1800000,
+                maxIdle: this.minConnections || Math.ceil((this.maxConnections ?? 10) * 0.3),
+                idleTimeout: 300000,
                 typeCast: function (field, next) {
                     if (field.type === 'DATETIME' || field.type === 'TIMESTAMP') {
                         const val = field.string();

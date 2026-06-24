@@ -48,8 +48,8 @@ export declare class DatabaseConfig {
             queueLimit: number;
             enableKeepAlive: boolean;
             keepAliveInitialDelay: number;
-            idleTimeoutMillis: number;
-            maxLifetime: number;
+            maxIdle: number;
+            idleTimeout: number;
             typeCast: (field: any, next: () => any) => any;
         };
         poolSize: number | undefined;

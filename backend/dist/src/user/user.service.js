@@ -92,16 +92,6 @@ let UserService = UserService_1 = class UserService {
         await this.onlineDailyRepo.query(`INSERT INTO user_online_daily (user_id, date, duration) VALUES (?, ?, ?)
        ON DUPLICATE KEY UPDATE duration = duration + ?`, [userId, date, duration, duration]);
     }
-    async recordUserActive(userId) {
-        const today = new Date().toISOString().slice(0, 10);
-        try {
-            await this.onlineDailyRepo.query(`INSERT INTO user_online_daily (user_id, date, duration) VALUES (?, ?, 0)
-         ON DUPLICATE KEY UPDATE user_id = user_id`, [userId, today]);
-        }
-        catch (e) {
-            this.logger.warn(`recordUserActive failed for user ${userId}: ${e?.message}`);
-        }
-    }
     async telegramLogin(dto) {
         this.validateBotToken();
         const userData = this.validateAndExtractUserData(dto);
@@ -289,7 +279,6 @@ let UserService = UserService_1 = class UserService {
     }
     async generateUserTokens(user, deviceInfo) {
         const tokens = await this.authService.generateTokens(user, deviceInfo || user.username || 'Telegram User');
-        await this.recordUserActive(user.id).catch(() => { });
         return tokens;
     }
     async findUserById(id) {
@@ -374,7 +363,6 @@ let UserService = UserService_1 = class UserService {
             }
         }
         const tokens = await this.authService.generateTokens(user, dto.deviceInfo || 'Email Login');
-        await this.recordUserActive(user.id).catch(() => { });
         return {
             ...tokens,
         };
@@ -497,7 +485,6 @@ let UserService = UserService_1 = class UserService {
             const mergeStats = await this.accountMergeService.mergeGuestToUser(userId, existingUser.id);
             this.logger.log(`数据合并完成: ${JSON.stringify(mergeStats)}`);
             const tokens = await this.authService.generateTokens(existingUser, 'Email Login After Merge');
-            await this.recordUserActive(existingUser.id).catch(() => { });
             return {
                 success: true,
                 message: '检测到该邮箱已注册，已将您的游客数据合并到现有账号',
@@ -525,7 +512,6 @@ let UserService = UserService_1 = class UserService {
         }
         await this.userRepo.save(guestUser);
         const tokens = await this.authService.generateTokens(guestUser, 'Email Registration');
-        await this.recordUserActive(guestUser.id).catch(() => { });
         return {
             success: true,
             message: '游客账号已成功转为正式用户，所有历史数据已保留',

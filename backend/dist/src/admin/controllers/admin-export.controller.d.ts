@@ -1,29 +1,23 @@
 import { Repository } from 'typeorm';
-import { WatchProgress } from '../../video/entity/watch-progress.entity';
 import { WatchLog } from '../../video/entity/watch-log.entity';
 import { User } from '../../user/entity/user.entity';
 import { EpisodeReaction } from '../../video/entity/episode-reaction.entity';
 import { Favorite } from '../../user/entity/favorite.entity';
-import { Episode } from '../../video/entity/episode.entity';
 import { Series } from '../../video/entity/series.entity';
 import { Comment } from '../../video/entity/comment.entity';
 import { UserOnlineDaily } from '../../user/entity/user-online-daily.entity';
 import { ExportSeriesDetailsDto, SeriesDetailData } from '../dto/export-series-details.dto';
-import { WatchLogService } from '../../video/services/watch-log.service';
 import { AnalyticsService } from '../services/analytics.service';
 export declare class AdminExportController {
-    private readonly wpRepo;
     private readonly watchLogRepo;
     private readonly userRepo;
     private readonly reactionRepo;
     private readonly favoriteRepo;
-    private readonly episodeRepo;
     private readonly seriesRepo;
     private readonly commentRepo;
     private readonly onlineDailyRepo;
-    private readonly watchLogService;
     private readonly analyticsService;
-    constructor(wpRepo: Repository<WatchProgress>, watchLogRepo: Repository<WatchLog>, userRepo: Repository<User>, reactionRepo: Repository<EpisodeReaction>, favoriteRepo: Repository<Favorite>, episodeRepo: Repository<Episode>, seriesRepo: Repository<Series>, commentRepo: Repository<Comment>, onlineDailyRepo: Repository<UserOnlineDaily>, watchLogService: WatchLogService, analyticsService: AnalyticsService);
+    constructor(watchLogRepo: Repository<WatchLog>, userRepo: Repository<User>, reactionRepo: Repository<EpisodeReaction>, favoriteRepo: Repository<Favorite>, seriesRepo: Repository<Series>, commentRepo: Repository<Comment>, onlineDailyRepo: Repository<UserOnlineDaily>, analyticsService: AnalyticsService);
     getPlayStats(startDate: string, endDate: string): Promise<{
         code: number;
         data: any[];
@@ -73,4 +67,5 @@ export declare class AdminExportController {
         message: string;
     }>;
     private formatDate;
+    private formatDateOnly;
 }
