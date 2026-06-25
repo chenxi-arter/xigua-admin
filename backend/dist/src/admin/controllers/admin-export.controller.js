@@ -130,12 +130,12 @@ let AdminExportController = class AdminExportController {
          GROUP BY DATE_FORMAT(DATE_ADD(created_at, INTERVAL 8 HOUR), '%Y-%m-%d')`, [startTime, endTime]);
             newUserRows.forEach(row => { const item = statsMap.get(row.date); if (item)
                 item.newUsers = Number(row.newUsers || 0); });
-            const dauRows = await this.onlineDailyRepo.query(`SELECT date, COUNT(DISTINCT user_id) dau
-         FROM user_online_daily
-         WHERE date >= ? AND date <= ? AND duration > 0
-         GROUP BY date`, [start, end]);
-            dauRows.forEach(row => { const item = statsMap.get(this.formatDateOnly(row.date)); if (item)
-                item.dau = Number(row.dau || 0); });
+            const activeUsersMap = await this.analyticsService.getActiveUsersForDates(dates);
+            dates.forEach(d => {
+                const item = statsMap.get(d);
+                if (item)
+                    item.dau = activeUsersMap.get(d) || 0;
+            });
             const avgWatchRows = await this.watchLogRepo.query(`SELECT DATE_FORMAT(watch_date, '%Y-%m-%d') date,
                 SUM(watch_duration) / COUNT(DISTINCT user_id) avgWatchDuration
          FROM watch_logs
@@ -330,11 +330,7 @@ let AdminExportController = class AdminExportController {
                 totalUsers += newUserMap.get(d) || 0;
                 totalUsersMap.set(d, totalUsers);
             });
-            const activeRows = await this.onlineDailyRepo.query(`SELECT date, COUNT(DISTINCT user_id) activeUsers
-         FROM user_online_daily
-         WHERE date >= ? AND date <= ? AND duration > 0
-         GROUP BY date`, [start, end]);
-            const activeUsersMap = new Map(activeRows.map(r => [this.formatDateOnly(r.date), Number(r.activeUsers || 0)]));
+            const activeUsersMap = await this.analyticsService.getActiveUsersForDates(dates);
             const sessionRows = await this.watchLogRepo.query(`SELECT DATE_FORMAT(watch_date, '%Y-%m-%d') date,
                 SUM(watch_duration) totalDuration,
                 COUNT(*) totalSessions,
