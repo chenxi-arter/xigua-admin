@@ -20,6 +20,7 @@ export declare class UserController {
     heartbeat(req: AuthenticatedRequest): Promise<{
         ok: boolean;
     }>;
+    private getBeijingDateOnly;
     getMe(req: AuthenticatedRequest): Promise<{
         message: string;
         email?: undefined;

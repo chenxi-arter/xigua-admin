@@ -65,8 +65,8 @@ let UserService = UserService_1 = class UserService {
     async flushOnlineDataToDb() {
         if (!this.redisClient)
             return;
-        const today = new Date().toISOString().slice(0, 10);
-        const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+        const today = this.getBeijingDateOnly();
+        const yesterday = this.getBeijingDateOnly(new Date(Date.now() - 86400000));
         for (const date of [yesterday, today]) {
             try {
                 const key = `online:${date}`;
@@ -91,6 +91,10 @@ let UserService = UserService_1 = class UserService {
     async flushHeartbeatToDb(userId, date, duration) {
         await this.onlineDailyRepo.query(`INSERT INTO user_online_daily (user_id, date, duration) VALUES (?, ?, ?)
        ON DUPLICATE KEY UPDATE duration = duration + ?`, [userId, date, duration, duration]);
+    }
+    getBeijingDateOnly(date = new Date()) {
+        const beijingTime = new Date(date.getTime() + 8 * 60 * 60 * 1000);
+        return beijingTime.toISOString().slice(0, 10);
     }
     async telegramLogin(dto) {
         this.validateBotToken();

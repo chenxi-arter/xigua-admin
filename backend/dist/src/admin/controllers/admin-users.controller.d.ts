@@ -84,4 +84,5 @@ export declare class AdminUsersController {
     private toExclusiveDateOnlyBoundary;
     private clearUserOnlineCache;
     private formatDateOnly;
+    private getBeijingDateOnly;
 }

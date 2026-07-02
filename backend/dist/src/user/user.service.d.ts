@@ -32,6 +32,7 @@ export declare class UserService {
     recordHeartbeat(userId: number, date: string): Promise<void>;
     flushOnlineDataToDb(): Promise<void>;
     private flushHeartbeatToDb;
+    private getBeijingDateOnly;
     telegramLogin(dto: TelegramUserDto): Promise<TokenResult>;
     private validateBotToken;
     bindEmail(userId: number, dto: BindEmailDto): Promise<{

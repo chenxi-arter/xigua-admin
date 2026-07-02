@@ -38,9 +38,13 @@ let UserController = class UserController {
     }
     async heartbeat(req) {
         const userId = req.user.userId;
-        const today = new Date().toISOString().slice(0, 10);
+        const today = this.getBeijingDateOnly();
         await this.userService.recordHeartbeat(userId, today);
         return { ok: true };
+    }
+    getBeijingDateOnly(date = new Date()) {
+        const beijingTime = new Date(date.getTime() + 8 * 60 * 60 * 1000);
+        return beijingTime.toISOString().slice(0, 10);
     }
     async getMe(req) {
         const user = await this.userService.findUserById(req.user.userId);
