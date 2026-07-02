@@ -35,7 +35,7 @@ let AdminUsersController = class AdminUsersController {
         this.onlineDailyRepo = onlineDailyRepo;
         this.redisClient = redisClient;
     }
-    async list(page = 1, size = 20, startDate, endDate, loginCount, minLoginCount, maxLoginCount, watchDurationRange, minWatchMinutes, maxWatchMinutes, onlineDurationRange, minOnlineMinutes, maxOnlineMinutes) {
+    async list(page = 1, size = 20, startDate, endDate, loginCount, minLoginCount, maxLoginCount, watchDurationRange, minWatchMinutes, maxWatchMinutes, onlineDurationRange, minOnlineMinutes, maxOnlineMinutes, minOnlineDays, maxOnlineDays) {
         const take = Math.max(Number(size) || 20, 1);
         const currentPage = Math.max(Number(page) || 1, 1);
         const skip = (currentPage - 1) * take;
@@ -45,12 +45,25 @@ let AdminUsersController = class AdminUsersController {
         const startDateOnly = parsedStartDate ? this.formatDateOnly(parsedStartDate) : null;
         const endDateOnly = parsedEndDate ? this.formatDateOnly(this.toExclusiveDateOnlyBoundary(parsedEndDate)) : null;
         const queryBuilder = this.userRepo.createQueryBuilder('u')
-            .leftJoin(qb => qb
-            .select('rt.user_id', 'userId')
-            .addSelect('COUNT(*)', 'loginCount')
-            .addSelect('MAX(rt.created_at)', 'lastLoginAt')
-            .from(refresh_token_entity_1.RefreshToken, 'rt')
-            .groupBy('rt.user_id'), 'login_stats', 'login_stats.userId = u.id')
+            .leftJoin(qb => {
+            const loginQb = qb
+                .select('rt.user_id', 'userId')
+                .addSelect('COUNT(*)', 'loginCount')
+                .addSelect('MAX(rt.created_at)', 'lastLoginAt')
+                .from(refresh_token_entity_1.RefreshToken, 'rt');
+            if (parsedStartDate) {
+                loginQb.where('rt.created_at >= :loginStartDate', { loginStartDate: parsedStartDate });
+            }
+            if (parsedEndDate) {
+                if (parsedStartDate) {
+                    loginQb.andWhere('rt.created_at < :loginEndDate', { loginEndDate: parsedEndDate });
+                }
+                else {
+                    loginQb.where('rt.created_at < :loginEndDate', { loginEndDate: parsedEndDate });
+                }
+            }
+            return loginQb.groupBy('rt.user_id');
+        }, 'login_stats', 'login_stats.userId = u.id')
             .leftJoin(qb => qb
             .select('art.user_id', 'userId')
             .addSelect('COUNT(*)', 'activeLogins')
@@ -81,17 +94,14 @@ let AdminUsersController = class AdminUsersController {
             const onlineQb = qb
                 .select('od.user_id', 'userId')
                 .addSelect('COALESCE(SUM(od.duration), 0)', 'totalOnlineDuration')
-                .from(user_online_daily_entity_1.UserOnlineDaily, 'od');
+                .addSelect('COUNT(*)', 'onlineDays')
+                .from(user_online_daily_entity_1.UserOnlineDaily, 'od')
+                .where('od.duration > 0');
             if (startDateOnly) {
-                onlineQb.where('od.date >= :onlineStartDate', { onlineStartDate: startDateOnly });
+                onlineQb.andWhere('od.date >= :onlineStartDate', { onlineStartDate: startDateOnly });
             }
             if (endDateOnly) {
-                if (startDateOnly) {
-                    onlineQb.andWhere('od.date < :onlineEndDate', { onlineEndDate: endDateOnly });
-                }
-                else {
-                    onlineQb.where('od.date < :onlineEndDate', { onlineEndDate: endDateOnly });
-                }
+                onlineQb.andWhere('od.date < :onlineEndDate', { onlineEndDate: endDateOnly });
             }
             return onlineQb.groupBy('od.user_id');
         }, 'online_stats', 'online_stats.userId = u.id')
@@ -101,6 +111,7 @@ let AdminUsersController = class AdminUsersController {
             .addSelect('COALESCE(watch_stats.totalWatchDuration, 0)', 'totalWatchDuration')
             .addSelect('watch_stats.lastActiveAt', 'lastActiveAt')
             .addSelect('COALESCE(online_stats.totalOnlineDuration, 0)', 'totalOnlineDuration')
+            .addSelect('COALESCE(online_stats.onlineDays, 0)', 'onlineDays')
             .orderBy('u.id', 'DESC');
         const exactLoginCount = this.parseOptionalNumber(loginCount);
         const loginCountMin = this.parseOptionalNumber(minLoginCount);
@@ -144,6 +155,14 @@ let AdminUsersController = class AdminUsersController {
                 maxOnlineSeconds: onlineRange.maxSeconds,
             });
         }
+        const onlineDaysMin = this.parseOptionalNumber(minOnlineDays);
+        const onlineDaysMax = this.parseOptionalNumber(maxOnlineDays);
+        if (onlineDaysMin !== null) {
+            queryBuilder.andWhere('COALESCE(online_stats.onlineDays, 0) >= :minOnlineDays', { minOnlineDays: onlineDaysMin });
+        }
+        if (onlineDaysMax !== null) {
+            queryBuilder.andWhere('COALESCE(online_stats.onlineDays, 0) <= :maxOnlineDays', { maxOnlineDays: onlineDaysMax });
+        }
         const total = await queryBuilder.clone().getCount();
         const { entities: users, raw } = await queryBuilder
             .skip(skip)
@@ -167,6 +186,7 @@ let AdminUsersController = class AdminUsersController {
             ]);
             const totalWatchDuration = Number(stats?.totalWatchDuration || 0);
             const totalOnlineDuration = Number(stats?.totalOnlineDuration || 0);
+            const onlineDays = Number(stats?.onlineDays || 0);
             const lastWatchAt = stats?.lastActiveAt ? new Date(stats.lastActiveAt) : null;
             const lastActiveAt = onlineLastActiveAt ? new Date(onlineLastActiveAt) : lastWatchAt;
             const isOnline = !!onlineLastActiveAt;
@@ -179,6 +199,7 @@ let AdminUsersController = class AdminUsersController {
                 activeLogins: Number(stats?.activeLogins || 0),
                 totalOnlineDuration,
                 totalOnlineMinutes: Math.floor(totalOnlineDuration / 60),
+                onlineDays,
                 totalWatchDuration,
                 totalWatchMinutes: Math.floor(totalWatchDuration / 60),
                 lastActiveAt,
@@ -461,8 +482,10 @@ __decorate([
     __param(10, (0, common_1.Query)('onlineDurationRange')),
     __param(11, (0, common_1.Query)('minOnlineMinutes')),
     __param(12, (0, common_1.Query)('maxOnlineMinutes')),
+    __param(13, (0, common_1.Query)('minOnlineDays')),
+    __param(14, (0, common_1.Query)('maxOnlineDays')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object, String, String, String, String, String, String, String, String, String, String, String]),
+    __metadata("design:paramtypes", [Object, Object, String, String, String, String, String, String, String, String, String, String, String, String, String]),
     __metadata("design:returntype", Promise)
 ], AdminUsersController.prototype, "list", null);
 __decorate([
