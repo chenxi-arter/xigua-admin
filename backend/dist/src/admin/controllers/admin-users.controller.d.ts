@@ -11,7 +11,7 @@ export declare class AdminUsersController {
     private readonly onlineDailyRepo;
     private readonly redisClient;
     constructor(userRepo: Repository<User>, refreshTokenRepo: Repository<RefreshToken>, watchLogRepo: Repository<WatchLog>, onlineDailyRepo: Repository<UserOnlineDaily>, redisClient: RedisClientType | null);
-    list(page?: number, size?: number, startDate?: string, endDate?: string, loginCount?: string, minLoginCount?: string, maxLoginCount?: string, watchDurationRange?: string, minWatchMinutes?: string, maxWatchMinutes?: string, onlineDurationRange?: string, minOnlineMinutes?: string, maxOnlineMinutes?: string, minOnlineDays?: string, maxOnlineDays?: string): Promise<{
+    list(page?: number, size?: number, startDate?: string, endDate?: string, createdStartDate?: string, createdEndDate?: string, loginCount?: string, minLoginCount?: string, maxLoginCount?: string, watchDurationRange?: string, minWatchMinutes?: string, maxWatchMinutes?: string, onlineDurationRange?: string, minOnlineMinutes?: string, maxOnlineMinutes?: string, minOnlineDays?: string, maxOnlineDays?: string): Promise<{
         total: number;
         items: {
             loginCount: number;

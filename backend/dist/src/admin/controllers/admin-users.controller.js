@@ -35,13 +35,15 @@ let AdminUsersController = class AdminUsersController {
         this.onlineDailyRepo = onlineDailyRepo;
         this.redisClient = redisClient;
     }
-    async list(page = 1, size = 20, startDate, endDate, loginCount, minLoginCount, maxLoginCount, watchDurationRange, minWatchMinutes, maxWatchMinutes, onlineDurationRange, minOnlineMinutes, maxOnlineMinutes, minOnlineDays, maxOnlineDays) {
+    async list(page = 1, size = 20, startDate, endDate, createdStartDate, createdEndDate, loginCount, minLoginCount, maxLoginCount, watchDurationRange, minWatchMinutes, maxWatchMinutes, onlineDurationRange, minOnlineMinutes, maxOnlineMinutes, minOnlineDays, maxOnlineDays) {
         const take = Math.max(Number(size) || 20, 1);
         const currentPage = Math.max(Number(page) || 1, 1);
         const skip = (currentPage - 1) * take;
         const now = new Date();
         const parsedStartDate = this.parseDateBoundary(startDate, 'start');
         const parsedEndDate = this.parseDateBoundary(endDate, 'end');
+        const parsedCreatedStartDate = this.parseDateBoundary(createdStartDate, 'start');
+        const parsedCreatedEndDate = this.parseDateBoundary(createdEndDate, 'end');
         const startDateOnly = parsedStartDate ? this.formatDateOnly(parsedStartDate) : null;
         const endDateOnly = parsedEndDate ? this.formatDateOnly(this.toExclusiveDateOnlyBoundary(parsedEndDate)) : null;
         const queryBuilder = this.userRepo.createQueryBuilder('u')
@@ -113,6 +115,12 @@ let AdminUsersController = class AdminUsersController {
             .addSelect('COALESCE(online_stats.totalOnlineDuration, 0)', 'totalOnlineDuration')
             .addSelect('COALESCE(online_stats.onlineDays, 0)', 'onlineDays')
             .orderBy('u.id', 'DESC');
+        if (parsedCreatedStartDate) {
+            queryBuilder.andWhere('u.created_at >= :createdStartDate', { createdStartDate: parsedCreatedStartDate });
+        }
+        if (parsedCreatedEndDate) {
+            queryBuilder.andWhere('u.created_at < :createdEndDate', { createdEndDate: parsedCreatedEndDate });
+        }
         const exactLoginCount = this.parseOptionalNumber(loginCount);
         const loginCountMin = this.parseOptionalNumber(minLoginCount);
         const loginCountMax = this.parseOptionalNumber(maxLoginCount);
@@ -477,19 +485,21 @@ __decorate([
     __param(1, (0, common_1.Query)('size')),
     __param(2, (0, common_1.Query)('startDate')),
     __param(3, (0, common_1.Query)('endDate')),
-    __param(4, (0, common_1.Query)('loginCount')),
-    __param(5, (0, common_1.Query)('minLoginCount')),
-    __param(6, (0, common_1.Query)('maxLoginCount')),
-    __param(7, (0, common_1.Query)('watchDurationRange')),
-    __param(8, (0, common_1.Query)('minWatchMinutes')),
-    __param(9, (0, common_1.Query)('maxWatchMinutes')),
-    __param(10, (0, common_1.Query)('onlineDurationRange')),
-    __param(11, (0, common_1.Query)('minOnlineMinutes')),
-    __param(12, (0, common_1.Query)('maxOnlineMinutes')),
-    __param(13, (0, common_1.Query)('minOnlineDays')),
-    __param(14, (0, common_1.Query)('maxOnlineDays')),
+    __param(4, (0, common_1.Query)('createdStartDate')),
+    __param(5, (0, common_1.Query)('createdEndDate')),
+    __param(6, (0, common_1.Query)('loginCount')),
+    __param(7, (0, common_1.Query)('minLoginCount')),
+    __param(8, (0, common_1.Query)('maxLoginCount')),
+    __param(9, (0, common_1.Query)('watchDurationRange')),
+    __param(10, (0, common_1.Query)('minWatchMinutes')),
+    __param(11, (0, common_1.Query)('maxWatchMinutes')),
+    __param(12, (0, common_1.Query)('onlineDurationRange')),
+    __param(13, (0, common_1.Query)('minOnlineMinutes')),
+    __param(14, (0, common_1.Query)('maxOnlineMinutes')),
+    __param(15, (0, common_1.Query)('minOnlineDays')),
+    __param(16, (0, common_1.Query)('maxOnlineDays')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object, String, String, String, String, String, String, String, String, String, String, String, String, String]),
+    __metadata("design:paramtypes", [Object, Object, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String]),
     __metadata("design:returntype", Promise)
 ], AdminUsersController.prototype, "list", null);
 __decorate([
