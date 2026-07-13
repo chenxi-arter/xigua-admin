@@ -54,6 +54,7 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)({ message: '跳转链接必须是字符串' }),
+    (0, class_validator_1.IsUrl)({ protocols: ['https'], require_protocol: true }, { message: '跳转链接必须是 HTTPS URL' }),
     (0, enhanced_validation_decorator_1.EnhancedStringLength)(1, 500, { message: '跳转链接长度必须在1到500个字符之间' }),
     __metadata("design:type", String)
 ], CreateBannerDto.prototype, "linkUrl", void 0);
@@ -133,6 +134,7 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)({ message: '跳转链接必须是字符串' }),
+    (0, class_validator_1.IsUrl)({ protocols: ['https'], require_protocol: true }, { message: '跳转链接必须是 HTTPS URL' }),
     (0, enhanced_validation_decorator_1.EnhancedStringLength)(1, 500, { message: '跳转链接长度必须在1到500个字符之间' }),
     __metadata("design:type", String)
 ], UpdateBannerDto.prototype, "linkUrl", void 0);

@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UrlController = void 0;
 const common_1 = require("@nestjs/common");
+const admin_jwt_auth_guard_1 = require("../../admin/guards/admin-jwt-auth.guard");
 const video_service_1 = require("../video.service");
 const base_controller_1 = require("./base.controller");
 let UrlController = class UrlController extends base_controller_1.BaseController {
@@ -21,6 +22,19 @@ let UrlController = class UrlController extends base_controller_1.BaseController
     constructor(videoService) {
         super();
         this.videoService = videoService;
+    }
+    validateHttpsUrl(value, fieldName) {
+        let parsed;
+        try {
+            parsed = new URL(value.trim());
+        }
+        catch {
+            throw new common_1.BadRequestException(`${fieldName}格式不正确`);
+        }
+        if (parsed.protocol !== 'https:') {
+            throw new common_1.BadRequestException(`${fieldName}必须是 HTTPS URL`);
+        }
+        return parsed.toString();
     }
     async createEpisodeUrl(episodeId, quality, ossUrl, cdnUrl, subtitleUrl) {
         try {
@@ -36,7 +50,12 @@ let UrlController = class UrlController extends base_controller_1.BaseController
             if (!cdnUrl || cdnUrl.trim().length === 0) {
                 return this.error('CDN地址不能为空', 400);
             }
-            const result = await this.videoService.createEpisodeUrl(episodeId, quality.trim(), ossUrl.trim(), cdnUrl.trim(), subtitleUrl?.trim());
+            const safeOssUrl = this.validateHttpsUrl(ossUrl, 'OSS地址');
+            const safeCdnUrl = this.validateHttpsUrl(cdnUrl, 'CDN地址');
+            const safeSubtitleUrl = subtitleUrl?.trim()
+                ? this.validateHttpsUrl(subtitleUrl, '字幕地址')
+                : undefined;
+            const result = await this.videoService.createEpisodeUrl(episodeId, quality.trim(), safeOssUrl, safeCdnUrl, safeSubtitleUrl);
             return this.success(result, '播放地址创建成功', 200);
         }
         catch (error) {
@@ -105,6 +124,7 @@ let UrlController = class UrlController extends base_controller_1.BaseController
 };
 exports.UrlController = UrlController;
 __decorate([
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
     (0, common_1.Post)('episode'),
     __param(0, (0, common_1.Body)('episodeId')),
     __param(1, (0, common_1.Body)('quality')),
@@ -130,6 +150,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], UrlController.prototype, "getEpisodeUrlByKey", null);
 __decorate([
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
     (0, common_1.Post)('episode/sequel'),
     __param(0, (0, common_1.Body)('episodeId')),
     __param(1, (0, common_1.Body)('hasSequel')),
@@ -138,6 +159,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], UrlController.prototype, "updateEpisodeSequel", null);
 __decorate([
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
     (0, common_1.Post)('generate-keys'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),

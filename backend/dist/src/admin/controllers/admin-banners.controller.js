@@ -22,6 +22,8 @@ const platform_express_1 = require("@nestjs/platform-express");
 const presigned_upload_dto_1 = require("../dto/presigned-upload.dto");
 const crypto_1 = require("crypto");
 const axios_1 = require("axios");
+const promises_1 = require("dns/promises");
+const net_1 = require("net");
 const https = require("https");
 const admin_jwt_auth_guard_1 = require("../guards/admin-jwt-auth.guard");
 let AdminBannersController = class AdminBannersController {
@@ -30,6 +32,64 @@ let AdminBannersController = class AdminBannersController {
     constructor(bannerRepo, storage) {
         this.bannerRepo = bannerRepo;
         this.storage = storage;
+    }
+    async validateExternalImageUrl(rawUrl) {
+        let parsed;
+        try {
+            parsed = new URL(rawUrl);
+        }
+        catch {
+            throw new common_1.BadRequestException('Invalid URL');
+        }
+        if (parsed.protocol !== 'https:') {
+            throw new common_1.BadRequestException('Only HTTPS URLs are allowed');
+        }
+        const hostname = parsed.hostname.toLowerCase();
+        if (hostname === 'localhost' || hostname.endsWith('.localhost')) {
+            throw new common_1.BadRequestException('Localhost URLs are not allowed');
+        }
+        const addresses = (0, net_1.isIP)(hostname) ? [{ address: hostname }] : await (0, promises_1.lookup)(hostname, { all: true });
+        if (addresses.some(({ address }) => this.isPrivateOrReservedIp(address))) {
+            throw new common_1.BadRequestException('Private or reserved IP addresses are not allowed');
+        }
+        return parsed.toString();
+    }
+    isPrivateOrReservedIp(address) {
+        if (address === '::1' || address.startsWith('fe80:') || address.startsWith('fc') || address.startsWith('fd')) {
+            return true;
+        }
+        const parts = address.split('.').map(Number);
+        if (parts.length !== 4 || parts.some(part => !Number.isInteger(part))) {
+            return false;
+        }
+        const [a, b] = parts;
+        return a === 10
+            || a === 127
+            || a === 0
+            || a === 169 && b === 254
+            || a === 172 && b >= 16 && b <= 31
+            || a === 192 && b === 168
+            || a === 100 && b >= 64 && b <= 127
+            || a >= 224;
+    }
+    buildPublicUrlFromKey(fileKey, allowedPrefix) {
+        if (!fileKey.startsWith(allowedPrefix) || fileKey.includes('..') || fileKey.startsWith('/')) {
+            throw new common_1.BadRequestException('Invalid fileKey');
+        }
+        return this.storage.getPublicUrl(fileKey);
+    }
+    validateHttpsUrl(value, fieldName) {
+        let parsed;
+        try {
+            parsed = new URL(value.trim());
+        }
+        catch {
+            throw new common_1.BadRequestException(`${fieldName}格式不正确`);
+        }
+        if (parsed.protocol !== 'https:') {
+            throw new common_1.BadRequestException(`${fieldName}必须是 HTTPS URL`);
+        }
+        return parsed.toString();
     }
     normalize(raw) {
         const toInt = (v) => (typeof v === 'string' || typeof v === 'number') ? Number(v) : undefined;
@@ -41,7 +101,7 @@ let AdminBannersController = class AdminBannersController {
         if (typeof raw.imageUrl === 'string')
             payload.imageUrl = raw.imageUrl;
         if (typeof raw.linkUrl === 'string')
-            payload.linkUrl = raw.linkUrl;
+            payload.linkUrl = this.validateHttpsUrl(raw.linkUrl, 'linkUrl');
         if (typeof raw.description === 'string')
             payload.description = raw.description;
         const seriesId = toInt(raw.seriesId);
@@ -136,12 +196,15 @@ let AdminBannersController = class AdminBannersController {
     async uploadImageFromUrl(id, src) {
         if (!src)
             throw new common_1.BadRequestException('url is required');
+        const safeUrl = await this.validateExternalImageUrl(src);
         const allowInsecure = process.env.ALLOW_INSECURE_EXTERNAL_FETCH === 'true';
         const httpsAgent = new https.Agent({ rejectUnauthorized: !allowInsecure });
-        const resp = await axios_1.default.get(src, {
+        const resp = await axios_1.default.get(safeUrl, {
             responseType: 'arraybuffer',
             httpsAgent,
             timeout: 15000,
+            maxRedirects: 0,
+            maxContentLength: 10 * 1024 * 1024,
         });
         const buffer = Buffer.from(resp.data);
         const contentType = resp.headers['content-type'];
@@ -154,13 +217,17 @@ let AdminBannersController = class AdminBannersController {
         return this.bannerRepo.findOne({ where: { id: Number(id) } });
     }
     async uploadComplete(id, body) {
-        const { fileKey, publicUrl } = body;
-        if (!fileKey || !publicUrl) {
-            throw new common_1.BadRequestException('fileKey and publicUrl are required');
+        const { fileKey } = body;
+        if (!fileKey) {
+            throw new common_1.BadRequestException('fileKey is required');
         }
         const banner = await this.bannerRepo.findOne({ where: { id: Number(id) } });
         if (!banner) {
             throw new common_1.NotFoundException('Banner not found');
+        }
+        const publicUrl = this.buildPublicUrlFromKey(fileKey, `banners/${id}/`);
+        if (!(await this.storage.objectExists(fileKey))) {
+            throw new common_1.BadRequestException('Uploaded object not found');
         }
         await this.bannerRepo.update({ id: Number(id) }, {
             imageUrl: publicUrl,

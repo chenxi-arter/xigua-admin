@@ -288,6 +288,9 @@ let UserService = UserService_1 = class UserService {
     async findUserById(id) {
         return this.userRepo.findOneBy({ id });
     }
+    async updatePwaStatus(userId, isPwa) {
+        await this.userRepo.update({ id: userId }, { isPwa });
+    }
     async register(dto) {
         if (dto.password !== dto.confirmPassword) {
             throw new common_1.BadRequestException('密码和确认密码不匹配');
@@ -485,15 +488,7 @@ let UserService = UserService_1 = class UserService {
         }
         const existingUser = await this.userRepo.findOneBy({ email: dto.email });
         if (existingUser) {
-            this.logger.log(`邮箱 ${dto.email} 已存在，将游客 ${userId} 的数据合并到用户 ${existingUser.id}`);
-            const mergeStats = await this.accountMergeService.mergeGuestToUser(userId, existingUser.id);
-            this.logger.log(`数据合并完成: ${JSON.stringify(mergeStats)}`);
-            const tokens = await this.authService.generateTokens(existingUser, 'Email Login After Merge');
-            return {
-                success: true,
-                message: '检测到该邮箱已注册，已将您的游客数据合并到现有账号',
-                ...tokens,
-            };
+            throw new common_1.ConflictException('该邮箱已被注册，请直接使用邮箱密码登录后再合并游客数据');
         }
         if (dto.username) {
             const existingUsername = await this.userRepo.findOneBy({ username: dto.username });

@@ -26,7 +26,7 @@ export declare class AdminAuthController {
             updatedAt: Date;
         };
     }>;
-    init(body: {
+    init(initToken: string | undefined, body: {
         username: string;
         password: string;
         name?: string;
@@ -45,7 +45,7 @@ export declare class AdminAuthController {
         username: string;
         role: string;
     } | undefined;
-    list(): Promise<{
+    list(req: AdminRequest): Promise<{
         id: number;
         username: string;
         name: string | null | undefined;
@@ -54,7 +54,7 @@ export declare class AdminAuthController {
         createdAt: Date;
         updatedAt: Date;
     }[]>;
-    add(body: {
+    add(req: AdminRequest, body: {
         username: string;
         password: string;
         name?: string;
@@ -75,7 +75,7 @@ export declare class AdminAuthController {
         success: boolean;
         message: string;
     }>;
-    resetPassword(id: number, body: {
+    resetPassword(req: AdminRequest, id: number, body: {
         newPassword: string;
     }): Promise<{
         success: boolean;
@@ -85,5 +85,7 @@ export declare class AdminAuthController {
         success: boolean;
         message: string;
     }>;
+    private assertInitToken;
+    private assertSuperAdmin;
 }
 export {};

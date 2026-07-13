@@ -16,6 +16,7 @@ export declare class R2StorageService {
     }>;
     generatePresignedUploadUrl(fileKey: string, contentType: string, expiresIn?: number): Promise<string>;
     getPublicUrl(fileKey: string): string;
+    objectExists(fileKey: string): Promise<boolean>;
     private generateShortPath;
     generateVideoPath(seriesId: number, episodeId: number, quality: string, filename: string, type?: string): string;
     private sanitizeFilename;

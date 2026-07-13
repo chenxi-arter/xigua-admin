@@ -14,6 +14,7 @@ export declare class User {
     is_active: boolean;
     isGuest: boolean;
     guestToken: string;
+    isPwa: boolean;
     created_at: Date;
     comments: Comment[];
     watchProgresses: WatchProgress[];

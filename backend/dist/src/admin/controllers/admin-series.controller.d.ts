@@ -10,6 +10,10 @@ export declare class AdminSeriesController {
     private readonly videoService;
     private readonly storage;
     constructor(seriesRepo: Repository<Series>, filterOptionRepo: Repository<FilterOption>, videoService: VideoService, storage: R2StorageService);
+    private validateExternalImageUrl;
+    private isPrivateOrReservedIp;
+    private buildPublicUrlFromKey;
+    private isMysqlForeignKeyError;
     private findFilterOptionIdByName;
     private resolveChineseFilters;
     private normalize;
@@ -36,9 +40,9 @@ export declare class AdminSeriesController {
         coverUrl: string;
     }>;
     get(id: string): Promise<Series | null>;
-    create(body: any): Promise<Series>;
+    create(body: Record<string, unknown>): Promise<Series>;
     private validateFilterOptionIds;
-    update(id: string, body: any): Promise<Series | null>;
+    update(id: string, body: Record<string, unknown>): Promise<Series | null>;
     remove(id: string): Promise<{
         success: boolean;
         message: string;

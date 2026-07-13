@@ -96,6 +96,12 @@ let AuthService = class AuthService {
     async revokeAllUserTokens(userId) {
         await this.refreshTokenRepo.update({ userId, isRevoked: false }, { isRevoked: true });
     }
+    async revokeUserSpecificToken(userId, tokenId) {
+        const result = await this.refreshTokenRepo.update({ id: tokenId, userId, isRevoked: false }, { isRevoked: true });
+        if (result.affected === 0) {
+            throw new common_1.UnauthorizedException('设备不存在或已登出');
+        }
+    }
     async cleanupExpiredTokens() {
         const result = await this.refreshTokenRepo.delete({
             expiresAt: (0, typeorm_2.LessThan)(new Date()),
@@ -108,7 +114,7 @@ let AuthService = class AuthService {
             where: {
                 userId,
                 isRevoked: false,
-                expiresAt: (0, typeorm_2.LessThan)(new Date())
+                expiresAt: (0, typeorm_2.MoreThan)(new Date())
             },
             select: ['id', 'createdAt', 'expiresAt', 'deviceInfo', 'ipAddress'],
             order: { createdAt: 'DESC' },

@@ -33,6 +33,13 @@ let AdminEpisodesController = class AdminEpisodesController {
         this.storage = storage;
         this.episodeService = episodeService;
     }
+    buildPublicUrlFromKey(fileKey) {
+        const allowedPrefix = 'admin.v1.0.0.t1/';
+        if (!fileKey.startsWith(allowedPrefix) || fileKey.includes('..') || fileKey.startsWith('/')) {
+            throw new common_1.BadRequestException('Invalid fileKey');
+        }
+        return this.storage.getPublicUrl(fileKey);
+    }
     normalize(raw) {
         const toInt = (v) => (typeof v === 'string' || typeof v === 'number') ? Number(v) : undefined;
         const toStr = (v) => (typeof v === 'string') ? v : undefined;
@@ -172,17 +179,22 @@ let AdminEpisodesController = class AdminEpisodesController {
         };
     }
     async uploadComplete(id, body) {
-        const { fileKey, publicUrl, quality, fileSize } = body;
-        if (!fileKey || !publicUrl) {
-            throw new common_1.BadRequestException('fileKey and publicUrl are required');
+        const { fileKey, quality, fileSize } = body;
+        if (!fileKey) {
+            throw new common_1.BadRequestException('fileKey is required');
         }
         const episode = await this.episodeRepo.findOne({ where: { id: Number(id) } });
         if (!episode) {
             throw new common_1.NotFoundException('Episode not found');
         }
+        const publicUrl = this.buildPublicUrlFromKey(fileKey);
+        if (!(await this.storage.objectExists(fileKey))) {
+            throw new common_1.BadRequestException('Uploaded object not found');
+        }
+        const normalizedQuality = quality || '720p';
         const whereCondition = {
             episodeId: Number(id),
-            quality: quality || null,
+            quality: normalizedQuality,
         };
         const existingUrl = await this.episodeUrlRepo.findOne({
             where: whereCondition,
@@ -198,7 +210,7 @@ let AdminEpisodesController = class AdminEpisodesController {
         else {
             const episodeUrl = this.episodeUrlRepo.create({
                 episodeId: Number(id),
-                quality: quality || undefined,
+                quality: normalizedQuality,
                 cdnUrl: publicUrl,
                 ossUrl: publicUrl,
                 originUrl: publicUrl,
@@ -209,7 +221,7 @@ let AdminEpisodesController = class AdminEpisodesController {
             success: true,
             message: 'Video upload completed',
             publicUrl,
-            quality,
+            quality: normalizedQuality,
             fileSize,
         };
     }

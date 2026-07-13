@@ -10,6 +10,7 @@ export declare class AdminEpisodesController {
     private readonly storage;
     private readonly episodeService;
     constructor(episodeRepo: Repository<Episode>, episodeUrlRepo: Repository<EpisodeUrl>, storage: R2StorageService, episodeService: EpisodeService);
+    private buildPublicUrlFromKey;
     private normalize;
     list(page?: number, size?: number, seriesId?: string, minDuration?: string, maxDuration?: string): Promise<{
         total: number;
@@ -80,7 +81,7 @@ export declare class AdminEpisodesController {
         success: boolean;
         message: string;
         publicUrl: string;
-        quality: string | undefined;
+        quality: string;
         fileSize: number | undefined;
     }>;
     update(id: string, body: Partial<Episode>): Promise<Episode | null>;

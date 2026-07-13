@@ -28,6 +28,7 @@ let User = class User {
     is_active;
     isGuest;
     guestToken;
+    isPwa;
     created_at;
     comments;
     watchProgresses;
@@ -90,6 +91,10 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'varchar', length: 64, unique: true, nullable: true, name: 'guest_token' }),
     __metadata("design:type", String)
 ], User.prototype, "guestToken", void 0);
+__decorate([
+    (0, typeorm_1.Column)({ type: 'tinyint', default: 0, name: 'is_pwa' }),
+    __metadata("design:type", Boolean)
+], User.prototype, "isPwa", void 0);
 __decorate([
     (0, typeorm_1.CreateDateColumn)(),
     __metadata("design:type", Date)

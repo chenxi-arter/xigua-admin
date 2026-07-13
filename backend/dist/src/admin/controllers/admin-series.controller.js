@@ -24,6 +24,8 @@ const platform_express_1 = require("@nestjs/platform-express");
 const presigned_upload_dto_1 = require("../dto/presigned-upload.dto");
 const crypto_1 = require("crypto");
 const axios_1 = require("axios");
+const promises_1 = require("dns/promises");
+const net_1 = require("net");
 const https = require("https");
 const admin_jwt_auth_guard_1 = require("../guards/admin-jwt-auth.guard");
 let AdminSeriesController = class AdminSeriesController {
@@ -36,6 +38,57 @@ let AdminSeriesController = class AdminSeriesController {
         this.filterOptionRepo = filterOptionRepo;
         this.videoService = videoService;
         this.storage = storage;
+    }
+    async validateExternalImageUrl(rawUrl) {
+        let parsed;
+        try {
+            parsed = new URL(rawUrl);
+        }
+        catch {
+            throw new common_1.BadRequestException('Invalid URL');
+        }
+        if (parsed.protocol !== 'https:') {
+            throw new common_1.BadRequestException('Only HTTPS URLs are allowed');
+        }
+        const hostname = parsed.hostname.toLowerCase();
+        if (hostname === 'localhost' || hostname.endsWith('.localhost')) {
+            throw new common_1.BadRequestException('Localhost URLs are not allowed');
+        }
+        const addresses = (0, net_1.isIP)(hostname) ? [{ address: hostname }] : await (0, promises_1.lookup)(hostname, { all: true });
+        if (addresses.some(({ address }) => this.isPrivateOrReservedIp(address))) {
+            throw new common_1.BadRequestException('Private or reserved IP addresses are not allowed');
+        }
+        return parsed.toString();
+    }
+    isPrivateOrReservedIp(address) {
+        if (address === '::1' || address.startsWith('fe80:') || address.startsWith('fc') || address.startsWith('fd')) {
+            return true;
+        }
+        const parts = address.split('.').map(Number);
+        if (parts.length !== 4 || parts.some(part => !Number.isInteger(part))) {
+            return false;
+        }
+        const [a, b] = parts;
+        return a === 10
+            || a === 127
+            || a === 0
+            || a === 169 && b === 254
+            || a === 172 && b >= 16 && b <= 31
+            || a === 192 && b === 168
+            || a === 100 && b >= 64 && b <= 127
+            || a >= 224;
+    }
+    buildPublicUrlFromKey(fileKey, allowedPrefix) {
+        if (!fileKey.startsWith(allowedPrefix) || fileKey.includes('..') || fileKey.startsWith('/')) {
+            throw new common_1.BadRequestException('Invalid fileKey');
+        }
+        return this.storage.getPublicUrl(fileKey);
+    }
+    isMysqlForeignKeyError(error) {
+        return typeof error === 'object'
+            && error !== null
+            && 'code' in error
+            && error.code === 'ER_NO_REFERENCED_ROW_2';
     }
     async findFilterOptionIdByName(name, typeCode) {
         if (!name)
@@ -196,13 +249,17 @@ let AdminSeriesController = class AdminSeriesController {
         };
     }
     async uploadComplete(id, body) {
-        const { fileKey, publicUrl } = body;
-        if (!fileKey || !publicUrl) {
-            throw new common_1.BadRequestException('fileKey and publicUrl are required');
+        const { fileKey } = body;
+        if (!fileKey) {
+            throw new common_1.BadRequestException('fileKey is required');
         }
         const series = await this.seriesRepo.findOne({ where: { id: Number(id) } });
         if (!series) {
             throw new common_1.NotFoundException('Series not found');
+        }
+        const publicUrl = this.buildPublicUrlFromKey(fileKey, `series/${id}/`);
+        if (!(await this.storage.objectExists(fileKey))) {
+            throw new common_1.BadRequestException('Uploaded object not found');
         }
         await this.seriesRepo.update({ id: Number(id) }, {
             coverUrl: publicUrl,
@@ -227,7 +284,7 @@ let AdminSeriesController = class AdminSeriesController {
             return this.seriesRepo.save(entity);
         }
         catch (error) {
-            if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+            if (this.isMysqlForeignKeyError(error)) {
                 throw new common_1.BadRequestException({
                     message: '外键约束失败：引用的选项不存在',
                     details: error.sqlMessage,
@@ -326,7 +383,7 @@ let AdminSeriesController = class AdminSeriesController {
             });
         }
         catch (error) {
-            if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+            if (this.isMysqlForeignKeyError(error)) {
                 throw new common_1.BadRequestException({
                     message: '外键约束失败：引用的选项不存在',
                     details: error.sqlMessage,
@@ -358,12 +415,15 @@ let AdminSeriesController = class AdminSeriesController {
     async uploadCoverFromUrl(id, src) {
         if (!src)
             throw new common_1.BadRequestException('url is required');
+        const safeUrl = await this.validateExternalImageUrl(src);
         const allowInsecure = process.env.ALLOW_INSECURE_EXTERNAL_FETCH === 'true';
         const httpsAgent = new https.Agent({ rejectUnauthorized: !allowInsecure });
-        const resp = await axios_1.default.get(src, {
+        const resp = await axios_1.default.get(safeUrl, {
             responseType: 'arraybuffer',
             httpsAgent,
             timeout: 15000,
+            maxRedirects: 0,
+            maxContentLength: 10 * 1024 * 1024,
         });
         const buffer = Buffer.from(resp.data);
         const contentType = resp.headers['content-type'];

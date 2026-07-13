@@ -3,6 +3,7 @@ import { BaseController } from './base.controller';
 export declare class UrlController extends BaseController {
     private readonly videoService;
     constructor(videoService: VideoService);
+    private validateHttpsUrl;
     createEpisodeUrl(episodeId: number, quality: string, ossUrl: string, cdnUrl: string, subtitleUrl?: string): Promise<void | import("./base.controller").ApiResponse<null> | import("./base.controller").ApiResponse<{
         code: number;
         data: {
@@ -34,7 +35,11 @@ export declare class UrlController extends BaseController {
         }[];
         accessKeySource: string;
     }>>;
-    getEpisodeUrlByKey(body: any): Promise<void | import("./base.controller").ApiResponse<null> | import("./base.controller").ApiResponse<{
+    getEpisodeUrlByKey(body: {
+        type?: string;
+        accessKey?: string;
+        key?: string;
+    }): Promise<void | import("./base.controller").ApiResponse<null> | import("./base.controller").ApiResponse<{
         episodeId: number;
         episodeShortId: string;
         episodeTitle: string;

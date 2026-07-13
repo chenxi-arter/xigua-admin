@@ -21,6 +21,7 @@ export declare class AuthService {
     }>;
     revokeRefreshToken(refreshTokenValue: string): Promise<void>;
     revokeAllUserTokens(userId: number): Promise<void>;
+    revokeUserSpecificToken(userId: number, tokenId: number): Promise<void>;
     cleanupExpiredTokens(): Promise<number | null | undefined>;
     getUserActiveTokens(userId: number): Promise<RefreshToken[]>;
     private getExpiresInSeconds;

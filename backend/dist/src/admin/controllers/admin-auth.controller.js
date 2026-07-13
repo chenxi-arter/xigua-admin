@@ -24,26 +24,42 @@ let AdminAuthController = class AdminAuthController {
     login(body) {
         return this.adminAuthService.login(body);
     }
-    init(body) {
+    init(initToken, body) {
+        this.assertInitToken(initToken);
         return this.adminAuthService.createFirstAdmin(body);
     }
     me(req) {
         return req.admin;
     }
-    list() {
+    list(req) {
+        this.assertSuperAdmin(req);
         return this.adminAuthService.listAdmins();
     }
-    add(body) {
+    add(req, body) {
+        this.assertSuperAdmin(req);
         return this.adminAuthService.addAdmin(body);
     }
     changePassword(req, body) {
         return this.adminAuthService.changePassword(req.admin.id, body.oldPassword, body.newPassword);
     }
-    resetPassword(id, body) {
+    resetPassword(req, id, body) {
+        this.assertSuperAdmin(req);
         return this.adminAuthService.resetPassword(id, body.newPassword);
     }
     remove(id, req) {
+        this.assertSuperAdmin(req);
         return this.adminAuthService.removeAdmin(id, req.admin.id);
+    }
+    assertInitToken(initToken) {
+        const expected = process.env.INIT_ADMIN_TOKEN;
+        if (!expected || initToken !== expected) {
+            throw new common_1.UnauthorizedException('初始化令牌无效');
+        }
+    }
+    assertSuperAdmin(req) {
+        if (req.admin?.role !== 'super_admin') {
+            throw new common_1.ForbiddenException('仅超级管理员可执行该操作');
+        }
     }
 };
 exports.AdminAuthController = AdminAuthController;
@@ -56,9 +72,10 @@ __decorate([
 ], AdminAuthController.prototype, "login", null);
 __decorate([
     (0, common_1.Post)('init'),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, common_1.Headers)('x-init-admin-token')),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", void 0)
 ], AdminAuthController.prototype, "init", null);
 __decorate([
@@ -72,16 +89,18 @@ __decorate([
 __decorate([
     (0, common_1.Get)('list'),
     (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
+    __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], AdminAuthController.prototype, "list", null);
 __decorate([
     (0, common_1.Post)('add'),
     (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
-    __param(0, (0, common_1.Body)()),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", void 0)
 ], AdminAuthController.prototype, "add", null);
 __decorate([
@@ -96,10 +115,11 @@ __decorate([
 __decorate([
     (0, common_1.Put)('reset-password/:id'),
     (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
-    __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
-    __param(1, (0, common_1.Body)()),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(2, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, Object]),
+    __metadata("design:paramtypes", [Object, Number, Object]),
     __metadata("design:returntype", void 0)
 ], AdminAuthController.prototype, "resetPassword", null);
 __decorate([

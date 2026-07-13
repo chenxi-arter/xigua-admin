@@ -57,6 +57,7 @@ export declare class UserService {
     private updateExistingUser;
     private generateUserTokens;
     findUserById(id: number): Promise<User | null>;
+    updatePwaStatus(userId: number, isPwa: boolean): Promise<void>;
     register(dto: RegisterDto): Promise<RegisterResponseDto>;
     emailLogin(dto: EmailLoginDto): Promise<EmailLoginResponseDto>;
     bindTelegram(userId: number, dto: BindTelegramDto): Promise<BindTelegramResponseDto>;

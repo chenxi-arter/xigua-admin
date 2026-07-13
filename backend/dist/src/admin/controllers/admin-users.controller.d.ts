@@ -4,6 +4,7 @@ import { User } from '../../user/entity/user.entity';
 import { RefreshToken } from '../../auth/entity/refresh-token.entity';
 import { WatchLog } from '../../video/entity/watch-log.entity';
 import { UserOnlineDaily } from '../../user/entity/user-online-daily.entity';
+type AdminUserMutationBody = Partial<Pick<User, 'email' | 'first_name' | 'last_name' | 'username' | 'nickname' | 'photo_url' | 'is_active'>>;
 export declare class AdminUsersController {
     private readonly userRepo;
     private readonly refreshTokenRepo;
@@ -11,7 +12,7 @@ export declare class AdminUsersController {
     private readonly onlineDailyRepo;
     private readonly redisClient;
     constructor(userRepo: Repository<User>, refreshTokenRepo: Repository<RefreshToken>, watchLogRepo: Repository<WatchLog>, onlineDailyRepo: Repository<UserOnlineDaily>, redisClient: RedisClientType | null);
-    list(page?: number, size?: number, startDate?: string, endDate?: string, createdStartDate?: string, createdEndDate?: string, loginCount?: string, minLoginCount?: string, maxLoginCount?: string, watchDurationRange?: string, minWatchMinutes?: string, maxWatchMinutes?: string, onlineDurationRange?: string, minOnlineMinutes?: string, maxOnlineMinutes?: string, minOnlineDays?: string, maxOnlineDays?: string): Promise<{
+    list(page?: number, size?: number, startDate?: string, endDate?: string, createdStartDate?: string, createdEndDate?: string, loginCount?: string, minLoginCount?: string, maxLoginCount?: string, watchDurationRange?: string, minWatchMinutes?: string, maxWatchMinutes?: string, onlineDurationRange?: string, minOnlineMinutes?: string, maxOnlineMinutes?: string, minOnlineDays?: string, maxOnlineDays?: string, isPwa?: string): Promise<{
         total: number;
         items: {
             loginCount: number;
@@ -37,12 +38,50 @@ export declare class AdminUsersController {
             photo_url: string | null;
             is_active: boolean;
             isGuest: boolean;
+            isPwa: boolean;
             created_at: Date;
         }[];
         page: number;
         size: number;
     }>;
-    get(id: string, startDate?: string, endDate?: string): Promise<any>;
+    get(id: string, startDate?: string, endDate?: string): Promise<{
+        lastLoginAt: Date | null;
+        lastLoginIp: string | null;
+        lastLoginDevice: string | null;
+        activeLogins: number;
+        totalWatchDuration: number;
+        lastActiveAt: Date | null;
+        isOnline: boolean;
+        onlineDaily: {
+            userId: number;
+            startDate: string;
+            endDate: string;
+            totalOnlineDuration: number;
+            totalWatchDuration: number;
+            days: {
+                date: string;
+                onlineDuration: number;
+                watchDuration: number;
+                onlineHours: number;
+                onlineMinutes: number;
+                watchHours: number;
+                watchMinutes: number;
+            }[];
+        };
+        id: number;
+        email: string;
+        telegram_id: number;
+        shortId: string;
+        first_name: string;
+        last_name: string;
+        username: string;
+        nickname: string;
+        photo_url: string | null;
+        is_active: boolean;
+        isGuest: boolean;
+        isPwa: boolean;
+        created_at: Date;
+    } | null>;
     loginLogs(id: string, page?: number, size?: number): Promise<{
         total: number;
         items: RefreshToken[];
@@ -55,8 +94,8 @@ export declare class AdminUsersController {
             lastActiveAt: string | null;
         };
     }>;
-    create(body: Partial<User>): Promise<User>;
-    update(id: string, body: Partial<User>): Promise<User | null>;
+    create(body: AdminUserMutationBody): Promise<User>;
+    update(id: string, body: AdminUserMutationBody): Promise<User | null>;
     remove(id: string): Promise<{
         success: boolean;
     }>;
@@ -77,12 +116,13 @@ export declare class AdminUsersController {
         }[];
     }>;
     private getOnlineDailyStats;
+    private pickUserMutationFields;
     private toSafeUser;
     private parseDateBoundary;
     private parseOptionalNumber;
     private parseDurationRange;
-    private toExclusiveDateOnlyBoundary;
     private clearUserOnlineCache;
     private formatDateOnly;
     private getBeijingDateOnly;
 }
+export {};

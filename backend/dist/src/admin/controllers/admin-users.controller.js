@@ -35,7 +35,7 @@ let AdminUsersController = class AdminUsersController {
         this.onlineDailyRepo = onlineDailyRepo;
         this.redisClient = redisClient;
     }
-    async list(page = 1, size = 20, startDate, endDate, createdStartDate, createdEndDate, loginCount, minLoginCount, maxLoginCount, watchDurationRange, minWatchMinutes, maxWatchMinutes, onlineDurationRange, minOnlineMinutes, maxOnlineMinutes, minOnlineDays, maxOnlineDays) {
+    async list(page = 1, size = 20, startDate, endDate, createdStartDate, createdEndDate, loginCount, minLoginCount, maxLoginCount, watchDurationRange, minWatchMinutes, maxWatchMinutes, onlineDurationRange, minOnlineMinutes, maxOnlineMinutes, minOnlineDays, maxOnlineDays, isPwa) {
         const take = Math.max(Number(size) || 20, 1);
         const currentPage = Math.max(Number(page) || 1, 1);
         const skip = (currentPage - 1) * take;
@@ -44,8 +44,8 @@ let AdminUsersController = class AdminUsersController {
         const parsedEndDate = this.parseDateBoundary(endDate, 'end');
         const parsedCreatedStartDate = this.parseDateBoundary(createdStartDate, 'start');
         const parsedCreatedEndDate = this.parseDateBoundary(createdEndDate, 'end');
-        const startDateOnly = parsedStartDate ? this.formatDateOnly(parsedStartDate) : null;
-        const endDateOnly = parsedEndDate ? this.formatDateOnly(this.toExclusiveDateOnlyBoundary(parsedEndDate)) : null;
+        const startDateOnly = parsedStartDate ? parsedStartDate.slice(0, 10) : null;
+        const endDateOnly = parsedEndDate ? parsedEndDate.slice(0, 10) : null;
         const queryBuilder = this.userRepo.createQueryBuilder('u')
             .leftJoin(qb => {
             const loginQb = qb
@@ -114,12 +114,19 @@ let AdminUsersController = class AdminUsersController {
             .addSelect('watch_stats.lastActiveAt', 'lastActiveAt')
             .addSelect('COALESCE(online_stats.totalOnlineDuration, 0)', 'totalOnlineDuration')
             .addSelect('COALESCE(online_stats.onlineDays, 0)', 'onlineDays')
-            .orderBy('u.id', 'DESC');
+            .orderBy('u.created_at', 'DESC')
+            .addOrderBy('u.id', 'DESC');
         if (parsedCreatedStartDate) {
             queryBuilder.andWhere('u.created_at >= :createdStartDate', { createdStartDate: parsedCreatedStartDate });
         }
         if (parsedCreatedEndDate) {
             queryBuilder.andWhere('u.created_at < :createdEndDate', { createdEndDate: parsedCreatedEndDate });
+        }
+        if (isPwa === 'true' || isPwa === '1') {
+            queryBuilder.andWhere('u.is_pwa = 1');
+        }
+        else if (isPwa === 'false' || isPwa === '0') {
+            queryBuilder.andWhere('u.is_pwa = 0');
         }
         const exactLoginCount = this.parseOptionalNumber(loginCount);
         const loginCountMin = this.parseOptionalNumber(minLoginCount);
@@ -292,11 +299,11 @@ let AdminUsersController = class AdminUsersController {
         };
     }
     async create(body) {
-        const entity = this.userRepo.create(body);
+        const entity = this.userRepo.create(this.pickUserMutationFields(body));
         return this.userRepo.save(entity);
     }
     async update(id, body) {
-        await this.userRepo.update({ id: Number(id) }, body);
+        await this.userRepo.update({ id: Number(id) }, this.pickUserMutationFields(body));
         return this.userRepo.findOne({ where: { id: Number(id) } });
     }
     async remove(id) {
@@ -379,6 +386,24 @@ let AdminUsersController = class AdminUsersController {
             }),
         };
     }
+    pickUserMutationFields(body) {
+        const allowedKeys = [
+            'email',
+            'first_name',
+            'last_name',
+            'username',
+            'nickname',
+            'photo_url',
+            'is_active',
+        ];
+        const result = {};
+        for (const key of allowedKeys) {
+            if (Object.prototype.hasOwnProperty.call(body, key)) {
+                result[key] = body[key];
+            }
+        }
+        return result;
+    }
     toSafeUser(user) {
         return {
             id: user.id,
@@ -392,6 +417,7 @@ let AdminUsersController = class AdminUsersController {
             photo_url: user.photo_url,
             is_active: user.is_active,
             isGuest: user.isGuest,
+            isPwa: user.isPwa,
             created_at: user.created_at,
         };
     }
@@ -400,27 +426,25 @@ let AdminUsersController = class AdminUsersController {
             return null;
         const normalized = value.trim().replace('T', ' ');
         const match = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:\s+(\d{1,2})(?::(\d{1,2})(?::(\d{1,2}))?)?)?$/);
-        if (!match) {
-            const parsed = new Date(normalized);
-            return Number.isNaN(parsed.getTime()) ? null : parsed;
+        if (!match)
+            return null;
+        const [, yearStr, monthStr, dayStr, hourRaw, minuteRaw, secondRaw] = match;
+        const y = Number(yearStr);
+        const m = Number(monthStr);
+        const d = Number(dayStr);
+        const pad = (n) => String(n).padStart(2, '0');
+        if (boundary === 'end' && hourRaw === undefined) {
+            const nextDay = new Date(Date.UTC(y, m - 1, d + 1));
+            return `${nextDay.getUTCFullYear()}-${pad(nextDay.getUTCMonth() + 1)}-${pad(nextDay.getUTCDate())} 00:00:00`;
         }
-        const [, year, month, day, hourRaw, minuteRaw, secondRaw] = match;
-        let hour = hourRaw === undefined ? (boundary === 'start' ? 0 : 23) : Number(hourRaw);
+        const hour = hourRaw === undefined ? (boundary === 'start' ? 0 : 23) : Number(hourRaw);
         const minute = minuteRaw === undefined ? (boundary === 'start' ? 0 : 59) : Number(minuteRaw);
         const second = secondRaw === undefined ? (boundary === 'start' ? 0 : 59) : Number(secondRaw);
-        const date = new Date(Number(year), Number(month) - 1, Number(day), 0, 0, 0, 0);
-        if (boundary === 'end' && hourRaw === undefined) {
-            date.setDate(date.getDate() + 1);
-            date.setHours(0, 0, 0, 0);
-            return date;
-        }
         if (hour === 24) {
-            date.setDate(date.getDate() + 1);
-            date.setHours(0, 0, 0, 0);
-            return date;
+            const nextDay = new Date(Date.UTC(y, m - 1, d + 1));
+            return `${nextDay.getUTCFullYear()}-${pad(nextDay.getUTCMonth() + 1)}-${pad(nextDay.getUTCDate())} 00:00:00`;
         }
-        date.setHours(hour, minute, second, boundary === 'start' ? 0 : 999);
-        return Number.isNaN(date.getTime()) ? null : date;
+        return `${yearStr}-${pad(m)}-${pad(d)} ${pad(hour)}:${pad(minute)}:${pad(second)}`;
     }
     parseOptionalNumber(value) {
         if (value === undefined || value === null || String(value).trim() === '')
@@ -440,18 +464,6 @@ let AdminUsersController = class AdminUsersController {
             minSeconds: minMinutes === null ? null : Math.max(minMinutes, 0) * 60,
             maxSeconds: maxMinutes === null ? null : Math.max(maxMinutes, 0) * 60,
         };
-    }
-    toExclusiveDateOnlyBoundary(value) {
-        const result = new Date(value);
-        const hasTimePart = result.getHours() > 0
-            || result.getMinutes() > 0
-            || result.getSeconds() > 0
-            || result.getMilliseconds() > 0;
-        if (hasTimePart) {
-            result.setDate(result.getDate() + 1);
-            result.setHours(0, 0, 0, 0);
-        }
-        return result;
     }
     async clearUserOnlineCache(userId) {
         if (!this.redisClient)
@@ -498,8 +510,9 @@ __decorate([
     __param(14, (0, common_1.Query)('maxOnlineMinutes')),
     __param(15, (0, common_1.Query)('minOnlineDays')),
     __param(16, (0, common_1.Query)('maxOnlineDays')),
+    __param(17, (0, common_1.Query)('isPwa')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, Object, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String]),
+    __metadata("design:paramtypes", [Object, Object, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String]),
     __metadata("design:returntype", Promise)
 ], AdminUsersController.prototype, "list", null);
 __decorate([

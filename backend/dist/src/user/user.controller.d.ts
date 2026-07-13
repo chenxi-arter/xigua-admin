@@ -20,6 +20,12 @@ export declare class UserController {
     heartbeat(req: AuthenticatedRequest): Promise<{
         ok: boolean;
     }>;
+    reportPwaStatus(req: AuthenticatedRequest, body: {
+        isPwa: boolean;
+    }): Promise<{
+        ok: boolean;
+        isPwa: boolean;
+    }>;
     private getBeijingDateOnly;
     getMe(req: AuthenticatedRequest): Promise<{
         message: string;
@@ -34,6 +40,7 @@ export declare class UserController {
         isActive?: undefined;
         isGuest?: undefined;
         guestToken?: undefined;
+        isPwa?: undefined;
         createdAt?: undefined;
     } | {
         email: string | null;
@@ -47,6 +54,7 @@ export declare class UserController {
         isActive: boolean;
         isGuest: boolean;
         guestToken: string | null;
+        isPwa: boolean;
         createdAt: Date;
         message?: undefined;
     }>;

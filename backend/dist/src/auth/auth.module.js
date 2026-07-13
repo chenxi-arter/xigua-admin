@@ -32,6 +32,7 @@ const core_module_1 = require("../core/core.module");
 const dau_service_1 = require("../admin/services/dau.service");
 const jwt_auth_guard_1 = require("./guards/jwt-auth.guard");
 const optional_jwt_auth_guard_1 = require("./guards/optional-jwt-auth.guard");
+const admin_auth_module_1 = require("../admin/admin-auth.module");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
@@ -52,6 +53,7 @@ exports.AuthModule = AuthModule = __decorate([
             ]),
             (0, common_1.forwardRef)(() => user_module_1.UserModule),
             core_module_1.CoreModule,
+            admin_auth_module_1.AdminAuthModule,
             jwt_1.JwtModule.registerAsync({
                 useFactory: (configService) => ({
                     secret: configService.get('JWT_SECRET'),

@@ -6,6 +6,10 @@ export declare class AdminBannersController {
     private readonly bannerRepo;
     private readonly storage;
     constructor(bannerRepo: Repository<Banner>, storage: R2StorageService);
+    private validateExternalImageUrl;
+    private isPrivateOrReservedIp;
+    private buildPublicUrlFromKey;
+    private validateHttpsUrl;
     private normalize;
     list(page?: number, size?: number): Promise<{
         total: number;

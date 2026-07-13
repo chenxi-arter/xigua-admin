@@ -37,10 +37,14 @@ export declare class AuthController {
         }[];
         total: number;
     }>;
-    revokeDevice(tokenId: string): {
+    revokeDevice(req: {
+        user?: {
+            userId: number;
+        };
+    }, tokenId: string): Promise<{
         message: string;
         success: boolean;
-    };
+    }>;
     logout(refreshDto: RefreshTokenDto): Promise<{
         message: string;
     }>;

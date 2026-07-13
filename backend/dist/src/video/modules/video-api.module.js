@@ -55,6 +55,7 @@ const series_module_1 = require("./series.module");
 const episode_module_1 = require("./episode.module");
 const banner_module_1 = require("./banner.module");
 const auth_module_1 = require("../../auth/auth.module");
+const admin_auth_module_1 = require("../../admin/admin-auth.module");
 const series_entity_1 = require("../entity/series.entity");
 const episode_entity_1 = require("../entity/episode.entity");
 const episode_url_entity_1 = require("../entity/episode-url.entity");
@@ -71,6 +72,7 @@ const filter_option_entity_1 = require("../entity/filter-option.entity");
 const series_genre_option_entity_1 = require("../entity/series-genre-option.entity");
 const user_entity_1 = require("../../user/entity/user.entity");
 const dau_service_1 = require("../../admin/services/dau.service");
+const rate_limit_guard_1 = require("../../common/guards/rate-limit.guard");
 let VideoApiModule = class VideoApiModule {
 };
 exports.VideoApiModule = VideoApiModule;
@@ -81,6 +83,7 @@ exports.VideoApiModule = VideoApiModule = __decorate([
             series_module_1.SeriesModule,
             episode_module_1.EpisodeModule,
             banner_module_1.BannerModule,
+            admin_auth_module_1.AdminAuthModule,
             (0, common_1.forwardRef)(() => auth_module_1.AuthModule),
             typeorm_1.TypeOrmModule.forFeature([
                 series_entity_1.Series, episode_entity_1.Episode, episode_url_entity_1.EpisodeUrl, episode_reaction_entity_1.EpisodeReaction, comment_entity_1.Comment, comment_like_entity_1.CommentLike, watch_progress_entity_1.WatchProgress, watch_log_entity_1.WatchLog, category_entity_1.Category, short_video_entity_1.ShortVideo, banner_entity_1.Banner, filter_type_entity_1.FilterType, filter_option_entity_1.FilterOption,
@@ -131,6 +134,7 @@ exports.VideoApiModule = VideoApiModule = __decorate([
             notification_service_1.NotificationService,
             recommend_service_1.RecommendService,
             dau_service_1.DauService,
+            rate_limit_guard_1.RateLimitGuard,
             app_logger_service_1.AppLoggerService,
             app_config_service_1.AppConfigService,
         ],

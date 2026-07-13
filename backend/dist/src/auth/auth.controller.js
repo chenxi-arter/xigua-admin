@@ -27,6 +27,7 @@ const user_service_1 = require("../user/user.service");
 const telegram_user_dto_1 = require("../user/dto/telegram-user.dto");
 const guest_service_1 = require("./guest.service");
 const convert_guest_dto_1 = require("../user/dto/convert-guest.dto");
+const admin_jwt_auth_guard_1 = require("../admin/guards/admin-jwt-auth.guard");
 const common_2 = require("@nestjs/common");
 let AuthController = class AuthController {
     authService;
@@ -92,14 +93,16 @@ let AuthController = class AuthController {
             total: devices.length,
         };
     }
-    revokeDevice(tokenId) {
+    async revokeDevice(req, tokenId) {
+        const userId = req.user?.userId;
+        if (!userId) {
+            throw new common_1.UnauthorizedException('用户信息无效');
+        }
         const numericTokenId = parseInt(tokenId, 10);
         if (isNaN(numericTokenId)) {
-            return {
-                message: '无效的设备ID',
-                success: false,
-            };
+            throw new common_1.BadRequestException('无效的设备ID');
         }
+        await this.authService.revokeUserSpecificToken(userId, numericTokenId);
         return {
             message: '设备已登出',
             success: true,
@@ -260,11 +263,12 @@ __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Delete)('devices/:tokenId'),
     (0, swagger_1.ApiBearerAuth)(),
-    (0, swagger_1.ApiOperation)({ summary: '撤销指定设备refresh token（占位实现）' }),
-    __param(0, (0, common_1.Param)('tokenId')),
+    (0, swagger_1.ApiOperation)({ summary: '撤销指定设备 refresh token' }),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Param)('tokenId')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
 ], AuthController.prototype, "revokeDevice", null);
 __decorate([
     (0, common_1.Post)('logout'),
@@ -349,6 +353,7 @@ __decorate([
 ], AuthController.prototype, "convertGuestToEmail", null);
 __decorate([
     (0, common_1.Post)('admin/clean-inactive-guests'),
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({
         summary: '清理不活跃游客（管理员）',
@@ -375,6 +380,7 @@ __decorate([
 ], AuthController.prototype, "cleanInactiveGuests", null);
 __decorate([
     (0, common_1.Get)('admin/guest-statistics'),
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
     (0, swagger_1.ApiOperation)({
         summary: '获取游客统计信息（管理员）',
         description: '获取游客总数、活跃数、转化率等统计数据'
@@ -400,6 +406,7 @@ __decorate([
 ], AuthController.prototype, "getGuestStatistics", null);
 __decorate([
     (0, common_1.Post)('admin/reactivate-guest/:userId'),
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
     (0, swagger_1.ApiOperation)({
         summary: '恢复不活跃游客（管理员）',

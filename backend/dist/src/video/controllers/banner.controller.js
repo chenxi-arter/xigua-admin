@@ -14,9 +14,11 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BannerController = void 0;
 const common_1 = require("@nestjs/common");
+const rate_limit_guard_1 = require("../../common/guards/rate-limit.guard");
 const banner_service_1 = require("../services/banner.service");
 const response_util_1 = require("../../common/utils/response.util");
 const banner_dto_1 = require("../dto/banner.dto");
+const admin_jwt_auth_guard_1 = require("../../admin/guards/admin-jwt-auth.guard");
 let BannerController = class BannerController {
     bannerService;
     constructor(bannerService) {
@@ -91,6 +93,7 @@ let BannerController = class BannerController {
 };
 exports.BannerController = BannerController;
 __decorate([
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)(common_1.ValidationPipe)),
     __metadata("design:type", Function),
@@ -98,6 +101,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], BannerController.prototype, "createBanner", null);
 __decorate([
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
     (0, common_1.Put)(':id'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __param(1, (0, common_1.Body)(common_1.ValidationPipe)),
@@ -106,6 +110,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], BannerController.prototype, "updateBanner", null);
 __decorate([
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
@@ -127,6 +132,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], BannerController.prototype, "getBanners", null);
 __decorate([
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
     (0, common_1.Put)(':id/status'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __param(1, (0, common_1.Body)('isActive')),
@@ -135,6 +141,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], BannerController.prototype, "toggleBannerStatus", null);
 __decorate([
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
     (0, common_1.Put)('weights'),
     __param(0, (0, common_1.Body)('updates')),
     __metadata("design:type", Function),
@@ -150,6 +157,8 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], BannerController.prototype, "getActiveBanners", null);
 __decorate([
+    (0, common_1.UseGuards)(rate_limit_guard_1.RateLimitGuard),
+    (0, rate_limit_guard_1.RateLimit)({ windowMs: 60 * 1000, maxRequests: 60, message: '统计上报过于频繁，请稍后再试' }),
     (0, common_1.Post)(':id/impression'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __metadata("design:type", Function),
@@ -157,6 +166,8 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], BannerController.prototype, "impression", null);
 __decorate([
+    (0, common_1.UseGuards)(rate_limit_guard_1.RateLimitGuard),
+    (0, rate_limit_guard_1.RateLimit)({ windowMs: 60 * 1000, maxRequests: 60, message: '统计上报过于频繁，请稍后再试' }),
     (0, common_1.Post)('track'),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -164,6 +175,8 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], BannerController.prototype, "track", null);
 __decorate([
+    (0, common_1.UseGuards)(rate_limit_guard_1.RateLimitGuard),
+    (0, rate_limit_guard_1.RateLimit)({ windowMs: 60 * 1000, maxRequests: 60, message: '统计上报过于频繁，请稍后再试' }),
     (0, common_1.Post)(':id/click'),
     __param(0, (0, common_1.Param)('id', common_1.ParseIntPipe)),
     __metadata("design:type", Function),

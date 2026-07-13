@@ -77,6 +77,19 @@ let R2StorageService = class R2StorageService {
         const base = (this.publicBaseUrl ?? this.endpointBucketBase).replace(/\/$/, '');
         return `${base}/${fileKey}`;
     }
+    async objectExists(fileKey) {
+        this.ensureInitialized();
+        try {
+            await this.s3.send(new client_s3_1.HeadObjectCommand({
+                Bucket: this.bucketName,
+                Key: fileKey,
+            }));
+            return true;
+        }
+        catch {
+            return false;
+        }
+    }
     generateShortPath(id) {
         const padding = 'zpxw';
         const hash = (0, crypto_1.createHash)('md5')
@@ -98,7 +111,7 @@ let R2StorageService = class R2StorageService {
             basename = 'video';
         }
         basename = basename
-            .replace(/[^\w\-\.]/g, '_')
+            .replace(/[^\w\-.]/g, '_')
             .replace(/_{2,}/g, '_')
             .replace(/^_+|_+$/g, '')
             .substring(0, 100);

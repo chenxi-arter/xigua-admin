@@ -42,6 +42,10 @@ let UserController = class UserController {
         await this.userService.recordHeartbeat(userId, today);
         return { ok: true };
     }
+    async reportPwaStatus(req, body) {
+        await this.userService.updatePwaStatus(req.user.userId, !!body?.isPwa);
+        return { ok: true, isPwa: !!body?.isPwa };
+    }
     getBeijingDateOnly(date = new Date()) {
         const beijingTime = new Date(date.getTime() + 8 * 60 * 60 * 1000);
         return beijingTime.toISOString().slice(0, 10);
@@ -75,6 +79,7 @@ let UserController = class UserController {
             isActive: user.is_active,
             isGuest: user.isGuest,
             guestToken: user.guestToken || null,
+            isPwa: user.isPwa,
             createdAt: user.created_at,
         };
     }
@@ -103,6 +108,18 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], UserController.prototype, "heartbeat", null);
+__decorate([
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Post)('pwa-status'),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, swagger_1.ApiOperation)({ summary: '上报 PWA 安装状态', description: '前端检测到已安装到桌面时调用' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: '上报成功' }),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], UserController.prototype, "reportPwaStatus", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Get)('me'),
