@@ -114,7 +114,8 @@ let AdminUsersController = class AdminUsersController {
             .addSelect('watch_stats.lastActiveAt', 'lastActiveAt')
             .addSelect('COALESCE(online_stats.totalOnlineDuration, 0)', 'totalOnlineDuration')
             .addSelect('COALESCE(online_stats.onlineDays, 0)', 'onlineDays')
-            .orderBy('u.id', 'DESC');
+            .orderBy('u.created_at', 'DESC')
+            .addOrderBy('u.id', 'DESC');
         if (parsedCreatedStartDate) {
             queryBuilder.andWhere('u.created_at >= :createdStartDate', { createdStartDate: parsedCreatedStartDate });
         }
@@ -192,8 +193,8 @@ let AdminUsersController = class AdminUsersController {
             ? await queryBuilder.clone().getCount()
             : await this.countUsersOnly(parsedCreatedStartDate, parsedCreatedEndDate, isPwa);
         const { entities: users, raw } = await queryBuilder
-            .skip(skip)
-            .take(take)
+            .offset(skip)
+            .limit(take)
             .getRawAndEntities();
         const statsByUserId = new Map();
         raw.forEach((row) => {
