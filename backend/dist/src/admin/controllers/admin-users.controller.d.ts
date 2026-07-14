@@ -12,32 +12,6 @@ export declare class AdminUsersController {
     private readonly onlineDailyRepo;
     private readonly redisClient;
     constructor(userRepo: Repository<User>, refreshTokenRepo: Repository<RefreshToken>, watchLogRepo: Repository<WatchLog>, onlineDailyRepo: Repository<UserOnlineDaily>, redisClient: RedisClientType | null);
-    timezoneDiagnostics(): Promise<{
-        node: {
-            processTz: string | null;
-            intlTimeZone: string;
-            offsetMinutes: number;
-            nowIso: string;
-            nowLocalString: string;
-        };
-        mysql: Record<string, unknown>;
-        fieldAnalysis: Record<string, unknown>;
-        createdAtAnalysis: unknown;
-        samples: Record<string, unknown>;
-        parseBoundaryExample: {
-            input: string;
-            startBoundary: string | null;
-            endBoundary: string | null;
-            beijingStart: string | null;
-            beijingEnd: string | null;
-        };
-        hints: {
-            how_to_read: string;
-            cross_check_hint: string;
-            parse_boundary_hint: string;
-            date_column_hint: string;
-        };
-    }>;
     list(page?: number, size?: number, startDate?: string, endDate?: string, createdStartDate?: string, createdEndDate?: string, loginCount?: string, minLoginCount?: string, maxLoginCount?: string, watchDurationRange?: string, minWatchMinutes?: string, maxWatchMinutes?: string, onlineDurationRange?: string, minOnlineMinutes?: string, maxOnlineMinutes?: string, minOnlineDays?: string, maxOnlineDays?: string, isPwa?: string): Promise<{
         total: number;
         items: {
@@ -151,5 +125,9 @@ export declare class AdminUsersController {
     private clearUserOnlineCache;
     private formatDateOnly;
     private getBeijingDateOnly;
+    private formatBeijingDateTimeNow;
+    private countUsersOnly;
+    private batchLoadLastRefreshTokens;
+    private batchLoadOnlineLast;
 }
 export {};

@@ -35,149 +35,11 @@ let AdminUsersController = class AdminUsersController {
         this.onlineDailyRepo = onlineDailyRepo;
         this.redisClient = redisClient;
     }
-    async timezoneDiagnostics() {
-        const nodeInfo = {
-            processTz: process.env.TZ || null,
-            intlTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            offsetMinutes: -new Date().getTimezoneOffset(),
-            nowIso: new Date().toISOString(),
-            nowLocalString: new Date().toString(),
-        };
-        let mysqlInfo = { available: false };
-        try {
-            const rows = await this.userRepo.query(`
-        SELECT
-          @@global.time_zone   AS globalTz,
-          @@session.time_zone  AS sessionTz,
-          @@system_time_zone   AS systemTz,
-          NOW()                AS \`now\`,
-          UTC_TIMESTAMP()      AS \`utc\`,
-          TIMESTAMPDIFF(HOUR, UTC_TIMESTAMP(), NOW()) AS nowMinusUtcHours
-      `);
-            mysqlInfo = { available: true, ...(rows[0] ?? {}) };
-        }
-        catch (err) {
-            mysqlInfo = { available: false, error: err.message };
-        }
-        const sampleTable = async (sql) => {
-            try {
-                const rows = await this.userRepo.query(sql);
-                return rows;
-            }
-            catch (err) {
-                return [{ error: err.message }];
-            }
-        };
-        const samples = {};
-        const queries = [
-            { key: 'users', sql: 'SELECT id, created_at FROM users ORDER BY id DESC LIMIT 3' },
-            { key: 'refresh_tokens', sql: 'SELECT id, created_at, expires_at FROM refresh_tokens ORDER BY id DESC LIMIT 3' },
-            { key: 'admin_users', sql: 'SELECT id, created_at, updated_at FROM admin_users ORDER BY id DESC LIMIT 3' },
-            { key: 'user_online_daily', sql: 'SELECT user_id, date, updated_at FROM user_online_daily ORDER BY id DESC LIMIT 3' },
-            { key: 'watch_logs', sql: 'SELECT id, created_at, watch_date FROM watch_logs ORDER BY id DESC LIMIT 3' },
-            { key: 'watch_progress', sql: 'SELECT user_id, episode_id, updated_at FROM watch_progress ORDER BY updated_at DESC LIMIT 3' },
-            { key: 'browse_history', sql: 'SELECT id, created_at, updated_at FROM browse_history ORDER BY id DESC LIMIT 3' },
-            { key: 'series', sql: 'SELECT id, created_at, updated_at, release_date, deleted_at FROM series ORDER BY id DESC LIMIT 3' },
-            { key: 'episodes', sql: 'SELECT id, created_at, updated_at FROM episodes ORDER BY id DESC LIMIT 3' },
-            { key: 'episode_urls', sql: 'SELECT id, created_at, updated_at FROM episode_urls ORDER BY id DESC LIMIT 3' },
-            { key: 'episode_reactions', sql: 'SELECT id, created_at, updated_at FROM episode_reactions ORDER BY id DESC LIMIT 3' },
-            { key: 'comments', sql: 'SELECT id, created_at FROM comments ORDER BY id DESC LIMIT 3' },
-            { key: 'comment_likes', sql: 'SELECT id, created_at FROM comment_likes ORDER BY id DESC LIMIT 3' },
-            { key: 'favorites', sql: 'SELECT id, created_at, updated_at FROM favorites ORDER BY id DESC LIMIT 3' },
-            { key: 'categories', sql: 'SELECT id, created_at, updated_at FROM categories ORDER BY id DESC LIMIT 3' },
-            { key: 'banners', sql: 'SELECT id, created_at, updated_at FROM banners ORDER BY id DESC LIMIT 3' },
-            { key: 'banner_metric_daily', sql: 'SELECT id, date FROM banner_metric_daily ORDER BY id DESC LIMIT 3' },
-            { key: 'filter_types', sql: 'SELECT id, created_at, updated_at FROM filter_types ORDER BY id DESC LIMIT 3' },
-            { key: 'filter_options', sql: 'SELECT id, created_at, updated_at FROM filter_options ORDER BY id DESC LIMIT 3' },
-            { key: 'series_genre_options', sql: 'SELECT series_id, created_at FROM series_genre_options ORDER BY series_id DESC LIMIT 3' },
-            { key: 'short_videos', sql: 'SELECT id, created_at FROM short_videos ORDER BY id DESC LIMIT 3' },
-            { key: 'advertising_platforms', sql: 'SELECT id, created_at, updated_at FROM advertising_platforms ORDER BY id DESC LIMIT 3' },
-            { key: 'advertising_campaigns', sql: 'SELECT id, start_date, end_date, created_at, updated_at FROM advertising_campaigns ORDER BY id DESC LIMIT 3' },
-            { key: 'advertising_campaign_stats', sql: 'SELECT id, stat_date, updated_at FROM advertising_campaign_stats ORDER BY id DESC LIMIT 3' },
-            { key: 'advertising_events', sql: 'SELECT id, event_time, created_at FROM advertising_events ORDER BY id DESC LIMIT 3' },
-            { key: 'advertising_conversions', sql: 'SELECT id, first_click_time, conversion_time, created_at FROM advertising_conversions ORDER BY id DESC LIMIT 3' },
-        ];
-        for (const q of queries) {
-            samples[q.key] = await sampleTable(q.sql);
-        }
-        const fieldAnalysisTargets = [
-            { key: 'users.created_at', table: 'users', column: 'created_at' },
-            { key: 'refresh_tokens.created_at', table: 'refresh_tokens', column: 'created_at' },
-            { key: 'refresh_tokens.expires_at', table: 'refresh_tokens', column: 'expires_at' },
-            { key: 'admin_users.created_at', table: 'admin_users', column: 'created_at' },
-            { key: 'user_online_daily.updated_at', table: 'user_online_daily', column: 'updated_at' },
-            { key: 'watch_logs.created_at', table: 'watch_logs', column: 'created_at' },
-            { key: 'series.created_at', table: 'series', column: 'created_at' },
-            { key: 'episodes.created_at', table: 'episodes', column: 'created_at' },
-            { key: 'comments.created_at', table: 'comments', column: 'created_at' },
-            { key: 'banners.created_at', table: 'banners', column: 'created_at' },
-            { key: 'advertising_events.event_time', table: 'advertising_events', column: 'event_time' },
-            { key: 'advertising_events.created_at', table: 'advertising_events', column: 'created_at' },
-        ];
-        const fieldAnalysis = {};
-        for (const t of fieldAnalysisTargets) {
-            try {
-                const rows = await this.userRepo.query(`SELECT
-             MAX(\`${t.column}\`) AS latest,
-             TIMESTAMPDIFF(MINUTE, MAX(\`${t.column}\`), NOW())            AS minutesToNow,
-             TIMESTAMPDIFF(MINUTE, MAX(\`${t.column}\`), UTC_TIMESTAMP())  AS minutesToUtc
-           FROM \`${t.table}\``);
-                const row = rows[0] ?? {};
-                const mToUtc = Number(row.minutesToUtc ?? NaN);
-                const mToNow = Number(row.minutesToNow ?? NaN);
-                let verdict;
-                if (!Number.isFinite(mToUtc) && !Number.isFinite(mToNow)) {
-                    verdict = '无数据';
-                }
-                else if (Math.abs(mToUtc - mToNow) < 30) {
-                    verdict = 'MySQL server 走 UTC，无法从字面区分（字面 = UTC = server local）';
-                }
-                else if (Math.abs(mToUtc) < Math.abs(mToNow)) {
-                    verdict = '字面存 UTC（离 UTC_TIMESTAMP 更近）';
-                }
-                else {
-                    verdict = '字面存 MySQL server 本地时间（离 NOW() 更近）';
-                }
-                fieldAnalysis[t.key] = {
-                    latest: row.latest,
-                    minutesToNow: row.minutesToNow,
-                    minutesToUtc: row.minutesToUtc,
-                    verdict,
-                };
-            }
-            catch (err) {
-                fieldAnalysis[t.key] = { error: err.message };
-            }
-        }
-        const createdAtAnalysis = fieldAnalysis['users.created_at'];
-        const testBjDate = '2026-07-12';
-        const parseBoundaryExample = {
-            input: testBjDate,
-            startBoundary: this.parseDateBoundary(testBjDate, 'start'),
-            endBoundary: this.parseDateBoundary(testBjDate, 'end'),
-            beijingStart: this.parseBeijingDateBoundary(testBjDate, 'start'),
-            beijingEnd: this.parseBeijingDateBoundary(testBjDate, 'end'),
-        };
-        return {
-            node: nodeInfo,
-            mysql: mysqlInfo,
-            fieldAnalysis,
-            createdAtAnalysis,
-            samples,
-            parseBoundaryExample,
-            hints: {
-                how_to_read: 'fieldAnalysis 直接对每个关键字段判断字面到底存的是 UTC 还是 MySQL server 本地时间；若 MySQL server 本身就是 UTC，两者无法区分。',
-                cross_check_hint: '如果同一张表里两个 datetime 字段的 verdict 不一致（比如 refresh_tokens.created_at 是 UTC，expires_at 是 MySQL 本地），说明写入路径不同，SQL 边界筛选时要按各字段实际语义分别处理。',
-                parse_boundary_hint: 'parseDateBoundary 生成的字符串需要与被筛选字段字面同语义；对 users.created_at 已按 UTC 字面对齐（减 8h）。',
-                date_column_hint: 'DATE 类型（user_online_daily.date、watch_logs.watch_date、banner_metric_daily.date、advertising_campaign_stats.stat_date）不存时区，只存日历日字面；确认这些是按北京业务日还是 UTC 日历日写入。',
-            },
-        };
-    }
     async list(page = 1, size = 20, startDate, endDate, createdStartDate, createdEndDate, loginCount, minLoginCount, maxLoginCount, watchDurationRange, minWatchMinutes, maxWatchMinutes, onlineDurationRange, minOnlineMinutes, maxOnlineMinutes, minOnlineDays, maxOnlineDays, isPwa) {
         const take = Math.max(Number(size) || 20, 1);
         const currentPage = Math.max(Number(page) || 1, 1);
         const skip = (currentPage - 1) * take;
-        const now = new Date();
+        const nowBjString = this.formatBeijingDateTimeNow();
         const parsedStartDate = this.parseDateBoundary(startDate, 'start');
         const parsedEndDate = this.parseDateBoundary(endDate, 'end');
         const parsedCreatedStartDate = this.parseDateBoundary(createdStartDate, 'start');
@@ -209,7 +71,7 @@ let AdminUsersController = class AdminUsersController {
             .addSelect('COUNT(*)', 'activeLogins')
             .from(refresh_token_entity_1.RefreshToken, 'art')
             .where('art.is_revoked = 0')
-            .andWhere('art.expires_at > :now', { now })
+            .andWhere('art.expires_at > :nowBjString', { nowBjString })
             .groupBy('art.user_id'), 'active_login_stats', 'active_login_stats.userId = u.id')
             .leftJoin(qb => {
             const watchQb = qb
@@ -316,27 +178,38 @@ let AdminUsersController = class AdminUsersController {
         if (onlineDaysMax !== null) {
             queryBuilder.andWhere('COALESCE(online_stats.onlineDays, 0) <= :maxOnlineDays', { maxOnlineDays: onlineDaysMax });
         }
-        const total = await queryBuilder.clone().getCount();
+        const hasStatsFilter = exactLoginCount !== null ||
+            loginCountMin !== null ||
+            loginCountMax !== null ||
+            watchRange.minSeconds !== null ||
+            watchRange.maxSeconds !== null ||
+            hasWatchDurationFilter ||
+            onlineRange.minSeconds !== null ||
+            onlineRange.maxSeconds !== null ||
+            hasOnlineDurationFilter ||
+            onlineDaysMin !== null ||
+            onlineDaysMax !== null;
+        const total = hasStatsFilter
+            ? await queryBuilder.clone().getCount()
+            : await this.countUsersOnly(parsedCreatedStartDate, parsedCreatedEndDate, isPwa);
         const { entities: users, raw } = await queryBuilder
-            .skip(skip)
-            .take(take)
+            .offset(skip)
+            .limit(take)
             .getRawAndEntities();
         const statsByUserId = new Map();
         raw.forEach((row) => {
             const userId = Number(row.u_id);
             statsByUserId.set(userId, row);
         });
-        const items = await Promise.all(users.map(async (u) => {
+        const userIds = users.map((u) => Number(u.id));
+        const [lastTokenByUserId, onlineLastByUserId] = await Promise.all([
+            this.batchLoadLastRefreshTokens(userIds),
+            this.batchLoadOnlineLast(userIds),
+        ]);
+        const items = users.map((u) => {
             const stats = statsByUserId.get(Number(u.id));
-            const [lastToken, onlineLastActiveAt] = await Promise.all([
-                this.refreshTokenRepo.findOne({
-                    where: { userId: u.id },
-                    order: { createdAt: 'DESC' },
-                }),
-                this.redisClient
-                    ? this.redisClient.get(`online:last:${u.id}`).catch(() => null)
-                    : Promise.resolve(null),
-            ]);
+            const lastToken = lastTokenByUserId.get(Number(u.id)) ?? null;
+            const onlineLastActiveAt = onlineLastByUserId.get(Number(u.id)) ?? null;
             const totalWatchDuration = Number(stats?.totalWatchDuration || 0);
             const totalOnlineDuration = Number(stats?.totalOnlineDuration || 0);
             const onlineDays = Number(stats?.onlineDays || 0);
@@ -358,14 +231,14 @@ let AdminUsersController = class AdminUsersController {
                 lastActiveAt,
                 isOnline,
             };
-        }));
+        });
         return { total, items, page: currentPage, size: take };
     }
     async get(id, startDate, endDate) {
         const user = await this.userRepo.findOne({ where: { id: Number(id) } });
         if (!user)
             return null;
-        const now = new Date();
+        const nowBjString = this.formatBeijingDateTimeNow();
         const [lastToken, activeLogins, watchStats] = await Promise.all([
             this.refreshTokenRepo.findOne({
                 where: { userId: user.id },
@@ -374,7 +247,7 @@ let AdminUsersController = class AdminUsersController {
             this.refreshTokenRepo.createQueryBuilder('rt')
                 .where('rt.user_id = :uid', { uid: user.id })
                 .andWhere('rt.is_revoked = 0')
-                .andWhere('rt.expires_at > :now', { now })
+                .andWhere('rt.expires_at > :nowBjString', { nowBjString })
                 .getCount(),
             this.watchLogRepo.createQueryBuilder('wl')
                 .select('COALESCE(SUM(wl.watch_duration), 0)', 'totalDuration')
@@ -474,8 +347,9 @@ let AdminUsersController = class AdminUsersController {
         return this.getOnlineDailyStats(userId, startDate, endDate);
     }
     async getOnlineDailyStats(userId, startDate, endDate) {
-        const end = endDate || new Date().toISOString().slice(0, 10);
-        const start = startDate || (() => { const d = new Date(); d.setDate(d.getDate() - 30); return d.toISOString().slice(0, 10); })();
+        const todayBj = this.getBeijingDateOnly();
+        const end = endDate || todayBj;
+        const start = startDate || this.getBeijingDateOnly(new Date(Date.now() - 30 * 86400000));
         const records = await this.onlineDailyRepo
             .createQueryBuilder('od')
             .where('od.user_id = :userId', { userId })
@@ -563,7 +437,7 @@ let AdminUsersController = class AdminUsersController {
         if (!value || !value.trim())
             return null;
         const normalized = value.trim().replace('T', ' ');
-        const match = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:\s+(\d{1,2})(?::(\d{1,2})(?::(\d{1,2}))?)?)?$/);
+        const match = normalized.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:\s+(\d{1,2})(?::(\d{1,2})(?::(\d{1,2}))?)?)?/);
         if (!match)
             return null;
         const [, yearStr, monthStr, dayStr, hourRaw, minuteRaw, secondRaw] = match;
@@ -653,14 +527,63 @@ let AdminUsersController = class AdminUsersController {
         const beijingTime = new Date(date.getTime() + 8 * 60 * 60 * 1000);
         return beijingTime.toISOString().slice(0, 10);
     }
+    formatBeijingDateTimeNow() {
+        const beijing = new Date(Date.now() + 8 * 60 * 60 * 1000);
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${beijing.getUTCFullYear()}-${pad(beijing.getUTCMonth() + 1)}-${pad(beijing.getUTCDate())} ${pad(beijing.getUTCHours())}:${pad(beijing.getUTCMinutes())}:${pad(beijing.getUTCSeconds())}`;
+    }
+    async countUsersOnly(parsedCreatedStartDate, parsedCreatedEndDate, isPwa) {
+        const qb = this.userRepo.createQueryBuilder('u');
+        if (parsedCreatedStartDate) {
+            qb.andWhere('u.created_at >= :createdStartDate', { createdStartDate: parsedCreatedStartDate });
+        }
+        if (parsedCreatedEndDate) {
+            qb.andWhere('u.created_at < :createdEndDate', { createdEndDate: parsedCreatedEndDate });
+        }
+        if (isPwa === 'true' || isPwa === '1') {
+            qb.andWhere('u.is_pwa = 1');
+        }
+        else if (isPwa === 'false' || isPwa === '0') {
+            qb.andWhere('u.is_pwa = 0');
+        }
+        return qb.getCount();
+    }
+    async batchLoadLastRefreshTokens(userIds) {
+        const result = new Map();
+        if (userIds.length === 0)
+            return result;
+        const rows = await this.refreshTokenRepo
+            .createQueryBuilder('rt')
+            .where('rt.user_id IN (:...userIds)', { userIds })
+            .orderBy('rt.user_id', 'ASC')
+            .addOrderBy('rt.created_at', 'DESC')
+            .getMany();
+        for (const row of rows) {
+            const uid = Number(row.userId);
+            if (!result.has(uid)) {
+                result.set(uid, row);
+            }
+        }
+        return result;
+    }
+    async batchLoadOnlineLast(userIds) {
+        const result = new Map();
+        if (userIds.length === 0 || !this.redisClient)
+            return result;
+        const keys = userIds.map((id) => `online:last:${id}`);
+        try {
+            const values = await this.redisClient.mGet(keys);
+            values.forEach((val, idx) => {
+                if (val)
+                    result.set(userIds[idx], val);
+            });
+        }
+        catch {
+        }
+        return result;
+    }
 };
 exports.AdminUsersController = AdminUsersController;
-__decorate([
-    (0, common_1.Get)('_diagnostics/timezone'),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", Promise)
-], AdminUsersController.prototype, "timezoneDiagnostics", null);
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)('page')),
