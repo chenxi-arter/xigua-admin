@@ -35,6 +35,144 @@ let AdminUsersController = class AdminUsersController {
         this.onlineDailyRepo = onlineDailyRepo;
         this.redisClient = redisClient;
     }
+    async timezoneDiagnostics() {
+        const nodeInfo = {
+            processTz: process.env.TZ || null,
+            intlTimeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            offsetMinutes: -new Date().getTimezoneOffset(),
+            nowIso: new Date().toISOString(),
+            nowLocalString: new Date().toString(),
+        };
+        let mysqlInfo = { available: false };
+        try {
+            const rows = await this.userRepo.query(`
+        SELECT
+          @@global.time_zone   AS globalTz,
+          @@session.time_zone  AS sessionTz,
+          @@system_time_zone   AS systemTz,
+          NOW()                AS \`now\`,
+          UTC_TIMESTAMP()      AS \`utc\`,
+          TIMESTAMPDIFF(HOUR, UTC_TIMESTAMP(), NOW()) AS nowMinusUtcHours
+      `);
+            mysqlInfo = { available: true, ...(rows[0] ?? {}) };
+        }
+        catch (err) {
+            mysqlInfo = { available: false, error: err.message };
+        }
+        const sampleTable = async (sql) => {
+            try {
+                const rows = await this.userRepo.query(sql);
+                return rows;
+            }
+            catch (err) {
+                return [{ error: err.message }];
+            }
+        };
+        const samples = {};
+        const queries = [
+            { key: 'users', sql: 'SELECT id, created_at FROM users ORDER BY id DESC LIMIT 3' },
+            { key: 'refresh_tokens', sql: 'SELECT id, created_at, expires_at FROM refresh_tokens ORDER BY id DESC LIMIT 3' },
+            { key: 'admin_users', sql: 'SELECT id, created_at, updated_at FROM admin_users ORDER BY id DESC LIMIT 3' },
+            { key: 'user_online_daily', sql: 'SELECT user_id, date, updated_at FROM user_online_daily ORDER BY id DESC LIMIT 3' },
+            { key: 'watch_logs', sql: 'SELECT id, created_at, watch_date FROM watch_logs ORDER BY id DESC LIMIT 3' },
+            { key: 'watch_progress', sql: 'SELECT user_id, episode_id, updated_at FROM watch_progress ORDER BY updated_at DESC LIMIT 3' },
+            { key: 'browse_history', sql: 'SELECT id, created_at, updated_at FROM browse_history ORDER BY id DESC LIMIT 3' },
+            { key: 'series', sql: 'SELECT id, created_at, updated_at, release_date, deleted_at FROM series ORDER BY id DESC LIMIT 3' },
+            { key: 'episodes', sql: 'SELECT id, created_at, updated_at FROM episodes ORDER BY id DESC LIMIT 3' },
+            { key: 'episode_urls', sql: 'SELECT id, created_at, updated_at FROM episode_urls ORDER BY id DESC LIMIT 3' },
+            { key: 'episode_reactions', sql: 'SELECT id, created_at, updated_at FROM episode_reactions ORDER BY id DESC LIMIT 3' },
+            { key: 'comments', sql: 'SELECT id, created_at FROM comments ORDER BY id DESC LIMIT 3' },
+            { key: 'comment_likes', sql: 'SELECT id, created_at FROM comment_likes ORDER BY id DESC LIMIT 3' },
+            { key: 'favorites', sql: 'SELECT id, created_at, updated_at FROM favorites ORDER BY id DESC LIMIT 3' },
+            { key: 'categories', sql: 'SELECT id, created_at, updated_at FROM categories ORDER BY id DESC LIMIT 3' },
+            { key: 'banners', sql: 'SELECT id, created_at, updated_at FROM banners ORDER BY id DESC LIMIT 3' },
+            { key: 'banner_metric_daily', sql: 'SELECT id, date FROM banner_metric_daily ORDER BY id DESC LIMIT 3' },
+            { key: 'filter_types', sql: 'SELECT id, created_at, updated_at FROM filter_types ORDER BY id DESC LIMIT 3' },
+            { key: 'filter_options', sql: 'SELECT id, created_at, updated_at FROM filter_options ORDER BY id DESC LIMIT 3' },
+            { key: 'series_genre_options', sql: 'SELECT series_id, created_at FROM series_genre_options ORDER BY series_id DESC LIMIT 3' },
+            { key: 'short_videos', sql: 'SELECT id, created_at FROM short_videos ORDER BY id DESC LIMIT 3' },
+            { key: 'advertising_platforms', sql: 'SELECT id, created_at, updated_at FROM advertising_platforms ORDER BY id DESC LIMIT 3' },
+            { key: 'advertising_campaigns', sql: 'SELECT id, start_date, end_date, created_at, updated_at FROM advertising_campaigns ORDER BY id DESC LIMIT 3' },
+            { key: 'advertising_campaign_stats', sql: 'SELECT id, stat_date, updated_at FROM advertising_campaign_stats ORDER BY id DESC LIMIT 3' },
+            { key: 'advertising_events', sql: 'SELECT id, event_time, created_at FROM advertising_events ORDER BY id DESC LIMIT 3' },
+            { key: 'advertising_conversions', sql: 'SELECT id, first_click_time, conversion_time, created_at FROM advertising_conversions ORDER BY id DESC LIMIT 3' },
+        ];
+        for (const q of queries) {
+            samples[q.key] = await sampleTable(q.sql);
+        }
+        const fieldAnalysisTargets = [
+            { key: 'users.created_at', table: 'users', column: 'created_at' },
+            { key: 'refresh_tokens.created_at', table: 'refresh_tokens', column: 'created_at' },
+            { key: 'refresh_tokens.expires_at', table: 'refresh_tokens', column: 'expires_at' },
+            { key: 'admin_users.created_at', table: 'admin_users', column: 'created_at' },
+            { key: 'user_online_daily.updated_at', table: 'user_online_daily', column: 'updated_at' },
+            { key: 'watch_logs.created_at', table: 'watch_logs', column: 'created_at' },
+            { key: 'series.created_at', table: 'series', column: 'created_at' },
+            { key: 'episodes.created_at', table: 'episodes', column: 'created_at' },
+            { key: 'comments.created_at', table: 'comments', column: 'created_at' },
+            { key: 'banners.created_at', table: 'banners', column: 'created_at' },
+            { key: 'advertising_events.event_time', table: 'advertising_events', column: 'event_time' },
+            { key: 'advertising_events.created_at', table: 'advertising_events', column: 'created_at' },
+        ];
+        const fieldAnalysis = {};
+        for (const t of fieldAnalysisTargets) {
+            try {
+                const rows = await this.userRepo.query(`SELECT
+             MAX(\`${t.column}\`) AS latest,
+             TIMESTAMPDIFF(MINUTE, MAX(\`${t.column}\`), NOW())            AS minutesToNow,
+             TIMESTAMPDIFF(MINUTE, MAX(\`${t.column}\`), UTC_TIMESTAMP())  AS minutesToUtc
+           FROM \`${t.table}\``);
+                const row = rows[0] ?? {};
+                const mToUtc = Number(row.minutesToUtc ?? NaN);
+                const mToNow = Number(row.minutesToNow ?? NaN);
+                let verdict;
+                if (!Number.isFinite(mToUtc) && !Number.isFinite(mToNow)) {
+                    verdict = '无数据';
+                }
+                else if (Math.abs(mToUtc - mToNow) < 30) {
+                    verdict = 'MySQL server 走 UTC，无法从字面区分（字面 = UTC = server local）';
+                }
+                else if (Math.abs(mToUtc) < Math.abs(mToNow)) {
+                    verdict = '字面存 UTC（离 UTC_TIMESTAMP 更近）';
+                }
+                else {
+                    verdict = '字面存 MySQL server 本地时间（离 NOW() 更近）';
+                }
+                fieldAnalysis[t.key] = {
+                    latest: row.latest,
+                    minutesToNow: row.minutesToNow,
+                    minutesToUtc: row.minutesToUtc,
+                    verdict,
+                };
+            }
+            catch (err) {
+                fieldAnalysis[t.key] = { error: err.message };
+            }
+        }
+        const createdAtAnalysis = fieldAnalysis['users.created_at'];
+        const testBjDate = '2026-07-12';
+        const parseBoundaryExample = {
+            input: testBjDate,
+            startBoundary: this.parseDateBoundary(testBjDate, 'start'),
+            endBoundary: this.parseDateBoundary(testBjDate, 'end'),
+            beijingStart: this.parseBeijingDateBoundary(testBjDate, 'start'),
+            beijingEnd: this.parseBeijingDateBoundary(testBjDate, 'end'),
+        };
+        return {
+            node: nodeInfo,
+            mysql: mysqlInfo,
+            fieldAnalysis,
+            createdAtAnalysis,
+            samples,
+            parseBoundaryExample,
+            hints: {
+                how_to_read: 'fieldAnalysis 直接对每个关键字段判断字面到底存的是 UTC 还是 MySQL server 本地时间；若 MySQL server 本身就是 UTC，两者无法区分。',
+                cross_check_hint: '如果同一张表里两个 datetime 字段的 verdict 不一致（比如 refresh_tokens.created_at 是 UTC，expires_at 是 MySQL 本地），说明写入路径不同，SQL 边界筛选时要按各字段实际语义分别处理。',
+                parse_boundary_hint: 'parseDateBoundary 生成的字符串需要与被筛选字段字面同语义；对 users.created_at 已按 UTC 字面对齐（减 8h）。',
+                date_column_hint: 'DATE 类型（user_online_daily.date、watch_logs.watch_date、banner_metric_daily.date、advertising_campaign_stats.stat_date）不存时区，只存日历日字面；确认这些是按北京业务日还是 UTC 日历日写入。',
+            },
+        };
+    }
     async list(page = 1, size = 20, startDate, endDate, createdStartDate, createdEndDate, loginCount, minLoginCount, maxLoginCount, watchDurationRange, minWatchMinutes, maxWatchMinutes, onlineDurationRange, minOnlineMinutes, maxOnlineMinutes, minOnlineDays, maxOnlineDays, isPwa) {
         const take = Math.max(Number(size) || 20, 1);
         const currentPage = Math.max(Number(page) || 1, 1);
@@ -44,8 +182,8 @@ let AdminUsersController = class AdminUsersController {
         const parsedEndDate = this.parseDateBoundary(endDate, 'end');
         const parsedCreatedStartDate = this.parseDateBoundary(createdStartDate, 'start');
         const parsedCreatedEndDate = this.parseDateBoundary(createdEndDate, 'end');
-        const startDateOnly = parsedStartDate ? parsedStartDate.slice(0, 10) : null;
-        const endDateOnly = parsedEndDate ? parsedEndDate.slice(0, 10) : null;
+        const startDateOnly = this.parseBeijingDateBoundary(startDate, 'start');
+        const endDateOnly = this.parseBeijingDateBoundary(endDate, 'end');
         const queryBuilder = this.userRepo.createQueryBuilder('u')
             .leftJoin(qb => {
             const loginQb = qb
@@ -433,18 +571,44 @@ let AdminUsersController = class AdminUsersController {
         const m = Number(monthStr);
         const d = Number(dayStr);
         const pad = (n) => String(n).padStart(2, '0');
+        let hour;
+        let minute;
+        let second;
+        let dayOffset = 0;
         if (boundary === 'end' && hourRaw === undefined) {
-            const nextDay = new Date(Date.UTC(y, m - 1, d + 1));
-            return `${nextDay.getUTCFullYear()}-${pad(nextDay.getUTCMonth() + 1)}-${pad(nextDay.getUTCDate())} 00:00:00`;
+            dayOffset = 1;
+            hour = 0;
+            minute = 0;
+            second = 0;
         }
-        const hour = hourRaw === undefined ? (boundary === 'start' ? 0 : 23) : Number(hourRaw);
-        const minute = minuteRaw === undefined ? (boundary === 'start' ? 0 : 59) : Number(minuteRaw);
-        const second = secondRaw === undefined ? (boundary === 'start' ? 0 : 59) : Number(secondRaw);
-        if (hour === 24) {
-            const nextDay = new Date(Date.UTC(y, m - 1, d + 1));
-            return `${nextDay.getUTCFullYear()}-${pad(nextDay.getUTCMonth() + 1)}-${pad(nextDay.getUTCDate())} 00:00:00`;
+        else {
+            hour = hourRaw === undefined ? (boundary === 'start' ? 0 : 23) : Number(hourRaw);
+            minute = minuteRaw === undefined ? (boundary === 'start' ? 0 : 59) : Number(minuteRaw);
+            second = secondRaw === undefined ? (boundary === 'start' ? 0 : 59) : Number(secondRaw);
+            if (hour === 24) {
+                dayOffset = 1;
+                hour = 0;
+                minute = 0;
+                second = 0;
+            }
         }
-        return `${yearStr}-${pad(m)}-${pad(d)} ${pad(hour)}:${pad(minute)}:${pad(second)}`;
+        const utc = new Date(Date.UTC(y, m - 1, d + dayOffset, hour - 8, minute, second));
+        return `${utc.getUTCFullYear()}-${pad(utc.getUTCMonth() + 1)}-${pad(utc.getUTCDate())} ${pad(utc.getUTCHours())}:${pad(utc.getUTCMinutes())}:${pad(utc.getUTCSeconds())}`;
+    }
+    parseBeijingDateBoundary(value, boundary) {
+        if (!value || !value.trim())
+            return null;
+        const match = value.trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+        if (!match)
+            return null;
+        const [, yearStr, monthStr, dayStr] = match;
+        const y = Number(yearStr);
+        const m = Number(monthStr);
+        const d = Number(dayStr);
+        const dayOffset = boundary === 'end' ? 1 : 0;
+        const bj = new Date(Date.UTC(y, m - 1, d + dayOffset));
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${bj.getUTCFullYear()}-${pad(bj.getUTCMonth() + 1)}-${pad(bj.getUTCDate())}`;
     }
     parseOptionalNumber(value) {
         if (value === undefined || value === null || String(value).trim() === '')
@@ -491,6 +655,12 @@ let AdminUsersController = class AdminUsersController {
     }
 };
 exports.AdminUsersController = AdminUsersController;
+__decorate([
+    (0, common_1.Get)('_diagnostics/timezone'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], AdminUsersController.prototype, "timezoneDiagnostics", null);
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)('page')),
