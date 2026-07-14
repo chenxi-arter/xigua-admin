@@ -114,8 +114,7 @@ let AdminUsersController = class AdminUsersController {
             .addSelect('watch_stats.lastActiveAt', 'lastActiveAt')
             .addSelect('COALESCE(online_stats.totalOnlineDuration, 0)', 'totalOnlineDuration')
             .addSelect('COALESCE(online_stats.onlineDays, 0)', 'onlineDays')
-            .orderBy('u.created_at', 'DESC')
-            .addOrderBy('u.id', 'DESC');
+            .orderBy('u.id', 'DESC');
         if (parsedCreatedStartDate) {
             queryBuilder.andWhere('u.created_at >= :createdStartDate', { createdStartDate: parsedCreatedStartDate });
         }
@@ -193,18 +192,17 @@ let AdminUsersController = class AdminUsersController {
             ? await queryBuilder.clone().getCount()
             : await this.countUsersOnly(parsedCreatedStartDate, parsedCreatedEndDate, isPwa);
         const { entities: users, raw } = await queryBuilder
-            .offset(skip)
-            .limit(take)
+            .skip(skip)
+            .take(take)
             .getRawAndEntities();
         const statsByUserId = new Map();
         raw.forEach((row) => {
-            const userId = Number(row.u_id);
-            statsByUserId.set(userId, row);
+            statsByUserId.set(Number(row.u_id), row);
         });
-        const userIds = users.map((u) => Number(u.id));
+        const orderedIds = users.map((u) => Number(u.id));
         const [lastTokenByUserId, onlineLastByUserId] = await Promise.all([
-            this.batchLoadLastRefreshTokens(userIds),
-            this.batchLoadOnlineLast(userIds),
+            this.batchLoadLastRefreshTokens(orderedIds),
+            this.batchLoadOnlineLast(orderedIds),
         ]);
         const items = users.map((u) => {
             const stats = statsByUserId.get(Number(u.id));
