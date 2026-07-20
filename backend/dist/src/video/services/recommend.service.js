@@ -46,8 +46,8 @@ let RecommendService = class RecommendService {
     }
     async getRecommendList(page = 1, size = 20, userId) {
         try {
-            const offset = (page - 1) * size;
-            const randomPoolSize = Math.max(size * 10, 200);
+            const candidatePoolSize = Math.max(size * 30, 500);
+            const highQualityPoolSize = Math.max(size * 10, 200);
             const candidateQuery = `
         SELECT 
           e.id,
@@ -79,11 +79,11 @@ let RecommendService = class RecommendService {
         WHERE e.status = 'published'
           AND e.episode_number = 1
           AND s.is_active = 1
-          AND s.category_id = 1
-        ORDER BY RAND()
+          AND s.play_count >= 1000000
+        ORDER BY s.play_count DESC, e.favorite_count DESC, e.like_count DESC, e.created_at DESC
         LIMIT ?
       `;
-            const candidates = await this.episodeRepo.query(candidateQuery, [randomPoolSize]);
+            const candidates = await this.episodeRepo.query(candidateQuery, [candidatePoolSize]);
             if (candidates.length === 0) {
                 return {
                     list: [],
@@ -93,36 +93,35 @@ let RecommendService = class RecommendService {
                 };
             }
             const scoredCandidates = candidates.map(candidate => {
-                const likeWeight = (candidate.likeCount || 0) * 2;
-                const favoriteWeight = (candidate.favoriteCount || 0) * 4;
-                const interactionScore = likeWeight + favoriteWeight;
-                const randomWeight = 0.3 + Math.random() * 1.7;
-                const randomFactor = Math.floor(Math.random() * 800);
+                const playCount = Number(candidate.playCount || 0);
+                const likeCount = Number(candidate.likeCount || 0);
+                const favoriteCount = Number(candidate.favoriteCount || 0);
+                const dislikeCount = Number(candidate.dislikeCount || 0);
+                const popularityScore = Math.log10(playCount + 1) * 100;
+                const interactionScore = likeCount * 2 + favoriteCount * 5 - dislikeCount * 1.5;
                 const createdAt = new Date(candidate.createdAt);
-                const daysDiff = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
-                let freshnessScore = 120;
-                if (daysDiff <= 3) {
-                    freshnessScore = Math.max(0, 800 - daysDiff * 267);
-                }
-                else if (daysDiff <= 14) {
-                    freshnessScore = Math.max(0, 600 - (daysDiff - 3) * 54);
+                const daysDiff = Math.max(0, Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24)));
+                let freshnessScore = 0;
+                if (daysDiff <= 7) {
+                    freshnessScore = 180 - daysDiff * 12;
                 }
                 else if (daysDiff <= 30) {
-                    freshnessScore = Math.max(0, 300 - (daysDiff - 14) * 19);
+                    freshnessScore = 90 - (daysDiff - 7) * 2;
                 }
-                const recommendScore = interactionScore * randomWeight + randomFactor + freshnessScore;
+                const randomFactor = Math.random() * 120;
+                const recommendScore = popularityScore + interactionScore + freshnessScore + randomFactor;
                 return {
                     ...candidate,
-                    recommendScore: recommendScore.toString(),
+                    recommendScore: recommendScore.toFixed(2),
                 };
             });
             scoredCandidates.sort((a, b) => parseFloat(b.recommendScore) - parseFloat(a.recommendScore));
-            const topCandidates = scoredCandidates.slice(0, size + 1);
-            for (let i = topCandidates.length - 1; i > 0; i--) {
+            const highQualityCandidates = scoredCandidates.slice(0, highQualityPoolSize);
+            for (let i = highQualityCandidates.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
-                [topCandidates[i], topCandidates[j]] = [topCandidates[j], topCandidates[i]];
+                [highQualityCandidates[i], highQualityCandidates[j]] = [highQualityCandidates[j], highQualityCandidates[i]];
             }
-            const episodes = topCandidates;
+            const episodes = highQualityCandidates.slice(0, size + 1);
             const hasMore = episodes.length > size;
             const list = hasMore ? episodes.slice(0, size) : episodes;
             const userInteractions = {};
