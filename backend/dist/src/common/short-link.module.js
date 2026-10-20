@@ -10,13 +10,18 @@ exports.ShortLinkModule = void 0;
 const common_1 = require("@nestjs/common");
 const short_link_controller_1 = require("./controllers/short-link.controller");
 const short_link_service_1 = require("./services/short-link.service");
+const dau_service_1 = require("../admin/services/dau.service");
+const admin_auth_module_1 = require("../admin/admin-auth.module");
+const jwt_or_admin_guard_1 = require("../auth/guards/jwt-or-admin.guard");
+const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 let ShortLinkModule = class ShortLinkModule {
 };
 exports.ShortLinkModule = ShortLinkModule;
 exports.ShortLinkModule = ShortLinkModule = __decorate([
     (0, common_1.Module)({
+        imports: [admin_auth_module_1.AdminAuthModule],
         controllers: [short_link_controller_1.ShortLinkController],
-        providers: [short_link_service_1.ShortLinkService],
+        providers: [short_link_service_1.ShortLinkService, dau_service_1.DauService, jwt_auth_guard_1.JwtAuthGuard, jwt_or_admin_guard_1.JwtOrAdminGuard],
         exports: [short_link_service_1.ShortLinkService],
     })
 ], ShortLinkModule);

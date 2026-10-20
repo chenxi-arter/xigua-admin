@@ -22,6 +22,8 @@ const ingest_service_1 = require("../services/ingest.service");
 const ingest_series_dto_1 = require("../dto/ingest-series.dto");
 const update_ingest_series_dto_1 = require("../dto/update-ingest-series.dto");
 const response_util_1 = require("../../common/utils/response.util");
+const admin_jwt_auth_guard_1 = require("../../admin/guards/admin-jwt-auth.guard");
+const swagger_1 = require("@nestjs/swagger");
 let IngestController = class IngestController {
     ingestService;
     constructor(ingestService) {
@@ -110,7 +112,10 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], IngestController.prototype, "getSeriesProgress", null);
 exports.IngestController = IngestController = __decorate([
+    (0, swagger_1.ApiTags)('数据导入（管理员）'),
     (0, common_1.Controller)('admin/ingest'),
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
+    (0, swagger_1.ApiBearerAuth)(),
     __metadata("design:paramtypes", [ingest_service_1.IngestService])
 ], IngestController);
 //# sourceMappingURL=ingest.controller.js.map

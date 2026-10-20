@@ -11,6 +11,8 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TestIngestController = void 0;
 const common_1 = require("@nestjs/common");
+const admin_jwt_auth_guard_1 = require("../../admin/guards/admin-jwt-auth.guard");
+const swagger_1 = require("@nestjs/swagger");
 let TestIngestController = class TestIngestController {
     async testGet() {
         return { message: 'Test Ingest GET endpoint works!', timestamp: new Date().toISOString() };
@@ -33,6 +35,9 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], TestIngestController.prototype, "testPost", null);
 exports.TestIngestController = TestIngestController = __decorate([
-    (0, common_1.Controller)('admin/test-ingest')
+    (0, swagger_1.ApiTags)('测试（管理员）'),
+    (0, common_1.Controller)('admin/test-ingest'),
+    (0, common_1.UseGuards)(admin_jwt_auth_guard_1.AdminJwtAuthGuard),
+    (0, swagger_1.ApiBearerAuth)()
 ], TestIngestController);
 //# sourceMappingURL=test-ingest.controller.js.map

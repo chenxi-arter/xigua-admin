@@ -123,27 +123,6 @@ let VideoController = class VideoController extends base_controller_1.BaseContro
             return this.handleServiceError(error, '获取媒体列表失败');
         }
     }
-    async createEpisodeUrl(episodeId, quality, ossUrl, cdnUrl, subtitleUrl) {
-        try {
-            if (!episodeId || episodeId <= 0) {
-                return this.error('剧集ID无效', 400);
-            }
-            if (!quality || quality.trim().length === 0) {
-                return this.error('清晰度不能为空', 400);
-            }
-            if (!ossUrl || ossUrl.trim().length === 0) {
-                return this.error('OSS地址不能为空', 400);
-            }
-            if (!cdnUrl || cdnUrl.trim().length === 0) {
-                return this.error('CDN地址不能为空', 400);
-            }
-            const result = await this.videoService.createEpisodeUrl(episodeId, quality.trim(), ossUrl.trim(), cdnUrl.trim(), subtitleUrl?.trim());
-            return this.success(result, '播放地址创建成功');
-        }
-        catch (error) {
-            return this.handleServiceError(error, '创建播放地址失败');
-        }
-    }
     async getEpisodeUrlByAccessKey(accessKey) {
         try {
             if (!accessKey || accessKey.trim().length === 0) {
@@ -260,17 +239,6 @@ __decorate([
     __metadata("design:paramtypes", [Object, media_query_dto_1.MediaQueryDto]),
     __metadata("design:returntype", Promise)
 ], VideoController.prototype, "listMediaUser", null);
-__decorate([
-    (0, common_1.Post)('episode-url'),
-    __param(0, (0, common_1.Body)('episodeId')),
-    __param(1, (0, common_1.Body)('quality')),
-    __param(2, (0, common_1.Body)('ossUrl')),
-    __param(3, (0, common_1.Body)('cdnUrl')),
-    __param(4, (0, common_1.Body)('subtitleUrl')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, String, String, String, String]),
-    __metadata("design:returntype", Promise)
-], VideoController.prototype, "createEpisodeUrl", null);
 __decorate([
     (0, common_1.Get)('episode-url/:accessKey'),
     __param(0, (0, common_1.Param)('accessKey')),

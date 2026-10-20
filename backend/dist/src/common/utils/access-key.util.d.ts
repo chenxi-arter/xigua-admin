@@ -1,4 +1,5 @@
 export declare class AccessKeyUtil {
+    private static getSecret;
     static generateAccessKey(length?: number): string;
     static generateDeterministicKey(id: number, salt?: string): string;
     static generateFromString(key: string, length?: number): string;

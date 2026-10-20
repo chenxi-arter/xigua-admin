@@ -7,7 +7,9 @@ const common_1 = require("@nestjs/common");
 const app_client_module_1 = require("./app.client.module");
 const date_util_1 = require("./common/utils/date.util");
 const legal_constants_1 = require("./common/constants/legal.constants");
+const security_env_util_1 = require("./common/utils/security-env.util");
 async function bootstrap() {
+    (0, security_env_util_1.validateSecurityEnv)();
     console.log('\n' + '='.repeat(80));
     console.log('法律免责声明 / Legal Disclaimer');
     console.log('='.repeat(80));

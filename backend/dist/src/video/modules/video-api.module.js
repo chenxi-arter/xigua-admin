@@ -10,6 +10,7 @@ exports.VideoApiModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const video_controller_1 = require("../controllers/video.controller");
+const video_compat_admin_controller_1 = require("../controllers/video-compat-admin.controller");
 const public_video_controller_1 = require("../controllers/public-video.controller");
 const home_controller_1 = require("../controllers/home.controller");
 const list_controller_1 = require("../controllers/list.controller");
@@ -94,6 +95,7 @@ exports.VideoApiModule = VideoApiModule = __decorate([
         controllers: [
             public_video_controller_1.PublicVideoController,
             video_controller_1.VideoController,
+            video_compat_admin_controller_1.VideoCompatAdminController,
             home_controller_1.HomeController,
             list_controller_1.ListController,
             category_controller_1.CategoryController,

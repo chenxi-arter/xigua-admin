@@ -45,19 +45,6 @@ export declare class VideoController extends BaseController {
         };
         msg: null;
     }>>;
-    createEpisodeUrl(episodeId: number, quality: string, ossUrl: string, cdnUrl: string, subtitleUrl?: string): Promise<void | import("./base.controller").ApiResponse<null> | import("./base.controller").ApiResponse<{
-        code: number;
-        data: {
-            id: number;
-            episodeId: number;
-            quality: string;
-            accessKey: string;
-            ossUrl: string;
-            cdnUrl: string;
-            subtitleUrl: string | null;
-        };
-        msg: string;
-    }>>;
     getEpisodeUrlByAccessKey(accessKey: string): Promise<void | import("./base.controller").ApiResponse<null> | import("./base.controller").ApiResponse<{
         episodeId: number;
         episodeShortId: string;

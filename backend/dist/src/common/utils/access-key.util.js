@@ -2,17 +2,23 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AccessKeyUtil = void 0;
 const crypto_1 = require("crypto");
+const security_env_util_1 = require("./security-env.util");
 class AccessKeyUtil {
+    static getSecret() {
+        return (0, security_env_util_1.assertStrongSecret)('APP_SECRET');
+    }
     static generateAccessKey(length = 32) {
         return (0, crypto_1.randomBytes)(length / 2).toString('hex');
     }
     static generateDeterministicKey(id, salt) {
         const saltValue = salt || Date.now().toString();
-        const data = `${id}_${saltValue}_${process.env.APP_SECRET || 'default_secret'}`;
-        return (0, crypto_1.createHash)('sha256').update(data).digest('hex').substring(0, 32);
+        return (0, crypto_1.createHmac)('sha256', this.getSecret())
+            .update(`${id}_${saltValue}`)
+            .digest('hex')
+            .substring(0, 32);
     }
     static generateFromString(key, length = 32) {
-        const hash = (0, crypto_1.createHash)('sha256').update(`${key}_${process.env.APP_SECRET || 'default_secret'}`).digest('hex');
+        const hash = (0, crypto_1.createHmac)('sha256', this.getSecret()).update(key).digest('hex');
         return hash.substring(0, length);
     }
     static isValidAccessKey(key) {

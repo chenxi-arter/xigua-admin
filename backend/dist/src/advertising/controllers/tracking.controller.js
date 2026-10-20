@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const services_1 = require("../services");
 const dto_1 = require("../dto");
 const optional_jwt_auth_guard_1 = require("../../auth/guards/optional-jwt-auth.guard");
+const rate_limit_guard_1 = require("../../common/guards/rate-limit.guard");
 let TrackingController = class TrackingController {
     trackingService;
     constructor(trackingService) {
@@ -71,6 +72,7 @@ exports.TrackingController = TrackingController;
 __decorate([
     (0, common_1.Post)('event'),
     (0, common_1.UseGuards)(optional_jwt_auth_guard_1.OptionalJwtAuthGuard),
+    (0, rate_limit_guard_1.RateLimit)({ windowMs: 60 * 1000, maxRequests: 100 }),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -79,6 +81,7 @@ __decorate([
 ], TrackingController.prototype, "createEvent", null);
 __decorate([
     (0, common_1.Post)('events/batch'),
+    (0, rate_limit_guard_1.RateLimit)({ windowMs: 60 * 1000, maxRequests: 10 }),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -88,6 +91,7 @@ __decorate([
 __decorate([
     (0, common_1.Post)('conversion'),
     (0, common_1.UseGuards)(optional_jwt_auth_guard_1.OptionalJwtAuthGuard),
+    (0, rate_limit_guard_1.RateLimit)({ windowMs: 60 * 1000, maxRequests: 20 }),
     __param(0, (0, common_1.Body)()),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -96,6 +100,7 @@ __decorate([
 ], TrackingController.prototype, "createConversion", null);
 exports.TrackingController = TrackingController = __decorate([
     (0, common_1.Controller)('tracking/advertising'),
+    (0, common_1.UseGuards)(rate_limit_guard_1.RateLimitGuard),
     __metadata("design:paramtypes", [services_1.TrackingService])
 ], TrackingController);
 //# sourceMappingURL=tracking.controller.js.map

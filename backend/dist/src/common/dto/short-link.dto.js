@@ -38,7 +38,10 @@ __decorate([
     __metadata("design:type", String)
 ], CreateShortLinkDto.prototype, "ttl", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ description: '自定义域名', example: 'xgtv.short.gy' }),
+    (0, swagger_1.ApiPropertyOptional)({
+        description: '自定义域名（需先在 Short.io 控制台配置）。不传则取后端 SHORT_IO_DEFAULT_DOMAIN，缺省 xgtv.short.gy',
+        example: 'xgtv.short.gy',
+    }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)

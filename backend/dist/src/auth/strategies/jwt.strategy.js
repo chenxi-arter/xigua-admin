@@ -14,17 +14,36 @@ const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const passport_1 = require("@nestjs/passport");
 const passport_jwt_1 = require("passport-jwt");
+const jsonwebtoken_1 = require("jsonwebtoken");
+const security_env_util_1 = require("../../common/utils/security-env.util");
+const strategyLogger = new common_1.Logger('JwtStrategy');
 let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(passport_jwt_1.Strategy) {
     configService;
     constructor(configService) {
-        const jwtSecret = configService.get('JWT_SECRET');
-        if (!jwtSecret) {
-            throw new Error('JWT_SECRET is not defined in environment variables');
-        }
+        const newSecret = (0, security_env_util_1.assertStrongSecret)('JWT_SECRET', configService.get('JWT_SECRET'));
+        const legacySecret = (0, security_env_util_1.optionalSecret)('JWT_SECRET_LEGACY', configService.get('JWT_SECRET_LEGACY'));
         super({
             jwtFromRequest: passport_jwt_1.ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,
-            secretOrKey: jwtSecret,
+            secretOrKeyProvider: (_request, rawJwtToken, done) => {
+                if (!legacySecret) {
+                    return done(null, newSecret);
+                }
+                try {
+                    (0, jsonwebtoken_1.verify)(rawJwtToken, newSecret);
+                    return done(null, newSecret);
+                }
+                catch {
+                    try {
+                        (0, jsonwebtoken_1.verify)(rawJwtToken, legacySecret);
+                        strategyLogger.warn('检测到使用过渡期旧密钥签发的 token，请尽快完成迁移');
+                        return done(null, legacySecret);
+                    }
+                    catch {
+                        return done(null, newSecret);
+                    }
+                }
+            },
         });
         this.configService = configService;
     }
@@ -33,6 +52,9 @@ let JwtStrategy = class JwtStrategy extends (0, passport_1.PassportStrategy)(pas
             throw new common_1.UnauthorizedException('登录信息无效或已过期');
         }
         const userId = typeof payload.sub === 'string' ? parseInt(payload.sub, 10) : payload.sub;
+        if (!Number.isFinite(userId) || userId <= 0) {
+            throw new common_1.UnauthorizedException('登录信息无效或已过期');
+        }
         return { userId };
     }
 };

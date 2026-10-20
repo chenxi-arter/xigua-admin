@@ -62,6 +62,8 @@ class BatchCreateEventDto {
 exports.BatchCreateEventDto = BatchCreateEventDto;
 __decorate([
     (0, class_validator_1.IsArray)(),
+    (0, class_validator_1.ArrayMaxSize)(50, { message: '单次最多提交50个事件' }),
+    (0, class_validator_1.ValidateNested)({ each: true }),
     (0, class_transformer_1.Type)(() => CreateEventDto),
     __metadata("design:type", Array)
 ], BatchCreateEventDto.prototype, "events", void 0);
