@@ -79,7 +79,6 @@ let RecommendService = class RecommendService {
         WHERE e.status = 'published'
           AND e.episode_number = 1
           AND s.is_active = 1
-          AND s.play_count >= 1000000
         ORDER BY s.play_count DESC, e.favorite_count DESC, e.like_count DESC, e.created_at DESC
         LIMIT ?
       `;

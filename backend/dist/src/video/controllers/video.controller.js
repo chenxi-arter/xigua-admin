@@ -20,6 +20,7 @@ const video_service_1 = require("../video.service");
 const jwt_auth_guard_1 = require("../../auth/guards/jwt-auth.guard");
 const media_query_dto_1 = require("../dto/media-query.dto");
 const episode_list_dto_1 = require("../dto/episode-list.dto");
+const episode_pagination_constants_1 = require("../constants/episode-pagination.constants");
 const base_controller_1 = require("./base.controller");
 const user_entity_1 = require("../../user/entity/user.entity");
 let VideoController = class VideoController extends base_controller_1.BaseController {
@@ -184,7 +185,8 @@ let VideoController = class VideoController extends base_controller_1.BaseContro
     }
     async getEpisodeList(dto, req) {
         try {
-            const { page, size } = this.normalizePagination(dto.page, dto.size, 200);
+            const hasSeries = Boolean(dto.seriesShortId || dto.seriesId);
+            const { page, size } = this.normalizePagination(dto.page, dto.size, (0, episode_pagination_constants_1.resolveEpisodePageSizeLimit)(hasSeries));
             if (dto.seriesShortId) {
                 const result = await this.videoService.getEpisodeList(dto.seriesShortId, true, page, size, req.user?.userId);
                 return result;

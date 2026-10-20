@@ -22,18 +22,21 @@ const watch_log_entity_1 = require("../../video/entity/watch-log.entity");
 const user_online_daily_entity_1 = require("../../user/entity/user-online-daily.entity");
 const redis_module_1 = require("../../core/redis/redis.module");
 const admin_jwt_auth_guard_1 = require("../guards/admin-jwt-auth.guard");
+const guest_retention_service_1 = require("../services/guest-retention.service");
 let AdminUsersController = class AdminUsersController {
     userRepo;
     refreshTokenRepo;
     watchLogRepo;
     onlineDailyRepo;
     redisClient;
-    constructor(userRepo, refreshTokenRepo, watchLogRepo, onlineDailyRepo, redisClient) {
+    guestRetentionService;
+    constructor(userRepo, refreshTokenRepo, watchLogRepo, onlineDailyRepo, redisClient, guestRetentionService) {
         this.userRepo = userRepo;
         this.refreshTokenRepo = refreshTokenRepo;
         this.watchLogRepo = watchLogRepo;
         this.onlineDailyRepo = onlineDailyRepo;
         this.redisClient = redisClient;
+        this.guestRetentionService = guestRetentionService;
     }
     async list(page = 1, size = 20, startDate, endDate, createdStartDate, createdEndDate, loginCount, minLoginCount, maxLoginCount, watchDurationRange, minWatchMinutes, maxWatchMinutes, onlineDurationRange, minOnlineMinutes, maxOnlineMinutes, minOnlineDays, maxOnlineDays, isPwa) {
         const take = Math.max(Number(size) || 20, 1);
@@ -232,6 +235,19 @@ let AdminUsersController = class AdminUsersController {
             };
         });
         return { total, items, page: currentPage, size: take };
+    }
+    async previewGuestPurge(inactiveMonths) {
+        return this.guestRetentionService.preview({
+            inactiveMonths: inactiveMonths ? Number(inactiveMonths) : undefined,
+        });
+    }
+    async runGuestPurge(body = {}) {
+        return this.guestRetentionService.purge({
+            inactiveMonths: body.inactiveMonths,
+            batchSize: body.batchSize,
+            maxPerRun: body.maxPerRun,
+            dryRun: body.dryRun,
+        });
     }
     async get(id, startDate, endDate) {
         const user = await this.userRepo.findOne({ where: { id: Number(id) } });
@@ -608,6 +624,20 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AdminUsersController.prototype, "list", null);
 __decorate([
+    (0, common_1.Get)('guest-purge/preview'),
+    __param(0, (0, common_1.Query)('inactiveMonths')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], AdminUsersController.prototype, "previewGuestPurge", null);
+__decorate([
+    (0, common_1.Post)('guest-purge/run'),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AdminUsersController.prototype, "runGuestPurge", null);
+__decorate([
     (0, common_1.Get)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Query)('startDate')),
@@ -667,6 +697,6 @@ exports.AdminUsersController = AdminUsersController = __decorate([
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.Repository, Object])
+        typeorm_2.Repository, Object, guest_retention_service_1.GuestRetentionService])
 ], AdminUsersController);
 //# sourceMappingURL=admin-users.controller.js.map

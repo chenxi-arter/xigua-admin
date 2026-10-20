@@ -17,6 +17,7 @@ const common_1 = require("@nestjs/common");
 const video_service_1 = require("../video.service");
 const media_query_dto_1 = require("../dto/media-query.dto");
 const episode_list_dto_1 = require("../dto/episode-list.dto");
+const episode_pagination_constants_1 = require("../constants/episode-pagination.constants");
 let PublicVideoController = class PublicVideoController {
     videoService;
     constructor(videoService) {
@@ -37,7 +38,8 @@ let PublicVideoController = class PublicVideoController {
     }
     async getPublicEpisodeList(dto) {
         const page = Math.max(1, parseInt(dto.page || '1', 10));
-        const size = Math.min(200, Math.max(1, parseInt(dto.size || '20', 10)));
+        const hasSeries = Boolean(dto.seriesShortId || dto.seriesId);
+        const size = Math.min((0, episode_pagination_constants_1.resolveEpisodePageSizeLimit)(hasSeries), Math.max(1, parseInt(dto.size || '20', 10)));
         if (dto.seriesShortId) {
             return this.videoService.getEpisodeList(dto.seriesShortId, true, page, size, undefined);
         }

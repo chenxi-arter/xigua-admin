@@ -148,6 +148,13 @@ let InteractionController = class InteractionController extends base_controller_
         const userId = req.user?.userId ? Number(req.user.userId) : 0;
         if (!userId)
             return this.error('未认证', 401);
+        const user = await this.userRepo.findOne({ where: { id: userId } });
+        if (!user) {
+            return this.error('用户不存在', 404);
+        }
+        if (Boolean(user.isGuest)) {
+            return this.error('游客用户暂不支持发表评论，请先注册成为正式用户', 403, common_1.HttpStatus.FORBIDDEN);
+        }
         const { episodeShortId, parentId, content } = body;
         if (!episodeShortId?.trim())
             throw new common_1.BadRequestException('episodeShortId 必填');

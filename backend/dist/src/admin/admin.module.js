@@ -43,6 +43,7 @@ const watch_log_service_1 = require("../video/services/watch-log.service");
 const watch_logs_cleanup_service_1 = require("../video/services/watch-logs-cleanup.service");
 const export_optimization_service_1 = require("./services/export-optimization.service");
 const dau_service_1 = require("./services/dau.service");
+const guest_retention_service_1 = require("./services/guest-retention.service");
 let AdminModule = class AdminModule {
 };
 exports.AdminModule = AdminModule;
@@ -91,6 +92,7 @@ exports.AdminModule = AdminModule = __decorate([
             watch_logs_cleanup_service_1.WatchLogsCleanupService,
             export_optimization_service_1.ExportOptimizationService,
             dau_service_1.DauService,
+            guest_retention_service_1.GuestRetentionService,
         ],
     })
 ], AdminModule);

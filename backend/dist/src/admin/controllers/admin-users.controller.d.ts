@@ -4,6 +4,7 @@ import { User } from '../../user/entity/user.entity';
 import { RefreshToken } from '../../auth/entity/refresh-token.entity';
 import { WatchLog } from '../../video/entity/watch-log.entity';
 import { UserOnlineDaily } from '../../user/entity/user-online-daily.entity';
+import { GuestRetentionService } from '../services/guest-retention.service';
 type AdminUserMutationBody = Partial<Pick<User, 'email' | 'first_name' | 'last_name' | 'username' | 'nickname' | 'photo_url' | 'is_active'>>;
 export declare class AdminUsersController {
     private readonly userRepo;
@@ -11,7 +12,8 @@ export declare class AdminUsersController {
     private readonly watchLogRepo;
     private readonly onlineDailyRepo;
     private readonly redisClient;
-    constructor(userRepo: Repository<User>, refreshTokenRepo: Repository<RefreshToken>, watchLogRepo: Repository<WatchLog>, onlineDailyRepo: Repository<UserOnlineDaily>, redisClient: RedisClientType | null);
+    private readonly guestRetentionService;
+    constructor(userRepo: Repository<User>, refreshTokenRepo: Repository<RefreshToken>, watchLogRepo: Repository<WatchLog>, onlineDailyRepo: Repository<UserOnlineDaily>, redisClient: RedisClientType | null, guestRetentionService: GuestRetentionService);
     list(page?: number, size?: number, startDate?: string, endDate?: string, createdStartDate?: string, createdEndDate?: string, loginCount?: string, minLoginCount?: string, maxLoginCount?: string, watchDurationRange?: string, minWatchMinutes?: string, maxWatchMinutes?: string, onlineDurationRange?: string, minOnlineMinutes?: string, maxOnlineMinutes?: string, minOnlineDays?: string, maxOnlineDays?: string, isPwa?: string): Promise<{
         total: number;
         items: {
@@ -44,6 +46,13 @@ export declare class AdminUsersController {
         page: number;
         size: number;
     }>;
+    previewGuestPurge(inactiveMonths?: string): Promise<import("../services/guest-retention.service").GuestPurgePreview>;
+    runGuestPurge(body?: {
+        inactiveMonths?: number;
+        batchSize?: number;
+        maxPerRun?: number;
+        dryRun?: boolean;
+    }): Promise<import("../services/guest-retention.service").GuestPurgePreview | import("../services/guest-retention.service").GuestPurgeResult>;
     get(id: string, startDate?: string, endDate?: string): Promise<{
         lastLoginAt: Date | null;
         lastLoginIp: string | null;
